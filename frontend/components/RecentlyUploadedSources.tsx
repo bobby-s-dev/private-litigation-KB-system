@@ -1,23 +1,105 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import { apiClient, Document } from '@/lib/api'
+
 interface Source {
   name: string
   citations: number
   uploaded: string
   relatedFacts?: number
+  id: string
 }
 
-const sources: Source[] = [
-  { name: 'Stipulations.pdf', citations: 1, uploaded: '12/26/2025 at 1:13 pm', relatedFacts: 1 },
-  { name: 'Lane Parish Statement.pdf', citations: 28, uploaded: '12/26/2025 at 1:13 pm', relatedFacts: 24 },
-  { name: 'Ex 9 (News Article)', citations: 0, uploaded: '12/26/2025 at 1:13 pm' },
-  { name: 'Ex 8 (Internal Investigation Findings)', citations: 3, uploaded: '12/26/2025 at 1:13 pm', relatedFacts: 3 },
-  { name: 'Ex 7 (Lane & Fox Emails)', citations: 5, uploaded: '12/26/2025 at 1:13 pm', relatedFacts: 4 },
-  { name: 'Ex 6 (Phishing Email)', citations: 1, uploaded: '12/26/2025 at 1:13 pm', relatedFacts: 1 },
-  { name: 'Ex 5 (Texoma Hospital Policies & Procedures)', citations: 1, uploaded: '12/26/2025 at 1:13 pm', relatedFacts: 1 },
-]
+interface RecentlyUploadedSourcesProps {
+  matterId?: string
+  refreshKey?: number
+}
 
-export default function RecentlyUploadedSources() {
+export default function RecentlyUploadedSources({ matterId, refreshKey }: RecentlyUploadedSourcesProps) {
+  const [sources, setSources] = useState<Source[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!matterId) {
+      setLoading(false)
+      return
+    }
+
+    const fetchDocuments = async () => {
+      try {
+        setLoading(true)
+        const documents = await apiClient.getDocumentsByMatter(matterId)
+        
+        const formattedSources: Source[] = documents.map((doc: Document) => {
+          const uploadDate = doc.ingested_at || doc.created_at
+          let formattedDate = 'Unknown'
+          
+          if (uploadDate) {
+            try {
+              const date = new Date(uploadDate)
+              formattedDate = date.toLocaleString('en-US', {
+                month: '2-digit',
+                day: '2-digit',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+              })
+            } catch (e) {
+              formattedDate = uploadDate
+            }
+          }
+          
+          return {
+            id: doc.id,
+            name: doc.file_name || doc.filename,
+            citations: doc.citations || 0,
+            uploaded: formattedDate,
+            relatedFacts: doc.citations || 0,
+          }
+        })
+        
+        // Sort by upload date (most recent first)
+        formattedSources.sort((a, b) => {
+          const dateA = documents.find(d => d.id === a.id)?.ingested_at || documents.find(d => d.id === a.id)?.created_at
+          const dateB = documents.find(d => d.id === b.id)?.ingested_at || documents.find(d => d.id === b.id)?.created_at
+          if (!dateA || !dateB) return 0
+          return new Date(dateB).getTime() - new Date(dateA).getTime()
+        })
+        
+        setSources(formattedSources)
+      } catch (error) {
+        console.error('Error fetching documents:', error)
+        setSources([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDocuments()
+  }, [matterId, refreshKey])
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        </div>
+      </div>
+    )
+  }
+
+  if (sources.length === 0) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Recently uploaded sources</h2>
+        </div>
+        <p className="text-gray-600 text-sm py-4">No documents uploaded yet.</p>
+      </div>
+    )
+  }
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
@@ -37,8 +119,8 @@ export default function RecentlyUploadedSources() {
             </tr>
           </thead>
           <tbody>
-            {sources.map((source, index) => (
-              <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+            {sources.map((source) => (
+              <tr key={source.id} className="border-b border-gray-100 hover:bg-gray-50">
                 <td className="py-3 px-4">
                   <div className="font-medium text-gray-900">{source.name}</div>
                   {source.relatedFacts && (

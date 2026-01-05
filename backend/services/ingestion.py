@@ -13,6 +13,7 @@ from services.text_extraction import TextExtractionService
 from services.duplicate_detection import DuplicateDetectionService
 from services.version_management import VersionManagementService
 from services.metadata_extraction import MetadataExtractionService
+from config import settings
 
 
 class IngestionService:
@@ -93,24 +94,168 @@ class IngestionService:
             extracted_text = extraction_result.get('extracted_text', '')
             extraction_metadata = extraction_result.get('metadata', {})
             
-            # Check for near-duplicates
+            # Check for near-duplicates and potential version parent
             near_duplicates = []
+            potential_version_parent = None
+            similarity_score = 0.0
             if extracted_text:
                 near_duplicates = self.duplicate_detection.find_near_duplicates(
                     extracted_text, 
                     matter_id
                 )
+                
+                # Check if highest similarity near-duplicate might be a version
+                # If similarity is very high (>= 0.95), treat as potential version
+                if near_duplicates:
+                    best_match, similarity_score = near_duplicates[0]
+                    if similarity_score >= 0.95:
+                        # High similarity suggests this might be a version update
+                        potential_version_parent = best_match
             
-            # Create document record
-            document_id = uuid.uuid4()
-            
-            # Move file to processed directory
-            processed_path = self.file_storage.move_to_processed(
-                file_path,
-                matter_id,
-                str(document_id),
-                filename
-            )
+            # Handle version linking if potential version parent found
+            if potential_version_parent:
+                # Check if this should be treated as a new version
+                # Compare filenames - if same or very similar, likely a version
+                filename_similarity = self._compare_filenames(filename, potential_version_parent.file_name)
+                
+                if filename_similarity >= 0.8:  # Similar filenames suggest version
+                    # Create new version instead of new document
+                    try:
+                        # Generate document ID for file storage
+                        version_doc_id = uuid.uuid4()
+                        
+                        # Move file to processed directory
+                        processed_path = self.file_storage.move_to_processed(
+                            file_path,
+                            matter_id,
+                            str(version_doc_id),
+                            filename
+                        )
+                        
+                        # Get relative path
+                        try:
+                            relative_path = str(processed_path.relative_to(self.file_storage.storage_root))
+                        except ValueError:
+                            relative_path = str(processed_path)
+                        
+                        # Create new version
+                        new_version = self.version_management.create_new_version(
+                            existing_doc=potential_version_parent,
+                            new_file_path=relative_path,
+                            new_text=extracted_text,
+                            new_hash_sha256=sha256_hash,
+                            new_hash_md5=md5_hash,
+                            change_description=f"New version uploaded: {filename}"
+                        )
+                        
+                        # Update file path and other fields
+                        new_version.file_path = relative_path
+                        new_version.file_size = file_size
+                        new_version.raw_text = raw_text
+                        new_version.extracted_text = extracted_text
+                        new_version.text_length = len(extracted_text) if extracted_text else None
+                        
+                        # Update metadata
+                        metadata_result = self.metadata_extraction.extract_metadata(
+                            extracted_text,
+                            document_type,
+                            extraction_metadata
+                        )
+                        new_version.metadata = {
+                            'ingestion_run_id': self.ingestion_run_id,
+                            'extraction_metadata': extraction_metadata,
+                            'extracted_metadata': metadata_result,
+                            'is_version': True,
+                            'parent_version_id': str(potential_version_parent.id),
+                        }
+                        
+                        # Update tags and categories if provided
+                        if tags:
+                            new_version.tags = list(set((new_version.tags or []) + tags))
+                        if categories:
+                            new_version.categories = list(set((new_version.categories or []) + categories))
+                        
+                        # Extract email-specific metadata
+                        if document_type == 'email' and extraction_metadata:
+                            new_version.sender_email = extraction_metadata.get('sender') or extraction_metadata.get('from')
+                            recipient_emails = []
+                            if extraction_metadata.get('to'):
+                                recipient_emails.append(extraction_metadata.get('to'))
+                            if extraction_metadata.get('cc'):
+                                recipient_emails.append(extraction_metadata.get('cc'))
+                            if extraction_metadata.get('bcc'):
+                                recipient_emails.append(extraction_metadata.get('bcc'))
+                            new_version.recipient_emails = recipient_emails if recipient_emails else None
+                            received_date = self._parse_date(extraction_metadata.get('date'))
+                            new_version.received_date = received_date
+                            new_version.sent_date = received_date
+                        
+                        # Extract author/created date from metadata
+                        if extraction_metadata:
+                            if 'core_properties' in extraction_metadata:
+                                props = extraction_metadata['core_properties']
+                                new_version.author = props.get('author')
+                                new_version.created_date = self._parse_date(props.get('created'))
+                                new_version.modified_date = self._parse_date(props.get('modified'))
+                            elif 'author' in extraction_metadata:
+                                new_version.author = extraction_metadata.get('author')
+                        
+                        self.db.flush()
+                        
+                        # Create audit log
+                        audit_entry = AuditLog(
+                            action_type='version_created',
+                            resource_type='document',
+                            resource_id=new_version.id,
+                            user_id=uuid.UUID(user_id) if user_id else None,
+                            description=f"Created new version of document: {filename}",
+                            metadata={
+                                'ingestion_run_id': self.ingestion_run_id,
+                                'parent_document_id': str(potential_version_parent.id),
+                                'version_number': new_version.version_number,
+                            }
+                        )
+                        self.db.add(audit_entry)
+                        self.db.commit()
+                        
+                        result['success'] = True
+                        result['document_id'] = str(new_version.id)
+                        result['is_new_version'] = True
+                        result['existing_document_id'] = str(potential_version_parent.id)
+                        result['status'] = 'version_created'
+                        result['version_number'] = new_version.version_number
+                        result['similarity_score'] = similarity_score
+                        
+                        # Auto-index if enabled
+                        if settings.auto_index_on_ingestion:
+                            try:
+                                from services.indexing import IndexingService
+                                indexing_service = IndexingService(self.db)
+                                index_result = indexing_service.index_document(str(new_version.id), force_reindex=False)
+                                result['indexing'] = {
+                                    'indexed': index_result.get('success', False),
+                                    'chunks_indexed': index_result.get('chunks_indexed', 0)
+                                }
+                            except Exception as e:
+                                result['indexing'] = {
+                                    'indexed': False,
+                                    'error': str(e)
+                                }
+                        
+                        return result
+                    except Exception as e:
+                        # If version creation fails, fall through to create new document
+                        self.db.rollback()
+                        # Recreate document_id since we deleted it
+                        document_id = uuid.uuid4()
+                        # Re-move file with new document_id
+                        processed_path = self.file_storage.move_to_processed(
+                            file_path,
+                            matter_id,
+                            str(document_id),
+                            filename
+                        )
+                        # Continue with normal document creation
             
             # Store relative path from storage root
             try:
@@ -309,4 +454,15 @@ class IngestionService:
             return None
         except Exception:
             return None
+    
+    def _compare_filenames(self, filename1: str, filename2: str) -> float:
+        """Compare two filenames and return similarity score (0-1)."""
+        from difflib import SequenceMatcher
+        
+        # Normalize filenames (remove paths, lowercase)
+        name1 = Path(filename1).stem.lower()
+        name2 = Path(filename2).stem.lower()
+        
+        # Use SequenceMatcher for similarity
+        return SequenceMatcher(None, name1, name2).ratio()
 

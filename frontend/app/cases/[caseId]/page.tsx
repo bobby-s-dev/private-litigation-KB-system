@@ -1,10 +1,14 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import CaseHeader from '@/components/CaseHeader'
 import FeatureCards from '@/components/FeatureCards'
 import RecentlyUploadedSources from '@/components/RecentlyUploadedSources'
 import FactsPerEntity from '@/components/FactsPerEntity'
+import DocumentUpload from '@/components/DocumentUpload'
+import { apiClient } from '@/lib/api'
 
 const recentActivities = [
   { action: 'You created a task', time: '12/26/2025 at 2:01 pm / 9 days ago' },
@@ -12,6 +16,14 @@ const recentActivities = [
 ]
 
 export default function CaseHomePage() {
+  const params = useParams()
+  const caseId = params?.caseId as string
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const handleUploadSuccess = () => {
+    setRefreshKey(prev => prev + 1)
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
@@ -30,16 +42,9 @@ export default function CaseHomePage() {
             </div>
 
             {/* Add Documents to Review */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Add documents to review</h2>
-              <p className="text-sm text-gray-600 mb-2">
-                Uploads Disabled. To add more documents, please sign up for the{' '}
-                <button className="text-purple-600 hover:text-purple-700 underline">
-                  Standard Plan
-                </button>
-                .
-              </p>
-            </div>
+            {caseId && (
+              <DocumentUpload matterId={caseId} onUploadSuccess={handleUploadSuccess} />
+            )}
           </div>
 
           {/* Resume Review */}
@@ -55,7 +60,7 @@ export default function CaseHomePage() {
 
           {/* Recently Uploaded Sources */}
           <div className="mb-6">
-            <RecentlyUploadedSources />
+            <RecentlyUploadedSources matterId={caseId} refreshKey={refreshKey} />
           </div>
 
           <div className="grid grid-cols-2 gap-6">

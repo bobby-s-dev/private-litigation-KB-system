@@ -9,6 +9,7 @@ from api.ingestion import router as ingestion_router
 from api.versions import router as versions_router
 from api.embeddings import router as embeddings_router
 from api.rag import router as rag_router
+from api.documents import router as documents_router
 
 
 @asynccontextmanager
@@ -43,6 +44,7 @@ app.include_router(ingestion_router)
 app.include_router(versions_router)
 app.include_router(embeddings_router)
 app.include_router(rag_router)
+app.include_router(documents_router)
 
 
 @app.get("/")
