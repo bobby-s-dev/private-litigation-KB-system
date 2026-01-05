@@ -3,9 +3,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from datetime import datetime
+import uuid
 
 from database import get_db
-from models import Document, Matter
+from models import Document, Matter, DocumentEntity, Entity, EntityType
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -80,7 +81,12 @@ async def get_document(
     """
     Get a single document by ID.
     """
-    document = db.query(Document).filter(Document.id == document_id).first()
+    try:
+        doc_uuid = uuid.UUID(document_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid document ID format: {document_id}")
+    
+    document = db.query(Document).filter(Document.id == doc_uuid).first()
     
     if not document:
         raise HTTPException(status_code=404, detail=f"Document {document_id} not found")
@@ -102,5 +108,167 @@ async def get_document(
         'text_length': document.text_length,
         'is_current_version': document.is_current_version,
         'version_number': document.version_number,
+    }
+
+
+@router.get("/{document_id}/review/facts")
+async def get_suggested_facts(
+    document_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get suggested facts extracted from the document by Document Intelligence engine.
+    """
+    try:
+        doc_uuid = uuid.UUID(document_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid document ID format: {document_id}")
+    
+    document = db.query(Document).filter(Document.id == doc_uuid).first()
+    
+    if not document:
+        raise HTTPException(status_code=404, detail=f"Document {document_id} not found")
+    
+    # TODO: Implement actual fact extraction using AI/ML
+    # For now, return stub data based on document metadata
+    facts = []
+    
+    # Extract basic facts from metadata if available
+    if document.metadata_json:
+        extracted_metadata = document.metadata_json.get('extracted_metadata', {})
+        dates = extracted_metadata.get('dates', [])
+        entities = extracted_metadata.get('entities', [])
+        
+        # Generate some basic facts from extracted data
+        fact_id = 1
+        for date in dates[:3]:  # Limit to 3 date-based facts
+            facts.append({
+                'id': str(fact_id),
+                'fact': f"Document references date: {date}",
+                'confidence': 0.85,
+                'source_text': f"Date mentioned: {date}",
+                'page_number': None
+            })
+            fact_id += 1
+    
+    # If no facts from metadata, return empty list with message
+    return facts
+
+
+@router.get("/{document_id}/review/entities")
+async def get_document_entities(
+    document_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get entities (persons, businesses, etc.) related to this document.
+    """
+    try:
+        doc_uuid = uuid.UUID(document_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid document ID format: {document_id}")
+    
+    document = db.query(Document).filter(Document.id == doc_uuid).first()
+    
+    if not document:
+        raise HTTPException(status_code=404, detail=f"Document {document_id} not found")
+    
+    # Get entities linked to this document
+    document_entities = db.query(DocumentEntity).filter(
+        DocumentEntity.document_id == doc_uuid
+    ).all()
+    
+    # Format entities with their details
+    entities = []
+    for doc_entity in document_entities:
+        try:
+            entity = db.query(Entity).filter(Entity.id == doc_entity.entity_id).first()
+            if entity:
+                entity_type = db.query(EntityType).filter(EntityType.id == entity.entity_type_id).first()
+                entities.append({
+                    'id': str(entity.id),
+                    'name': entity.display_name or entity.normalized_name,
+                    'type': entity_type.type_name if entity_type else 'unknown',
+                    'mentions': doc_entity.mention_count or 1,
+                    'confidence': float(doc_entity.confidence_score) if doc_entity.confidence_score else 0.8
+                })
+        except Exception:
+            continue
+    
+    # If no entities in database, try to extract from metadata
+    if not entities and document.metadata_json:
+        extracted_metadata = document.metadata_json.get('extracted_metadata', {})
+        email_entities = extracted_metadata.get('entities', [])
+        
+        for entity_data in email_entities:
+            if entity_data.get('type') == 'email':
+                entities.append({
+                    'id': str(uuid.uuid4()),
+                    'name': entity_data.get('value', ''),
+                    'type': 'email_address',
+                    'mentions': 1,
+                    'confidence': 0.7
+                })
+    
+    return entities
+
+
+@router.get("/{document_id}/review/summary")
+async def get_document_summary(
+    document_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get automatic summarization of the document with links to key information.
+    """
+    try:
+        doc_uuid = uuid.UUID(document_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid document ID format: {document_id}")
+    
+    document = db.query(Document).filter(Document.id == doc_uuid).first()
+    
+    if not document:
+        raise HTTPException(status_code=404, detail=f"Document {document_id} not found")
+    
+    # TODO: Implement actual summarization using AI/LLM
+    # For now, generate a basic summary from extracted text
+    
+    summary_text = ""
+    key_points = []
+    topics = []
+    
+    if document.extracted_text:
+        # Basic summary: first 500 characters
+        text = document.extracted_text
+        if len(text) > 500:
+            summary_text = text[:500] + "..."
+        else:
+            summary_text = text
+        
+        # Extract key points (stub - would use NLP in production)
+        if document.metadata_json:
+            extracted_metadata = document.metadata_json.get('extracted_metadata', {})
+            dates = extracted_metadata.get('dates', [])
+            entities = extracted_metadata.get('entities', [])
+            
+            if dates:
+                key_points.append(f"Document contains {len(dates)} date reference(s)")
+            if entities:
+                key_points.append(f"Document references {len(entities)} entity/entities")
+            
+            # Extract topics from categories if available
+            if document.categories:
+                topics = document.categories[:5]  # Limit to 5 topics
+    
+    # If no summary can be generated, return placeholder
+    if not summary_text:
+        summary_text = "Summary generation is in progress. Please check back later."
+        key_points = ["Document is being processed"]
+    
+    return {
+        'summary': summary_text,
+        'key_points': key_points,
+        'topics': topics
     }
 

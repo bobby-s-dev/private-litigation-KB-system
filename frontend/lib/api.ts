@@ -227,6 +227,22 @@ class ApiClient {
   async listMatters(): Promise<Matter[]> {
     return this.request<Matter[]>('/api/matters')
   }
+
+  async getDocument(documentId: string): Promise<any> {
+    return this.request<any>(`/api/documents/${documentId}`)
+  }
+
+  async getSuggestedFacts(documentId: string): Promise<any[]> {
+    return this.request<any[]>(`/api/documents/${documentId}/review/facts`)
+  }
+
+  async getDocumentEntities(documentId: string): Promise<any[]> {
+    return this.request<any[]>(`/api/documents/${documentId}/review/entities`)
+  }
+
+  async getDocumentSummary(documentId: string): Promise<any> {
+    return this.request<any>(`/api/documents/${documentId}/review/summary`)
+  }
 }
 
 export const apiClient = new ApiClient()

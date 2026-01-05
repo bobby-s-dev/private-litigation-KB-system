@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import { apiClient, Document } from '@/lib/api'
 
 interface Source {
@@ -17,8 +18,17 @@ interface RecentlyUploadedSourcesProps {
 }
 
 export default function RecentlyUploadedSources({ matterId, refreshKey }: RecentlyUploadedSourcesProps) {
+  const router = useRouter()
+  const params = useParams()
+  const caseId = params?.caseId as string
   const [sources, setSources] = useState<Source[]>([])
   const [loading, setLoading] = useState(true)
+
+  const handleReview = (documentId: string) => {
+    if (caseId) {
+      router.push(`/cases/${caseId}/documents/${documentId}/review`)
+    }
+  }
 
   useEffect(() => {
     if (!matterId) {
@@ -133,8 +143,11 @@ export default function RecentlyUploadedSources({ matterId, refreshKey }: Recent
                 <td className="py-3 px-4 text-gray-600 text-sm">{source.uploaded}</td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    <button className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 transition-colors">
-                      Launch Reviewer
+                    <button
+                      onClick={() => handleReview(source.id)}
+                      className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 transition-colors"
+                    >
+                      Review
                     </button>
                     <button className="text-gray-400 hover:text-gray-600">
                       ✏️
