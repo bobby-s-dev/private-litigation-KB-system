@@ -224,3 +224,33 @@ class AuditLog(Base):
         CheckConstraint("resource_type IN ('document', 'matter', 'entity', 'relationship', 'event', 'user', 'system')", name="check_resource_type"),
     )
 
+
+class EmbeddingsMetadata(Base):
+    """Embedding metadata table."""
+    __tablename__ = "embeddings_metadata"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"))
+    entity_id = Column(UUID(as_uuid=True), ForeignKey("entities.id", ondelete="CASCADE"))
+    event_id = Column(UUID(as_uuid=True), ForeignKey("events.id", ondelete="CASCADE"))
+    
+    # Qdrant reference
+    qdrant_collection_name = Column(String(100), nullable=False)
+    qdrant_point_id = Column(String(255), nullable=False)
+    
+    # Embedding metadata
+    embedding_model = Column(String(100), nullable=False)
+    embedding_dimension = Column(Integer, nullable=False)
+    chunk_text = Column(Text)
+    chunk_index = Column(Integer)
+    chunk_start_position = Column(Integer)
+    chunk_end_position = Column(Integer)
+    
+    # Metadata
+    metadata = Column(JSONB, default={})
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    __table_args__ = (
+        UniqueConstraint("qdrant_collection_name", "qdrant_point_id", name="unique_qdrant_point"),
+    )
+

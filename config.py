@@ -44,6 +44,35 @@ class Settings(BaseSettings):
     diff_max_changes: int = 1000  # Maximum changes to track
     enable_merge_artifacts: bool = True
     
+    # Qdrant Settings
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_api_key: Optional[str] = None
+    qdrant_timeout: int = 30
+    
+    # Embedding Settings
+    embedding_provider: str = "openai"  # openai, azure, local
+    embedding_model: str = "text-embedding-3-large"
+    embedding_dimension: int = 3072  # Will be auto-detected for OpenAI
+    openai_api_key: Optional[str] = None
+    openai_base_url: Optional[str] = None
+    azure_openai_endpoint: Optional[str] = None
+    azure_openai_api_key: Optional[str] = None
+    azure_openai_api_version: str = "2024-02-15-preview"
+    
+    # Chunking Settings
+    chunking_strategy: str = "sentence"  # sentence, paragraph, sliding_window, semantic
+    chunk_size: int = 1000  # Characters per chunk
+    chunk_overlap: int = 200  # Overlap between chunks
+    min_chunk_size: int = 100  # Minimum chunk size
+    max_chunk_size: int = 2000  # Maximum chunk size
+    respect_sentence_boundaries: bool = True
+    respect_paragraph_boundaries: bool = True
+    
+    # Indexing Settings
+    auto_index_on_ingestion: bool = True
+    batch_indexing_size: int = 100  # Number of chunks to process in batch
+    indexing_timeout: int = 300  # Seconds
+    
     class Config:
         env_file = ".env"
         case_sensitive = False

@@ -7,6 +7,7 @@ from database import engine, Base
 from config import settings
 from api.ingestion import router as ingestion_router
 from api.versions import router as versions_router
+from api.embeddings import router as embeddings_router
 
 
 @asynccontextmanager
@@ -39,6 +40,7 @@ app.add_middleware(
 # Include routers
 app.include_router(ingestion_router)
 app.include_router(versions_router)
+app.include_router(embeddings_router)
 
 
 @app.get("/")

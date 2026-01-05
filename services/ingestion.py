@@ -235,6 +235,23 @@ class IngestionService:
             
             self.db.commit()
             
+            # Auto-index if enabled
+            if settings.auto_index_on_ingestion:
+                try:
+                    from services.indexing import IndexingService
+                    indexing_service = IndexingService(self.db)
+                    index_result = indexing_service.index_document(str(document_id), force_reindex=False)
+                    result['indexing'] = {
+                        'indexed': index_result.get('success', False),
+                        'chunks_indexed': index_result.get('chunks_indexed', 0)
+                    }
+                except Exception as e:
+                    # Don't fail ingestion if indexing fails
+                    result['indexing'] = {
+                        'indexed': False,
+                        'error': str(e)
+                    }
+            
             result['success'] = True
             result['document_id'] = str(document_id)
             result['status'] = 'completed'
