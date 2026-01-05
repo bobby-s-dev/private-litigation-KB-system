@@ -28,6 +28,21 @@ class Settings(BaseSettings):
     # Similarity Thresholds
     exact_duplicate_threshold: float = 1.0
     near_duplicate_threshold: float = 0.95
+    fuzzy_match_threshold: float = 0.85  # For fuzzy matching algorithms
+    
+    # Canonical Version Selection
+    canonical_selection_enabled: bool = True
+    canonical_prefer_latest: bool = True  # Prefer most recent version
+    canonical_prefer_larger: bool = True  # Prefer larger file size (more complete)
+    canonical_prefer_processed: bool = True  # Prefer successfully processed documents
+    canonical_quality_weight: float = 0.4  # Weight for quality metrics
+    canonical_recency_weight: float = 0.3  # Weight for recency
+    canonical_completeness_weight: float = 0.3  # Weight for completeness
+    
+    # Diff/Merge Settings
+    diff_context_lines: int = 3  # Lines of context around changes
+    diff_max_changes: int = 1000  # Maximum changes to track
+    enable_merge_artifacts: bool = True
     
     class Config:
         env_file = ".env"

@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from database import engine, Base
 from config import settings
 from api.ingestion import router as ingestion_router
+from api.versions import router as versions_router
 
 
 @asynccontextmanager
@@ -37,6 +38,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(ingestion_router)
+app.include_router(versions_router)
 
 
 @app.get("/")

@@ -7,6 +7,7 @@ import uuid
 from models import Document, DocumentVersion
 from services.duplicate_detection import DuplicateDetectionService
 from services.hashing import HashingService
+from services.canonical_selection import CanonicalSelectionService
 
 
 class VersionManagementService:
@@ -16,6 +17,7 @@ class VersionManagementService:
         self.db = db
         self.duplicate_detection = DuplicateDetectionService(db)
         self.hashing_service = HashingService()
+        self.canonical_selection = CanonicalSelectionService(db)
     
     def create_new_version(
         self,
@@ -181,4 +183,56 @@ class VersionManagementService:
                 Document.is_current_version == True
             )
         ).first() or doc
+    
+    def get_canonical_version(self, document_id: str) -> Optional[Document]:
+        """Get the canonical version for a document (may be different from current)."""
+        doc = self.db.query(Document).filter(Document.id == document_id).first()
+        if not doc:
+            return None
+        
+        # Check if document has canonical metadata
+        if doc.metadata and doc.metadata.get('canonical_document_id'):
+            canonical_id = doc.metadata.get('canonical_document_id')
+            canonical = self.db.query(Document).filter(Document.id == canonical_id).first()
+            if canonical:
+                return canonical
+        
+        # If no canonical set, return current version
+        return self.get_current_version(document_id)
+    
+    def ensure_canonical_version(self, document_id: str) -> Document:
+        """
+        Ensure a canonical version is set for a document group.
+        If not set, select and mark one.
+        
+        Returns:
+            The canonical document
+        """
+        doc = self.db.query(Document).filter(Document.id == document_id).first()
+        if not doc:
+            return None
+        
+        # Find duplicate group
+        duplicate_groups = self.canonical_selection.find_duplicate_groups(doc.matter_id)
+        
+        # Find which group this document belongs to
+        for group in duplicate_groups:
+            if any(d.id == doc.id for d in group):
+                # Check if canonical is already set
+                has_canonical = any(
+                    d.metadata and d.metadata.get('is_canonical')
+                    for d in group
+                )
+                
+                if not has_canonical:
+                    # Set canonical version
+                    return self.canonical_selection.set_canonical_version(group)
+                else:
+                    # Return existing canonical
+                    for d in group:
+                        if d.metadata and d.metadata.get('is_canonical'):
+                            return d
+        
+        # If not in a duplicate group, return the document itself
+        return doc
 
