@@ -134,7 +134,8 @@ async def get_suggested_facts(
     from services.fact_extraction import FactExtractionService
     
     fact_service = FactExtractionService(db)
-    facts = fact_service.extract_facts_from_document(str(doc_uuid), use_llm=True)
+    # Try LLM first if available, otherwise use pattern-based extraction (no OpenAI required)
+    facts = fact_service.extract_facts_from_document(str(doc_uuid), use_llm=fact_service.llm_client is not None)
     
     # If no facts extracted, try fallback to metadata
     if not facts and document.metadata_json:

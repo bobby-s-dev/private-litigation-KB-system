@@ -145,20 +145,22 @@ Return only valid JSON, no other text. Use this format:
             return self._extract_with_patterns(document)
     
     def _extract_with_patterns(self, document: Document) -> List[Dict]:
-        """Extract facts using pattern matching (fallback)."""
+        """Extract facts using pattern matching (fallback - no LLM required)."""
         text = document.extracted_text
         facts = []
+        fact_id = 1
         
-        # Extract dates
+        # Extract dates with context
         date_patterns = [
             r'\b(\d{4}-\d{2}-\d{2})\b',  # ISO format
             r'\b(\d{1,2}/\d{1,2}/\d{4})\b',  # US format
             r'\b([A-Z][a-z]+ \d{1,2}, \d{4})\b',  # "January 15, 2024"
+            r'\b(\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})\b',  # "15 January 2024"
         ]
         
         dates_found = []
         for pattern in date_patterns:
-            matches = re.finditer(pattern, text)
+            matches = re.finditer(pattern, text, re.IGNORECASE)
             for match in matches:
                 date_str = match.group(1)
                 parsed_date = self._parse_date(date_str)
@@ -170,30 +172,200 @@ Return only valid JSON, no other text. Use this format:
                     })
         
         # Extract fact-like statements near dates
-        fact_id = 1
-        for date_info in dates_found[:10]:  # Limit to 10 date-based facts
+        for date_info in dates_found[:15]:  # Limit to 15 date-based facts
             # Extract context around the date
-            start_pos = max(0, date_info['position'] - 300)
-            end_pos = min(len(text), date_info['position'] + 300)
-            context = text[start_pos:end_pos]
-            
-            # Try to extract a sentence containing the date
-            sentence_start = text.rfind('.', 0, date_info['position']) + 1
+            sentence_start = max(0, text.rfind('.', 0, date_info['position']) + 1)
             sentence_end = text.find('.', date_info['position'])
             if sentence_end == -1:
                 sentence_end = min(len(text), date_info['position'] + 500)
             
             sentence = text[sentence_start:sentence_end].strip()
+            if len(sentence) < 20:  # Skip very short sentences
+                continue
             
             # Determine tags based on keywords
             tags = self._infer_tags_from_text(sentence)
             
+            # Create a fact statement
+            fact_text = sentence[:200] if len(sentence) <= 200 else sentence[:197] + "..."
+            
             facts.append({
                 'id': str(fact_id),
-                'fact': f"Document references date {date_info['text']}: {sentence[:200]}",
+                'fact': fact_text,
                 'event_date': date_info['date'].isoformat(),
                 'tags': tags,
-                'confidence': 0.6,
+                'confidence': 0.65,
+                'source_text': sentence[:300],
+                'page_number': None
+            })
+            fact_id += 1
+        
+        # Extract facts from key phrases and patterns (without dates)
+        fact_patterns = [
+            # Legal proceedings
+            (r'(?:hearing|trial|motion|filing|deposition|discovery|settlement|mediation|arbitration)\s+(?:was|is|will be|scheduled|held|conducted|filed|submitted)', 'legal_proceeding'),
+            # Deadlines
+            (r'(?:deadline|due date|must be|required by|by)\s+[A-Z][a-z]+\s+\d{1,2}', 'deadline'),
+            # Financial amounts
+            (r'\$\d{1,3}(?:,\d{3})*(?:\.\d{2})?\s+(?:was|is|paid|owed|due|received|charged)', 'financial'),
+            # Medical information
+            (r'(?:diagnosis|treatment|medical|doctor|hospital|patient|condition)\s+[a-z]+', 'medical'),
+            # Contracts/Agreements
+            (r'(?:contract|agreement|terms|clause|provision)\s+(?:was|is|states|requires)', 'contract'),
+            # Evidence
+            (r'(?:evidence|exhibit|document|record)\s+(?:was|is|shows|indicates)', 'evidence'),
+            # Witness statements
+            (r'(?:witness|testimony|testified|stated)\s+[a-z]+', 'witness'),
+            # Expert statements
+            (r'(?:expert|specialist|consultant)\s+(?:was|is|stated|concluded)', 'expert'),
+        ]
+        
+        for pattern, default_tag in fact_patterns:
+            matches = re.finditer(pattern, text, re.IGNORECASE)
+            for match in matches[:5]:  # Limit to 5 per pattern
+                start_pos = match.start()
+                # Extract sentence
+                sentence_start = max(0, text.rfind('.', 0, start_pos) + 1)
+                sentence_end = text.find('.', start_pos)
+                if sentence_end == -1:
+                    sentence_end = min(len(text), start_pos + 300)
+                
+                sentence = text[sentence_start:sentence_end].strip()
+                if len(sentence) < 30:
+                    continue
+                
+                # Check if this fact is already captured (similar to existing)
+                is_duplicate = False
+                for existing_fact in facts:
+                    if sentence[:100] in existing_fact.get('source_text', '')[:100]:
+                        is_duplicate = True
+                        break
+                
+                if is_duplicate:
+                    continue
+                
+                # Extract date from sentence if present
+                event_date = None
+                for date_info in dates_found:
+                    if date_info['position'] >= sentence_start and date_info['position'] <= sentence_end:
+                        event_date = date_info['date'].isoformat()
+                        break
+                
+                tags = self._infer_tags_from_text(sentence)
+                if default_tag not in tags:
+                    tags.append(default_tag)
+                
+                facts.append({
+                    'id': str(fact_id),
+                    'fact': sentence[:200] if len(sentence) <= 200 else sentence[:197] + "...",
+                    'event_date': event_date,
+                    'tags': tags,
+                    'confidence': 0.6,
+                    'source_text': sentence[:300],
+                    'page_number': None
+                })
+                fact_id += 1
+        
+        # Extract entity-based facts (names, organizations mentioned)
+        entity_facts = self._extract_entity_facts(text, fact_id)
+        facts.extend(entity_facts)
+        
+        # Remove duplicates and limit total
+        unique_facts = []
+        seen_facts = set()
+        for fact in facts[:30]:  # Limit to 30 total facts
+            fact_key = fact['fact'][:100].lower()
+            if fact_key not in seen_facts:
+                seen_facts.add(fact_key)
+                unique_facts.append(fact)
+        
+        return unique_facts
+    
+    def _extract_entity_facts(self, text: str, start_id: int) -> List[Dict]:
+        """Extract facts related to entities (people, organizations) without LLM."""
+        facts = []
+        fact_id = start_id
+        
+        # Patterns for person names (capitalized words, typically 2-4 words)
+        person_pattern = r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\b'
+        # Patterns for organizations (Inc, LLC, Corp, etc.)
+        org_patterns = [
+            r'\b([A-Z][a-zA-Z\s&]+(?:Inc|LLC|Corp|Corporation|Ltd|Company|Co\.|Associates|Group))\b',
+            r'\b([A-Z][a-zA-Z\s&]+(?:Hospital|University|College|School|Foundation|Institute))\b',
+        ]
+        
+        # Extract person names
+        person_matches = list(re.finditer(person_pattern, text))
+        # Filter out common false positives
+        common_words = {'The', 'This', 'That', 'There', 'These', 'Those', 'When', 'Where', 'What', 'Which', 
+                       'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 
+                       'September', 'October', 'November', 'December', 'Monday', 'Tuesday', 'Wednesday',
+                       'Thursday', 'Friday', 'Saturday', 'Sunday'}
+        
+        person_names = []
+        for match in person_matches:
+            name = match.group(1).strip()
+            words = name.split()
+            # Filter: must be 2-4 words, first word not in common words, all words capitalized
+            if (2 <= len(words) <= 4 and 
+                words[0] not in common_words and 
+                all(w[0].isupper() for w in words if w) and
+                len(name) > 5):
+                person_names.append({
+                    'name': name,
+                    'position': match.start(),
+                    'context': text[max(0, match.start()-100):min(len(text), match.end()+100)]
+                })
+        
+        # Extract organization names
+        org_names = []
+        for pattern in org_patterns:
+            matches = re.finditer(pattern, text)
+            for match in matches:
+                org_names.append({
+                    'name': match.group(1).strip(),
+                    'position': match.start(),
+                    'context': text[max(0, match.start()-100):min(len(text), match.end()+100)]
+                })
+        
+        # Create facts for significant entity mentions
+        all_entities = person_names[:10] + org_names[:10]  # Limit entities
+        
+        for entity in all_entities:
+            # Extract sentence with entity
+            sentence_start = max(0, text.rfind('.', 0, entity['position']) + 1)
+            sentence_end = text.find('.', entity['position'])
+            if sentence_end == -1:
+                sentence_end = min(len(text), entity['position'] + 300)
+            
+            sentence = text[sentence_start:sentence_end].strip()
+            if len(sentence) < 30:
+                continue
+            
+            # Check for date in sentence
+            event_date = None
+            date_match = re.search(r'\b(\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4}|[A-Z][a-z]+ \d{1,2}, \d{4})\b', sentence)
+            if date_match:
+                parsed_date = self._parse_date(date_match.group(1))
+                if parsed_date:
+                    event_date = parsed_date.isoformat()
+            
+            # Determine entity type and tags
+            if any(word in entity['name'] for word in ['Inc', 'LLC', 'Corp', 'Hospital', 'University']):
+                tags = ['organization', 'general']
+            else:
+                tags = ['person', 'general']
+            
+            # Add context-specific tags
+            context_tags = self._infer_tags_from_text(sentence)
+            tags.extend([t for t in context_tags if t not in tags])
+            
+            facts.append({
+                'id': str(fact_id),
+                'fact': f"{entity['name']} mentioned: {sentence[:150] if len(sentence) > 150 else sentence}",
+                'event_date': event_date,
+                'tags': tags[:3],  # Limit to 3 tags
+                'confidence': 0.55,
                 'source_text': sentence[:300],
                 'page_number': None
             })

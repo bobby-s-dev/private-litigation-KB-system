@@ -85,12 +85,114 @@ class MetadataExtractionService:
     
     def extract_entities(self, text: str) -> List[Dict[str, Any]]:
         """
-        Extract entities from text (stub).
+        Extract entities from text using pattern matching (no LLM required).
         
-        Future: Use NER model (spaCy, transformers, etc.)
+        Extracts:
+        - Person names
+        - Organizations
+        - Email addresses
+        - Phone numbers
+        - Locations (basic)
+        - Case numbers
         """
-        # Stub implementation
-        return []
+        entities = []
+        
+        # Email addresses (already extracted in extract_metadata, but include here for completeness)
+        emails = self._extract_emails(text)
+        for email in emails:
+            entities.append({
+                'type': 'email',
+                'value': email,
+                'confidence': 0.9
+            })
+        
+        # Phone numbers
+        phone_patterns = [
+            r'\b(\d{3}[-.]?\d{3}[-.]?\d{4})\b',  # US format
+            r'\b(\(\d{3}\)\s?\d{3}[-.]?\d{4})\b',  # (123) 456-7890
+            r'\b(\+\d{1,3}[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9})\b',  # International
+        ]
+        for pattern in phone_patterns:
+            matches = re.findall(pattern, text)
+            for match in matches:
+                entities.append({
+                    'type': 'phone',
+                    'value': match,
+                    'confidence': 0.85
+                })
+        
+        # Person names (capitalized 2-4 word sequences)
+        person_pattern = r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\b'
+        common_words = {'The', 'This', 'That', 'There', 'These', 'Those', 'When', 'Where', 'What', 'Which',
+                       'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+                       'September', 'October', 'November', 'December', 'Monday', 'Tuesday', 'Wednesday',
+                       'Thursday', 'Friday', 'Saturday', 'Sunday', 'State', 'United', 'Court', 'Judge'}
+        
+        person_matches = re.finditer(person_pattern, text)
+        seen_names = set()
+        for match in person_matches:
+            name = match.group(1).strip()
+            words = name.split()
+            if (2 <= len(words) <= 4 and 
+                words[0] not in common_words and 
+                all(w[0].isupper() for w in words if w) and
+                len(name) > 5 and
+                name.lower() not in seen_names):
+                seen_names.add(name.lower())
+                entities.append({
+                    'type': 'person',
+                    'value': name,
+                    'confidence': 0.7
+                })
+        
+        # Organizations
+        org_patterns = [
+            r'\b([A-Z][a-zA-Z\s&]+(?:Inc|LLC|Corp|Corporation|Ltd|Company|Co\.|Associates|Group))\b',
+            r'\b([A-Z][a-zA-Z\s&]+(?:Hospital|University|College|School|Foundation|Institute|Center|Clinic))\b',
+            r'\b([A-Z][a-zA-Z\s&]+(?:Law Firm|Attorneys|Legal|Services|Systems))\b',
+        ]
+        seen_orgs = set()
+        for pattern in org_patterns:
+            matches = re.finditer(pattern, text, re.IGNORECASE)
+            for match in matches:
+                org = match.group(1).strip()
+                if org.lower() not in seen_orgs and len(org) > 3:
+                    seen_orgs.add(org.lower())
+                    entities.append({
+                        'type': 'organization',
+                        'value': org,
+                        'confidence': 0.75
+                    })
+        
+        # Locations (cities, states, addresses)
+        location_patterns = [
+            r'\b([A-Z][a-z]+,\s*[A-Z]{2})\b',  # City, State
+            r'\b([A-Z][a-z]+\s+County)\b',  # County
+            r'\b(\d+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Street|Avenue|Road|Drive|Lane|Boulevard|Court|Place|Way))\b',  # Addresses
+        ]
+        seen_locs = set()
+        for pattern in location_patterns:
+            matches = re.finditer(pattern, text)
+            for match in matches:
+                loc = match.group(1).strip()
+                if loc.lower() not in seen_locs:
+                    seen_locs.add(loc.lower())
+                    entities.append({
+                        'type': 'location',
+                        'value': loc,
+                        'confidence': 0.7
+                    })
+        
+        # Case numbers
+        case_numbers = self._extract_case_numbers(text)
+        for case_num in case_numbers:
+            entities.append({
+                'type': 'case_number',
+                'value': case_num,
+                'confidence': 0.8
+            })
+        
+        return entities
     
     def extract_topics(self, text: str) -> List[str]:
         """
