@@ -1,6 +1,7 @@
 """Configuration settings for the litigation knowledge system."""
 from pydantic_settings import BaseSettings
 from typing import Optional, List
+from urllib.parse import quote_plus
 import os
 
 
@@ -20,9 +21,20 @@ class Settings(BaseSettings):
         if self.database_url:
             return self.database_url
         
+        # URL-encode components to handle special characters (like dots in database name)
+        user = quote_plus(self.postgres_user)
+        password = quote_plus(self.postgres_password) if self.postgres_password else ""
+        host = self.postgres_host
+        port = self.postgres_port
+        database = quote_plus(self.postgres_db)
+        
         # Construct URL from components
-        password_part = f":{self.postgres_password}" if self.postgres_password else ""
-        return f"postgresql://{self.postgres_user}{password_part}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        if password:
+            return f"postgresql://{user}:{password}@{host}:{port}/{database}"
+        else:
+            # Even with empty password, include the colon to indicate password field exists
+            # Some PostgreSQL configs require this format
+            return f"postgresql://{user}@{host}:{port}/{database}"
     
     # File Storage
     storage_root: str = "./storage"
