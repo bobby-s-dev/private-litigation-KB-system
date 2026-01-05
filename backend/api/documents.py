@@ -139,12 +139,15 @@ async def get_suggested_facts(
     # Get facts from database
     facts = db.query(Fact).filter(Fact.document_id == doc_uuid).all()
     
-    # Format facts for response
+    # Format facts for response - filter out facts with empty or None fact_text
     formatted_facts = []
     for fact in facts:
+        # Skip facts with empty or None fact_text
+        if not fact.fact_text or not fact.fact_text.strip():
+            continue
         formatted_facts.append({
             'id': str(fact.id),
-            'fact': fact.fact_text,
+            'fact': fact.fact_text.strip(),
             'event_date': fact.event_date.isoformat() if fact.event_date else None,
             'tags': fact.tags or [],
             'confidence': float(fact.confidence_score) if fact.confidence_score else 0.7,
@@ -160,8 +163,13 @@ async def get_suggested_facts(
             fact_service = FactExtractionService(db)
             extracted_facts = fact_service.extract_facts_from_document(str(doc_uuid), use_llm=fact_service.llm_client is not None)
             
-            # Save extracted facts
+            # Save extracted facts - only save facts with non-empty fact text
             for fact_data in extracted_facts:
+                fact_text = fact_data.get('fact', '').strip() if fact_data.get('fact') else ''
+                # Skip facts with empty fact text
+                if not fact_text:
+                    continue
+                
                 # Extract issues from tags
                 issues = []
                 tags = fact_data.get('tags', [])
@@ -182,7 +190,7 @@ async def get_suggested_facts(
                 fact = Fact(
                     document_id=doc_uuid,
                     matter_id=document.matter_id,
-                    fact_text=fact_data.get('fact', ''),
+                    fact_text=fact_text,
                     source_text=fact_data.get('source_text'),
                     page_number=fact_data.get('page_number'),
                     event_date=event_date,
@@ -201,9 +209,12 @@ async def get_suggested_facts(
             facts = db.query(Fact).filter(Fact.document_id == doc_uuid).all()
             formatted_facts = []
             for fact in facts:
+                # Skip facts with empty or None fact_text
+                if not fact.fact_text or not fact.fact_text.strip():
+                    continue
                 formatted_facts.append({
                     'id': str(fact.id),
-                    'fact': fact.fact_text,
+                    'fact': fact.fact_text.strip(),
                     'event_date': fact.event_date.isoformat() if fact.event_date else None,
                     'tags': fact.tags or [],
                     'confidence': float(fact.confidence_score) if fact.confidence_score else 0.7,
@@ -212,8 +223,11 @@ async def get_suggested_facts(
                     'review_status': fact.review_status
                 })
         except Exception as e:
+            import traceback
             print(f"Error extracting facts: {str(e)}")
+            traceback.print_exc()
     
+    # Ensure we always return a list (even if empty) with proper structure
     return formatted_facts
 
 
