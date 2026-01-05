@@ -112,6 +112,9 @@ class IngestionService:
                         # High similarity suggests this might be a version update
                         potential_version_parent = best_match
             
+            # Generate document ID for file storage (needed for both version and new document paths)
+            document_id = uuid.uuid4()
+            
             # Handle version linking if potential version parent found
             if potential_version_parent:
                 # Check if this should be treated as a new version
@@ -121,14 +124,11 @@ class IngestionService:
                 if filename_similarity >= 0.8:  # Similar filenames suggest version
                     # Create new version instead of new document
                     try:
-                        # Generate document ID for file storage
-                        version_doc_id = uuid.uuid4()
-                        
                         # Move file to processed directory
                         processed_path = self.file_storage.move_to_processed(
                             file_path,
                             matter_id,
-                            str(version_doc_id),
+                            str(document_id),
                             filename
                         )
                         
@@ -246,16 +246,15 @@ class IngestionService:
                     except Exception as e:
                         # If version creation fails, fall through to create new document
                         self.db.rollback()
-                        # Recreate document_id since we deleted it
-                        document_id = uuid.uuid4()
-                        # Re-move file with new document_id
-                        processed_path = self.file_storage.move_to_processed(
-                            file_path,
-                            matter_id,
-                            str(document_id),
-                            filename
-                        )
-                        # Continue with normal document creation
+                        # Continue with normal document creation using the same document_id
+            
+            # Move file to processed directory (for new documents, not versions)
+            processed_path = self.file_storage.move_to_processed(
+                file_path,
+                matter_id,
+                str(document_id),
+                filename
+            )
             
             # Store relative path from storage root
             try:
