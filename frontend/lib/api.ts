@@ -304,6 +304,30 @@ class ApiClient {
       }>
     }>(`/api/documents/matter/${matterId}/facts?${params.toString()}`)
   }
+
+  async updateFactReviewStatus(
+    factId: string,
+    reviewStatus: 'accepted' | 'rejected' | 'not_reviewed',
+    reviewNotes?: string
+  ): Promise<{
+    id: string
+    review_status: string
+    reviewed_at: string | null
+  }> {
+    const params = new URLSearchParams({
+      review_status: reviewStatus,
+    })
+    if (reviewNotes) {
+      params.append('review_notes', reviewNotes)
+    }
+    return this.request<{
+      id: string
+      review_status: string
+      reviewed_at: string | null
+    }>(`/api/documents/facts/${factId}/review-status?${params.toString()}`, {
+      method: 'PATCH',
+    })
+  }
 }
 
 export const apiClient = new ApiClient()

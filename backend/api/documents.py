@@ -6,7 +6,8 @@ from datetime import datetime
 import uuid
 
 from database import get_db
-from models import Document, Matter, DocumentEntity, Entity, EntityType
+from models import Document, Matter, DocumentEntity, Entity, EntityType, Fact
+from config import settings
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -123,7 +124,7 @@ async def get_suggested_facts(
 ):
     """
     Get suggested facts extracted from the document by Document Intelligence engine.
-    Returns facts with event dates and tags.
+    Returns facts with event dates and tags from the database.
     """
     try:
         doc_uuid = uuid.UUID(document_id)
@@ -135,49 +136,85 @@ async def get_suggested_facts(
     if not document:
         raise HTTPException(status_code=404, detail=f"Document {document_id} not found")
     
-    facts = []
+    # Get facts from database
+    facts = db.query(Fact).filter(Fact.document_id == doc_uuid).all()
     
-    try:
-        # Use fact extraction service
-        from services.fact_extraction import FactExtractionService
-        
-        fact_service = FactExtractionService(db)
-        # Try LLM first if available, otherwise use pattern-based extraction (no OpenAI required)
-        facts = fact_service.extract_facts_from_document(str(doc_uuid), use_llm=fact_service.llm_client is not None)
-    except Exception as e:
-        # Log error but continue with fallback
-        print(f"Error in fact extraction service: {str(e)}")
-        facts = []
+    # Format facts for response
+    formatted_facts = []
+    for fact in facts:
+        formatted_facts.append({
+            'id': str(fact.id),
+            'fact': fact.fact_text,
+            'event_date': fact.event_date.isoformat() if fact.event_date else None,
+            'tags': fact.tags or [],
+            'confidence': float(fact.confidence_score) if fact.confidence_score else 0.7,
+            'source_text': fact.source_text or '',
+            'page_number': fact.page_number,
+            'review_status': fact.review_status
+        })
     
-    # If no facts extracted, try fallback to metadata
-    if not facts and document.metadata_json:
-        extracted_metadata = document.metadata_json.get('extracted_metadata', {})
-        dates = extracted_metadata.get('dates', [])
-        
-        # Generate basic facts from metadata
-        fact_id = 1
-        for date_str in dates[:3]:  # Limit to 3 date-based facts
-            facts.append({
-                'id': str(fact_id),
-                'fact': f"Document references date: {date_str}",
-                'event_date': date_str if date_str else None,
-                'tags': ['general'],
-                'confidence': 0.7,
-                'source_text': f"Date mentioned: {date_str}",
-                'page_number': None
-            })
-            fact_id += 1
-    
-    # If still no facts and document has text, extract basic facts from text
-    if not facts and document.extracted_text:
+    # If no facts in database, try to extract and save them
+    if not formatted_facts and document.extracted_text:
         try:
             from services.fact_extraction import FactExtractionService
             fact_service = FactExtractionService(db)
-            facts = fact_service._extract_with_patterns(document)
+            extracted_facts = fact_service.extract_facts_from_document(str(doc_uuid), use_llm=fact_service.llm_client is not None)
+            
+            # Save extracted facts
+            for fact_data in extracted_facts:
+                # Extract issues from tags
+                issues = []
+                tags = fact_data.get('tags', [])
+                issue_tags = ['legal_proceeding', 'deadline', 'contract', 'evidence', 'witness', 'expert']
+                for tag in tags:
+                    if tag in issue_tags:
+                        issues.append(tag.replace('_', ' ').title())
+                
+                # Parse event date
+                event_date = None
+                if fact_data.get('event_date'):
+                    try:
+                        from datetime import date as date_type
+                        event_date = date_type.fromisoformat(fact_data['event_date'])
+                    except:
+                        pass
+                
+                fact = Fact(
+                    document_id=doc_uuid,
+                    matter_id=document.matter_id,
+                    fact_text=fact_data.get('fact', ''),
+                    source_text=fact_data.get('source_text'),
+                    page_number=fact_data.get('page_number'),
+                    event_date=event_date,
+                    tags=tags,
+                    issues=issues,
+                    confidence_score=fact_data.get('confidence', 0.7),
+                    review_status='not_reviewed',
+                    extraction_method='llm' if fact_service.llm_client else 'pattern',
+                    extraction_model=settings.rag_model if fact_service.llm_client else None
+                )
+                db.add(fact)
+            
+            db.commit()
+            
+            # Re-query facts
+            facts = db.query(Fact).filter(Fact.document_id == doc_uuid).all()
+            formatted_facts = []
+            for fact in facts:
+                formatted_facts.append({
+                    'id': str(fact.id),
+                    'fact': fact.fact_text,
+                    'event_date': fact.event_date.isoformat() if fact.event_date else None,
+                    'tags': fact.tags or [],
+                    'confidence': float(fact.confidence_score) if fact.confidence_score else 0.7,
+                    'source_text': fact.source_text or '',
+                    'page_number': fact.page_number,
+                    'review_status': fact.review_status
+                })
         except Exception as e:
-            print(f"Error in pattern-based fact extraction: {str(e)}")
+            print(f"Error extracting facts: {str(e)}")
     
-    return facts
+    return formatted_facts
 
 
 @router.get("/{document_id}/review/entities")
@@ -279,11 +316,11 @@ async def get_matter_facts(
     matter_id: str,
     limit: int = Query(20, description="Number of facts per page"),
     offset: int = Query(0, description="Number of facts to skip"),
-    review_status: Optional[str] = Query(None, description="Filter by review status: accepted, not_reviewed"),
+    review_status: Optional[str] = Query(None, description="Filter by review status: accepted, not_reviewed, rejected"),
     db: Session = Depends(get_db)
 ):
     """
-    Get all facts for a matter with pagination.
+    Get all facts for a matter with pagination from the database.
     Returns facts with date/time, fact text, issues, evidence, and review status.
     """
     try:
@@ -291,76 +328,85 @@ async def get_matter_facts(
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid matter ID format: {matter_id}")
     
-    # Get all documents for this matter
-    documents = db.query(Document).filter(
-        Document.matter_id == matter_uuid,
-        Document.is_current_version == True
-    ).all()
-    
-    all_facts = []
-    
-    # Extract facts from all documents
-    for document in documents:
-        if not document.extracted_text:
-            continue
-        
-        try:
-            from services.fact_extraction import FactExtractionService
-            fact_service = FactExtractionService(db)
-            facts = fact_service.extract_facts_from_document(str(document.id), use_llm=False)
-            
-            for fact in facts:
-                # Extract issues from tags (tags that indicate issues)
-                issues = []
-                tags = fact.get('tags', [])
-                issue_tags = ['legal_proceeding', 'deadline', 'contract', 'evidence', 'witness', 'expert']
-                for tag in tags:
-                    if tag in issue_tags:
-                        issues.append(tag.replace('_', ' ').title())
-                
-                # Evidence is the source document
-                evidence = document.file_name or document.title or "Unknown Document"
-                
-                # Review status - default to "not_reviewed" (can be extended later with a facts table)
-                review_status_value = "not_reviewed"
-                
-                all_facts.append({
-                    'id': f"{document.id}_{fact.get('id', '')}",
-                    'date_time': fact.get('event_date'),
-                    'fact': fact.get('fact', ''),
-                    'issues': issues,
-                    'evidence': evidence,
-                    'review_status': review_status_value,
-                    'confidence': fact.get('confidence', 0.7),
-                    'source_text': fact.get('source_text', ''),
-                    'document_id': str(document.id),
-                    'document_name': document.file_name
-                })
-        except Exception as e:
-            print(f"Error extracting facts from document {document.id}: {str(e)}")
-            continue
+    # Query facts from database
+    query = db.query(Fact).filter(Fact.matter_id == matter_uuid)
     
     # Filter by review status if provided
     if review_status:
-        all_facts = [f for f in all_facts if f['review_status'] == review_status]
-    
-    # Sort by date (most recent first, or by fact text if no date)
-    all_facts.sort(key=lambda x: (
-        x['date_time'] if x['date_time'] else '0000-00-00',
-        x['fact']
-    ), reverse=True)
+        query = query.filter(Fact.review_status == review_status)
     
     # Get total count
-    total = len(all_facts)
+    total = query.count()
+    
+    # Sort by date (most recent first, or by created_at if no date)
+    query = query.order_by(
+        Fact.event_date.desc().nullslast(),
+        Fact.created_at.desc()
+    )
     
     # Apply pagination
-    paginated_facts = all_facts[offset:offset + limit]
+    facts = query.offset(offset).limit(limit).all()
+    
+    # Format response
+    formatted_facts = []
+    for fact in facts:
+        document = db.query(Document).filter(Document.id == fact.document_id).first()
+        evidence = document.file_name if document else "Unknown Document"
+        
+        formatted_facts.append({
+            'id': str(fact.id),
+            'date_time': fact.event_date.isoformat() if fact.event_date else None,
+            'fact': fact.fact_text,
+            'issues': fact.issues or [],
+            'evidence': evidence,
+            'review_status': fact.review_status,
+            'confidence': float(fact.confidence_score) if fact.confidence_score else 0.7,
+            'source_text': fact.source_text or '',
+            'document_id': str(fact.document_id),
+            'document_name': evidence
+        })
     
     return {
         'total': total,
         'limit': limit,
         'offset': offset,
-        'facts': paginated_facts
+        'facts': formatted_facts
+    }
+
+
+@router.patch("/facts/{fact_id}/review-status")
+async def update_fact_review_status(
+    fact_id: str,
+    review_status: str = Query(..., description="New review status: accepted, rejected, not_reviewed"),
+    review_notes: Optional[str] = Query(None, description="Optional review notes"),
+    db: Session = Depends(get_db)
+):
+    """
+    Update the review status of a fact.
+    """
+    try:
+        fact_uuid = uuid.UUID(fact_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid fact ID format: {fact_id}")
+    
+    if review_status not in ['accepted', 'rejected', 'not_reviewed']:
+        raise HTTPException(status_code=400, detail=f"Invalid review status: {review_status}")
+    
+    fact = db.query(Fact).filter(Fact.id == fact_uuid).first()
+    if not fact:
+        raise HTTPException(status_code=404, detail=f"Fact {fact_id} not found")
+    
+    fact.review_status = review_status
+    fact.reviewed_at = datetime.utcnow()
+    if review_notes:
+        fact.review_notes = review_notes
+    
+    db.commit()
+    
+    return {
+        'id': str(fact.id),
+        'review_status': fact.review_status,
+        'reviewed_at': fact.reviewed_at.isoformat() if fact.reviewed_at else None
     }
 
 

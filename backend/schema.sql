@@ -266,6 +266,44 @@ CREATE TABLE document_events (
     CONSTRAINT unique_document_event UNIQUE (document_id, event_id)
 );
 
+-- Facts: Extracted facts from documents
+CREATE TABLE facts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    matter_id UUID NOT NULL REFERENCES matters(id) ON DELETE CASCADE,
+    
+    -- Fact content
+    fact_text TEXT NOT NULL,
+    source_text TEXT,  -- Excerpt from document showing where fact came from
+    page_number INTEGER,
+    
+    -- Temporal
+    event_date DATE,
+    event_datetime TIMESTAMP WITH TIME ZONE,
+    
+    -- Classification
+    tags TEXT[],  -- Array of tags/categories
+    issues TEXT[],  -- Array of issues identified
+    confidence_score DECIMAL(5,4),  -- Extraction confidence (0-1)
+    
+    -- Review status
+    review_status VARCHAR(20) DEFAULT 'not_reviewed' CHECK (review_status IN ('not_reviewed', 'accepted', 'rejected')),
+    reviewed_at TIMESTAMP WITH TIME ZONE,
+    reviewed_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    review_notes TEXT,
+    
+    -- Extraction metadata
+    extraction_method VARCHAR(50),  -- 'llm', 'pattern', etc.
+    extraction_model VARCHAR(100),  -- Model used if LLM
+    
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Constraints
+    CONSTRAINT unique_fact_per_document UNIQUE (document_id, fact_text, event_date)
+);
+
 -- Embeddings Metadata: Metadata about vector embeddings (actual vectors in Qdrant)
 CREATE TABLE embeddings_metadata (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -415,6 +453,15 @@ CREATE INDEX idx_events_attributes ON events USING GIN(attributes);
 -- Document-Events indexes
 CREATE INDEX idx_document_events_document_id ON document_events(document_id);
 CREATE INDEX idx_document_events_event_id ON document_events(event_id);
+
+-- Facts indexes
+CREATE INDEX idx_facts_document_id ON facts(document_id);
+CREATE INDEX idx_facts_matter_id ON facts(matter_id);
+CREATE INDEX idx_facts_event_date ON facts(event_date);
+CREATE INDEX idx_facts_review_status ON facts(review_status);
+CREATE INDEX idx_facts_tags ON facts USING GIN(tags);
+CREATE INDEX idx_facts_issues ON facts USING GIN(issues);
+CREATE INDEX idx_facts_created_at ON facts(created_at);
 
 -- Embeddings metadata indexes
 CREATE INDEX idx_embeddings_metadata_document_id ON embeddings_metadata(document_id);

@@ -379,3 +379,48 @@ class EmbeddingsMetadata(Base):
         UniqueConstraint("qdrant_collection_name", "qdrant_point_id", name="unique_qdrant_point"),
     )
 
+
+class Fact(Base):
+    """Extracted facts from documents."""
+    __tablename__ = "facts"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
+    matter_id = Column(UUID(as_uuid=True), ForeignKey("matters.id", ondelete="CASCADE"), nullable=False)
+    
+    # Fact content
+    fact_text = Column(Text, nullable=False)
+    source_text = Column(Text)
+    page_number = Column(Integer)
+    
+    # Temporal
+    event_date = Column(Date)
+    event_datetime = Column(DateTime(timezone=True))
+    
+    # Classification
+    tags = Column(ARRAY(String))
+    issues = Column(ARRAY(String))
+    confidence_score = Column(DECIMAL(5, 4))
+    
+    # Review status
+    review_status = Column(String(20), default='not_reviewed')
+    reviewed_at = Column(DateTime(timezone=True))
+    reviewed_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
+    review_notes = Column(Text)
+    
+    # Extraction metadata
+    extraction_method = Column(String(50))
+    extraction_model = Column(String(100))
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    document = relationship("Document", backref="facts")
+    matter = relationship("Matter", backref="facts")
+    
+    __table_args__ = (
+        CheckConstraint("review_status IN ('not_reviewed', 'accepted', 'rejected')", name="check_review_status"),
+        UniqueConstraint("document_id", "fact_text", "event_date", name="unique_fact_per_document"),
+    )

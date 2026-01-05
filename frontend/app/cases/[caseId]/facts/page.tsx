@@ -85,13 +85,22 @@ export default function FactsPage() {
     }
   }
 
-  const handleReviewStatusChange = (factId: string, newStatus: string) => {
-    // Update local state (in a real app, this would call an API to update the status)
-    setFacts(prevFacts =>
-      prevFacts.map(fact =>
-        fact.id === factId ? { ...fact, review_status: newStatus } : fact
+  const handleReviewStatusChange = async (factId: string, newStatus: string) => {
+    try {
+      await apiClient.updateFactReviewStatus(
+        factId,
+        newStatus as 'accepted' | 'rejected' | 'not_reviewed'
       )
-    )
+      // Update local state
+      setFacts(prevFacts =>
+        prevFacts.map(fact =>
+          fact.id === factId ? { ...fact, review_status: newStatus } : fact
+        )
+      )
+    } catch (error) {
+      console.error('Error updating fact review status:', error)
+      alert('Failed to update review status. Please try again.')
+    }
   }
 
   const formatDate = (dateStr: string | null) => {

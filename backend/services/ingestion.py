@@ -425,6 +425,75 @@ class IngestionService:
                         'error': str(e)
                     }
             
+            # Extract and save facts
+            facts_extracted = 0
+            try:
+                from services.fact_extraction import FactExtractionService
+                from models import Fact
+                
+                fact_service = FactExtractionService(self.db)
+                extracted_facts = fact_service.extract_facts_from_document(
+                    str(document_id),
+                    use_llm=fact_service.llm_client is not None
+                )
+                
+                for fact_data in extracted_facts:
+                    # Parse event date first
+                    event_date = None
+                    event_datetime = None
+                    if fact_data.get('event_date'):
+                        try:
+                            from datetime import date as date_type
+                            event_date = date_type.fromisoformat(fact_data['event_date'])
+                        except:
+                            pass
+                    
+                    # Check if fact already exists
+                    fact_text = fact_data.get('fact', '')[:500]  # Truncate for comparison
+                    existing_fact = self.db.query(Fact).filter(
+                        Fact.document_id == document_id,
+                        Fact.fact_text == fact_text,
+                        Fact.event_date == event_date
+                    ).first()
+                    
+                    if existing_fact:
+                        continue
+                    
+                    # Extract issues from tags
+                    issues = []
+                    tags = fact_data.get('tags', [])
+                    issue_tags = ['legal_proceeding', 'deadline', 'contract', 'evidence', 'witness', 'expert']
+                    for tag in tags:
+                        if tag in issue_tags:
+                            issues.append(tag.replace('_', ' ').title())
+                    
+                    # Create fact record
+                    fact = Fact(
+                        document_id=document_id,
+                        matter_id=matter_id,
+                        fact_text=fact_data.get('fact', ''),
+                        source_text=fact_data.get('source_text'),
+                        page_number=fact_data.get('page_number'),
+                        event_date=event_date,
+                        event_datetime=event_datetime,
+                        tags=tags,
+                        issues=issues,
+                        confidence_score=fact_data.get('confidence', 0.7),
+                        review_status='not_reviewed',
+                        extraction_method='llm' if fact_service.llm_client else 'pattern',
+                        extraction_model=settings.rag_model if fact_service.llm_client else None
+                    )
+                    self.db.add(fact)
+                    facts_extracted += 1
+                
+                self.db.commit()
+                result['facts_extracted'] = facts_extracted
+            except Exception as e:
+                # Don't fail ingestion if fact extraction fails
+                print(f"Error extracting facts during ingestion: {str(e)}")
+                result['facts_extracted'] = 0
+                result['fact_extraction_error'] = str(e)
+            
             result['success'] = True
             result['document_id'] = str(document_id)
             result['status'] = 'completed'
