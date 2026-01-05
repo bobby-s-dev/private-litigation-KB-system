@@ -55,16 +55,25 @@ export default function DocumentReviewPage() {
       const doc = await apiClient.getDocument(documentId)
       setDocument(doc)
       
-      // Load review data in parallel
-      const [facts, entitiesData, summaryData] = await Promise.all([
-        apiClient.getSuggestedFacts(documentId),
-        apiClient.getDocumentEntities(documentId),
-        apiClient.getDocumentSummary(documentId)
+      // Load review data in parallel with error handling for each
+      const [facts, entitiesData, summaryData] = await Promise.allSettled([
+        apiClient.getSuggestedFacts(documentId).catch(err => {
+          console.error('Error loading facts:', err)
+          return []
+        }),
+        apiClient.getDocumentEntities(documentId).catch(err => {
+          console.error('Error loading entities:', err)
+          return []
+        }),
+        apiClient.getDocumentSummary(documentId).catch(err => {
+          console.error('Error loading summary:', err)
+          return null
+        })
       ])
       
-      setSuggestedFacts(facts)
-      setEntities(entitiesData)
-      setSummary(summaryData)
+      setSuggestedFacts(facts.status === 'fulfilled' ? facts.value : [])
+      setEntities(entitiesData.status === 'fulfilled' ? entitiesData.value : [])
+      setSummary(summaryData.status === 'fulfilled' ? summaryData.value : null)
     } catch (error) {
       console.error('Error loading review data:', error)
     } finally {

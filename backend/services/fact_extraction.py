@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, date
 import json
 import re
+import uuid
 
 from openai import OpenAI, AzureOpenAI
 from models import Document
@@ -38,13 +39,23 @@ class FactExtractionService:
         Extract facts from a document with event dates and tags.
         
         Args:
-            document_id: Document ID
+            document_id: Document ID (UUID string)
             use_llm: Use LLM for extraction (more accurate but slower)
         
         Returns:
             List of extracted facts with event_date, fact, and tags
         """
-        document = self.db.query(Document).filter(Document.id == document_id).first()
+        try:
+            # Convert string to UUID if needed
+            if isinstance(document_id, str):
+                doc_uuid = uuid.UUID(document_id)
+            else:
+                doc_uuid = document_id
+        except (ValueError, AttributeError):
+            # If conversion fails, try as string
+            doc_uuid = document_id
+        
+        document = self.db.query(Document).filter(Document.id == doc_uuid).first()
         if not document or not document.extracted_text:
             return []
         

@@ -130,12 +130,19 @@ async def get_suggested_facts(
     if not document:
         raise HTTPException(status_code=404, detail=f"Document {document_id} not found")
     
-    # Use fact extraction service
-    from services.fact_extraction import FactExtractionService
+    facts = []
     
-    fact_service = FactExtractionService(db)
-    # Try LLM first if available, otherwise use pattern-based extraction (no OpenAI required)
-    facts = fact_service.extract_facts_from_document(str(doc_uuid), use_llm=fact_service.llm_client is not None)
+    try:
+        # Use fact extraction service
+        from services.fact_extraction import FactExtractionService
+        
+        fact_service = FactExtractionService(db)
+        # Try LLM first if available, otherwise use pattern-based extraction (no OpenAI required)
+        facts = fact_service.extract_facts_from_document(str(doc_uuid), use_llm=fact_service.llm_client is not None)
+    except Exception as e:
+        # Log error but continue with fallback
+        print(f"Error in fact extraction service: {str(e)}")
+        facts = []
     
     # If no facts extracted, try fallback to metadata
     if not facts and document.metadata_json:
@@ -155,6 +162,15 @@ async def get_suggested_facts(
                 'page_number': None
             })
             fact_id += 1
+    
+    # If still no facts and document has text, extract basic facts from text
+    if not facts and document.extracted_text:
+        try:
+            from services.fact_extraction import FactExtractionService
+            fact_service = FactExtractionService(db)
+            facts = fact_service._extract_with_patterns(document)
+        except Exception as e:
+            print(f"Error in pattern-based fact extraction: {str(e)}")
     
     return facts
 
@@ -199,20 +215,56 @@ async def get_document_entities(
         except Exception:
             continue
     
-    # If no entities in database, try to extract from metadata
-    if not entities and document.metadata_json:
-        extracted_metadata = document.metadata_json.get('extracted_metadata', {})
-        email_entities = extracted_metadata.get('entities', [])
+    # If no entities in database, extract from document text
+    if not entities:
+        # Try metadata first
+        if document.metadata_json:
+            extracted_metadata = document.metadata_json.get('extracted_metadata', {})
+            email_entities = extracted_metadata.get('entities', [])
+            
+            for entity_data in email_entities:
+                if entity_data.get('type') == 'email':
+                    entities.append({
+                        'id': str(uuid.uuid4()),
+                        'name': entity_data.get('value', ''),
+                        'type': 'email_address',
+                        'mentions': 1,
+                        'confidence': 0.7
+                    })
         
-        for entity_data in email_entities:
-            if entity_data.get('type') == 'email':
-                entities.append({
-                    'id': str(uuid.uuid4()),
-                    'name': entity_data.get('value', ''),
-                    'type': 'email_address',
-                    'mentions': 1,
-                    'confidence': 0.7
-                })
+        # Extract entities from text using metadata extraction service
+        if not entities and document.extracted_text:
+            try:
+                from services.metadata_extraction import MetadataExtractionService
+                metadata_service = MetadataExtractionService()
+                extracted_entities = metadata_service.extract_entities(document.extracted_text)
+                
+                # Count mentions for each entity
+                entity_counts = {}
+                for entity_data in extracted_entities:
+                    entity_value = entity_data.get('value', '')
+                    entity_type = entity_data.get('type', 'unknown')
+                    key = f"{entity_type}:{entity_value.lower()}"
+                    if key not in entity_counts:
+                        entity_counts[key] = {
+                            'value': entity_value,
+                            'type': entity_type,
+                            'count': 0,
+                            'confidence': entity_data.get('confidence', 0.7)
+                        }
+                    entity_counts[key]['count'] += 1
+                
+                # Format entities
+                for idx, (key, entity_info) in enumerate(entity_counts.items()):
+                    entities.append({
+                        'id': str(uuid.uuid4()),
+                        'name': entity_info['value'],
+                        'type': entity_info['type'],
+                        'mentions': entity_info['count'],
+                        'confidence': entity_info['confidence']
+                    })
+            except Exception as e:
+                print(f"Error extracting entities from text: {str(e)}")
     
     return entities
 
@@ -235,35 +287,88 @@ async def get_document_summary(
     if not document:
         raise HTTPException(status_code=404, detail=f"Document {document_id} not found")
     
-    # TODO: Implement actual summarization using AI/LLM
-    # For now, generate a basic summary from extracted text
-    
     summary_text = ""
     key_points = []
     topics = []
     
     if document.extracted_text:
-        # Basic summary: first 500 characters
         text = document.extracted_text
-        if len(text) > 500:
-            summary_text = text[:500] + "..."
-        else:
-            summary_text = text
         
-        # Extract key points (stub - would use NLP in production)
-        if document.metadata_json:
-            extracted_metadata = document.metadata_json.get('extracted_metadata', {})
-            dates = extracted_metadata.get('dates', [])
-            entities = extracted_metadata.get('entities', [])
+        # Generate a better summary by extracting key sentences
+        # Split into sentences
+        import re
+        sentences = re.split(r'[.!?]+\s+', text)
+        sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
+        
+        # Take first few sentences and a few from middle/end for better summary
+        if len(sentences) > 0:
+            summary_sentences = []
+            # First sentence (usually introduction)
+            if len(sentences) > 0:
+                summary_sentences.append(sentences[0])
+            # Middle sentence if document is long
+            if len(sentences) > 3:
+                mid_point = len(sentences) // 2
+                summary_sentences.append(sentences[mid_point])
+            # Last sentence (usually conclusion)
+            if len(sentences) > 1:
+                summary_sentences.append(sentences[-1])
             
-            if dates:
-                key_points.append(f"Document contains {len(dates)} date reference(s)")
-            if entities:
-                key_points.append(f"Document references {len(entities)} entity/entities")
+            summary_text = ". ".join(summary_sentences[:3])
+            if len(summary_text) > 1000:
+                summary_text = summary_text[:997] + "..."
+        else:
+            # Fallback: first 500 characters
+            summary_text = text[:500] + ("..." if len(text) > 500 else "")
+        
+        # Extract key points from document
+        key_points = []
+        
+        # Extract dates mentioned
+        date_pattern = r'\b(\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4}|[A-Z][a-z]+ \d{1,2}, \d{4})\b'
+        dates = re.findall(date_pattern, text)
+        if dates:
+            key_points.append(f"Contains {len(set(dates))} unique date reference(s)")
+        
+        # Extract entities
+        try:
+            from services.metadata_extraction import MetadataExtractionService
+            metadata_service = MetadataExtractionService()
+            extracted_entities = metadata_service.extract_entities(text)
             
-            # Extract topics from categories if available
-            if document.categories:
-                topics = document.categories[:5]  # Limit to 5 topics
+            entity_types = {}
+            for entity in extracted_entities:
+                entity_type = entity.get('type', 'unknown')
+                entity_types[entity_type] = entity_types.get(entity_type, 0) + 1
+            
+            if entity_types:
+                entity_summary = ", ".join([f"{count} {etype}" for etype, count in list(entity_types.items())[:3]])
+                key_points.append(f"References: {entity_summary}")
+        except Exception:
+            pass
+        
+        # Extract key legal terms
+        legal_keywords = ['hearing', 'trial', 'motion', 'filing', 'deposition', 'discovery', 'settlement', 
+                         'judgment', 'order', 'complaint', 'defendant', 'plaintiff', 'witness', 'evidence']
+        found_keywords = [kw for kw in legal_keywords if kw.lower() in text.lower()]
+        if found_keywords:
+            key_points.append(f"Contains legal terms: {', '.join(found_keywords[:5])}")
+        
+        # Extract topics from categories if available
+        if document.categories:
+            topics = document.categories[:5]
+        elif document.tags:
+            topics = document.tags[:5]
+        else:
+            # Infer topics from content
+            if any(kw in text.lower() for kw in ['medical', 'health', 'treatment', 'diagnosis']):
+                topics.append('medical')
+            if any(kw in text.lower() for kw in ['financial', 'payment', 'cost', 'expense']):
+                topics.append('financial')
+            if any(kw in text.lower() for kw in ['contract', 'agreement', 'terms']):
+                topics.append('contract')
+            if any(kw in text.lower() for kw in ['legal', 'court', 'lawsuit', 'case']):
+                topics.append('legal')
     
     # If no summary can be generated, return placeholder
     if not summary_text:
