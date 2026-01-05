@@ -250,6 +250,12 @@ class ApiClient {
   async getDocumentSummary(documentId: string): Promise<any> {
     return this.request<any>(`/api/documents/${documentId}/review/summary`)
   }
+
+  async getFactsPerEntity(matterId: string): Promise<Array<{ name: string; value: number; color: string; type: string }>> {
+    return this.request<Array<{ name: string; value: number; color: string; type: string }>>(
+      `/api/documents/matter/${matterId}/facts-per-entity`
+    )
+  }
 }
 
 export const apiClient = new ApiClient()

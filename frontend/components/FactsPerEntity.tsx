@@ -1,20 +1,75 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
+import { apiClient } from '@/lib/api'
 
-const data = [
-  { name: 'Mulder Scully', value: 35, color: '#8b5cf6' },
-  { name: 'Texoma General Hospital', value: 20, color: '#e5e7eb' },
-  { name: 'Lane Parish', value: 18, color: '#1e40af' },
-  { name: 'Avery Jackson', value: 12, color: '#a78bfa' },
-  { name: 'Alex Karen', value: 8, color: '#3b82f6' },
-  { name: 'Dr. Robbins', value: 4, color: '#60a5fa' },
-  { name: 'Bicalutamide', value: 2, color: '#93c5fd' },
-  { name: 'Paperless Records System', value: 1, color: '#cbd5e1' },
-  { name: 'Improved', value: 1, color: '#d1d5db' },
-]
+interface FactsPerEntityProps {
+  matterId?: string | null
+}
 
-export default function FactsPerEntity() {
+interface EntityData {
+  name: string
+  value: number
+  color: string
+  type: string
+}
+
+export default function FactsPerEntity({ matterId }: FactsPerEntityProps) {
+  const [data, setData] = useState<EntityData[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (!matterId) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        setLoading(true)
+        const factsPerEntity = await apiClient.getFactsPerEntity(matterId)
+        setData(factsPerEntity)
+      } catch (error) {
+        console.error('Error loading facts per entity:', error)
+        setData([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [matterId])
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Facts per Entity</h2>
+        </div>
+        <div className="flex items-center justify-center h-[300px]">
+          <div className="text-gray-500">Loading...</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Facts per Entity</h2>
+        </div>
+        <div className="flex items-center justify-center h-[300px]">
+          <div className="text-center text-gray-500">
+            <p>No facts found yet.</p>
+            <p className="text-sm mt-2">Upload and process documents to see facts per entity.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
@@ -56,7 +111,9 @@ export default function FactsPerEntity() {
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: item.color }}
             ></div>
-            <span className="text-gray-700">{item.name}</span>
+            <span className="text-gray-700 truncate" title={item.name}>
+              {item.name}
+            </span>
           </div>
         ))}
       </div>

@@ -29,7 +29,12 @@ async def get_documents(
     
     # Apply filters
     if matter_id:
-        query = query.filter(Document.matter_id == matter_id)
+        try:
+            matter_uuid = uuid.UUID(matter_id)
+            query = query.filter(Document.matter_id == matter_uuid)
+        except ValueError:
+            # If not a valid UUID, skip the filter
+            pass
     
     if document_type:
         query = query.filter(Document.document_type == document_type)
@@ -267,6 +272,105 @@ async def get_document_entities(
                 print(f"Error extracting entities from text: {str(e)}")
     
     return entities
+
+
+@router.get("/matter/{matter_id}/facts-per-entity")
+async def get_facts_per_entity(
+    matter_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get aggregated facts and entities for a matter.
+    Returns entity names with fact counts for the pie chart.
+    """
+    try:
+        matter_uuid = uuid.UUID(matter_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid matter ID format: {matter_id}")
+    
+    # Get all documents for this matter
+    documents = db.query(Document).filter(
+        Document.matter_id == matter_uuid,
+        Document.is_current_version == True
+    ).all()
+    
+    # Aggregate entities and their fact counts
+    entity_fact_counts = {}
+    all_entities = {}
+    
+    for document in documents:
+        if not document.extracted_text:
+            continue
+        
+        # Get entities for this document
+        try:
+            from services.metadata_extraction import MetadataExtractionService
+            metadata_service = MetadataExtractionService()
+            entities = metadata_service.extract_entities(document.extracted_text)
+            
+            for entity in entities:
+                entity_name = entity.get('value', '').strip()
+                entity_type = entity.get('type', 'unknown')
+                
+                if not entity_name or len(entity_name) < 2:
+                    continue
+                
+                # Normalize entity name (use display name as key)
+                key = entity_name.lower()
+                if key not in all_entities:
+                    all_entities[key] = {
+                        'name': entity_name,
+                        'type': entity_type,
+                        'fact_count': 0
+                    }
+        except Exception as e:
+            print(f"Error extracting entities: {str(e)}")
+        
+        # Get facts for this document
+        try:
+            from services.fact_extraction import FactExtractionService
+            fact_service = FactExtractionService(db)
+            facts = fact_service.extract_facts_from_document(str(document.id), use_llm=False)
+            
+            # Count facts mentioning each entity
+            for fact in facts:
+                fact_text = fact.get('fact', '').lower()
+                source_text = fact.get('source_text', '').lower()
+                
+                for key, entity_info in all_entities.items():
+                    entity_name_lower = entity_info['name'].lower()
+                    # Check if entity is mentioned in fact
+                    if entity_name_lower in fact_text or entity_name_lower in source_text:
+                        entity_fact_counts[key] = entity_fact_counts.get(key, 0) + 1
+        except Exception as e:
+            print(f"Error extracting facts: {str(e)}")
+    
+    # Format response for pie chart
+    # Sort by fact count and take top entities
+    sorted_entities = sorted(
+        all_entities.items(),
+        key=lambda x: entity_fact_counts.get(x[0], 0),
+        reverse=True
+    )[:10]  # Top 10 entities
+    
+    # Generate colors for pie chart
+    colors = [
+        '#8b5cf6', '#e5e7eb', '#1e40af', '#a78bfa', '#3b82f6',
+        '#60a5fa', '#93c5fd', '#cbd5e1', '#d1d5db', '#9ca3af'
+    ]
+    
+    result = []
+    for idx, (key, entity_info) in enumerate(sorted_entities):
+        fact_count = entity_fact_counts.get(key, 0)
+        if fact_count > 0:  # Only include entities with facts
+            result.append({
+                'name': entity_info['name'],
+                'value': fact_count,
+                'color': colors[idx % len(colors)],
+                'type': entity_info['type']
+            })
+    
+    return result
 
 
 @router.get("/{document_id}/review/summary")

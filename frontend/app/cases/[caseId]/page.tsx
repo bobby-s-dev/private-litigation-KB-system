@@ -94,7 +94,7 @@ export default function CaseHomePage() {
 
           {/* Recently Uploaded Sources */}
           <div className="mb-6">
-            <RecentlyUploadedSources matterId={caseId} refreshKey={refreshKey} />
+            <RecentlyUploadedSources matterId={caseId ?? undefined} refreshKey={refreshKey} />
           </div>
 
           <div className="grid grid-cols-2 gap-6">
@@ -117,7 +117,7 @@ export default function CaseHomePage() {
             </div>
 
             {/* Facts per Entity */}
-            <FactsPerEntity />
+            <FactsPerEntity matterId={caseId} />
           </div>
     </div>
   )
