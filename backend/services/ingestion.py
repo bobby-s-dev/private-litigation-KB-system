@@ -13,6 +13,7 @@ from services.text_extraction import TextExtractionService
 from services.duplicate_detection import DuplicateDetectionService
 from services.version_management import VersionManagementService
 from services.metadata_extraction import MetadataExtractionService
+from services.security_check import SecurityCheckService
 from config import settings
 
 
@@ -28,6 +29,7 @@ class IngestionService:
         self.duplicate_detection = DuplicateDetectionService(db)
         self.version_management = VersionManagementService(db)
         self.metadata_extraction = MetadataExtractionService()
+        self.security_check = SecurityCheckService()
     
     def ingest_file(
         self,
@@ -55,6 +57,12 @@ class IngestionService:
             'version_number': 1,
             'error': None,
             'ingestion_run_id': self.ingestion_run_id,
+            'processing_stages': {
+                'upload': 'completed',
+                'security_check': 'pending',
+                'metadata_extraction': 'pending',
+                'processing': 'pending'
+            }
         }
         
         try:
@@ -62,6 +70,7 @@ class IngestionService:
             matter = self.db.query(Matter).filter(Matter.id == matter_id).first()
             if not matter:
                 result['error'] = f"Matter {matter_id} not found"
+                result['processing_stages']['upload'] = 'failed'
                 return result
             
             # Get file info
@@ -72,6 +81,19 @@ class IngestionService:
             # Determine document type
             if not document_type:
                 document_type = self._infer_document_type(file_path, mime_type)
+            
+            # Security check
+            result['processing_stages']['security_check'] = 'processing'
+            security_result = self.security_check.check_document(file_path, file_size)
+            
+            if not security_result['passed']:
+                result['error'] = f"Security check failed: {', '.join(security_result['errors'])}"
+                result['status'] = 'security_check_failed'
+                result['processing_stages']['security_check'] = 'failed'
+                return result
+            
+            result['processing_stages']['security_check'] = 'completed'
+            result['security_warnings'] = security_result.get('warnings', [])
             
             # Compute hashes
             sha256_hash, md5_hash = self.hashing_service.compute_file_hashes(file_path)
@@ -88,11 +110,20 @@ class IngestionService:
                 result['version_number'] = existing_doc.version_number
                 return result
             
-            # Extract text
+            # Extract text and metadata
+            result['processing_stages']['metadata_extraction'] = 'processing'
             extraction_result = self.text_extraction.extract_text(file_path, mime_type)
             raw_text = extraction_result.get('raw_text', '')
             extracted_text = extraction_result.get('extracted_text', '')
             extraction_metadata = extraction_result.get('metadata', {})
+            
+            # Extract additional metadata automatically
+            metadata_result = self.metadata_extraction.extract_metadata(
+                extracted_text,
+                document_type,
+                extraction_metadata
+            )
+            result['processing_stages']['metadata_extraction'] = 'completed'
             
             # Check for near-duplicates and potential version parent
             near_duplicates = []
@@ -155,12 +186,13 @@ class IngestionService:
                         new_version.extracted_text = extracted_text
                         new_version.text_length = len(extracted_text) if extracted_text else None
                         
-                        # Update metadata
-                        metadata_result = self.metadata_extraction.extract_metadata(
-                            extracted_text,
-                            document_type,
-                            extraction_metadata
-                        )
+                        # Update metadata (already extracted above, but ensure it's set)
+                        if not metadata_result:
+                            metadata_result = self.metadata_extraction.extract_metadata(
+                                extracted_text,
+                                document_type,
+                                extraction_metadata
+                            )
                         new_version.metadata_json = {
                             'ingestion_run_id': self.ingestion_run_id,
                             'extraction_metadata': extraction_metadata,
@@ -225,6 +257,7 @@ class IngestionService:
                         result['status'] = 'version_created'
                         result['version_number'] = new_version.version_number
                         result['similarity_score'] = similarity_score
+                        result['processing_stages']['processing'] = 'completed'
                         
                         # Auto-index if enabled
                         if settings.auto_index_on_ingestion:
@@ -263,12 +296,8 @@ class IngestionService:
                 # If paths aren't related, store absolute path
                 relative_path = str(processed_path)
             
-            # Extract metadata (stub)
-            metadata_result = self.metadata_extraction.extract_metadata(
-                extracted_text,
-                document_type,
-                extraction_metadata
-            )
+            # Prepare document metadata (metadata already extracted above)
+            result['processing_stages']['processing'] = 'processing'
             
             # Prepare document metadata
             doc_metadata = {
@@ -401,11 +430,17 @@ class IngestionService:
             result['status'] = 'completed'
             result['version_number'] = 1
             result['near_duplicates_found'] = len(near_duplicates)
+            result['processing_stages']['processing'] = 'completed'
             
         except Exception as e:
             self.db.rollback()
             result['error'] = str(e)
             result['status'] = 'failed'
+            # Mark current stage as failed
+            for stage in ['security_check', 'metadata_extraction', 'processing']:
+                if result['processing_stages'][stage] == 'processing':
+                    result['processing_stages'][stage] = 'failed'
+                    break
         
         return result
     

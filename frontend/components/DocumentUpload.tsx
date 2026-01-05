@@ -15,11 +15,20 @@ interface UploadProgress {
   currentFile?: string
 }
 
+interface ProcessingStages {
+  upload: 'pending' | 'processing' | 'completed' | 'failed'
+  security_check: 'pending' | 'processing' | 'completed' | 'failed'
+  metadata_extraction: 'pending' | 'processing' | 'completed' | 'failed'
+  processing: 'pending' | 'processing' | 'completed' | 'failed'
+}
+
 export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [uploadMode, setUploadMode] = useState<'file' | 'folder'>('file')
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null)
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null)
+  const [processingStages, setProcessingStages] = useState<ProcessingStages | null>(null)
+  const [securityWarnings, setSecurityWarnings] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
 
@@ -45,9 +54,32 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
     setUploading(true)
     setUploadStatus(null)
     setUploadProgress(null)
+    setSecurityWarnings([])
+    
+    // Initialize processing stages
+    setProcessingStages({
+      upload: 'processing',
+      security_check: 'pending',
+      metadata_extraction: 'pending',
+      processing: 'pending'
+    })
 
     try {
+      // Stage 1: Upload
+      setProcessingStages(prev => prev ? { ...prev, upload: 'processing' } : null)
       const result: UploadResponse = await apiClient.uploadDocument(matterId, file)
+      
+      // Update stages from response
+      if (result.processing_stages) {
+        setProcessingStages(result.processing_stages)
+      } else {
+        // If no stages in response, mark upload as completed
+        setProcessingStages(prev => prev ? { ...prev, upload: 'completed' } : null)
+      }
+      
+      if (result.security_warnings) {
+        setSecurityWarnings(result.security_warnings)
+      }
       
       if (result.success !== false) {
         setUploadStatus({
@@ -71,6 +103,13 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
         type: 'error',
         message: error instanceof Error ? error.message : 'Upload failed'
       })
+      setProcessingStages(prev => prev ? {
+        ...prev,
+        upload: 'failed',
+        security_check: 'failed',
+        metadata_extraction: 'failed',
+        processing: 'failed'
+      } : null)
     } finally {
       setUploading(false)
       if (fileInputRef.current) {
@@ -213,18 +252,16 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
           onChange={handleFolderSelect}
           className="hidden"
           id="folder-upload"
-          webkitdirectory=""
-          directory=""
+          {...({ webkitdirectory: '', directory: '' } as any)}
           multiple
           disabled={uploading}
         />
         
         {uploading ? (
-          <div className="space-y-3">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <div className="space-y-4 w-full max-w-md mx-auto">
             {uploadProgress ? (
               <>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 font-medium">
                   Uploading {uploadProgress.completed + uploadProgress.failed} of {uploadProgress.total} files...
                 </p>
                 {uploadProgress.currentFile && (
@@ -242,8 +279,40 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
                   {uploadProgress.completed} succeeded, {uploadProgress.failed} failed
                 </p>
               </>
+            ) : processingStages ? (
+              <div className="space-y-3">
+                <ProcessingStage
+                  label="Uploading"
+                  status={processingStages.upload}
+                />
+                <ProcessingStage
+                  label="Review (Security Check)"
+                  status={processingStages.security_check}
+                />
+                <ProcessingStage
+                  label="Get Metadata Automatically"
+                  status={processingStages.metadata_extraction}
+                />
+                <ProcessingStage
+                  label="Processing"
+                  status={processingStages.processing}
+                />
+                {securityWarnings.length > 0 && (
+                  <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                    <p className="font-medium mb-1">Security Warnings:</p>
+                    <ul className="list-disc list-inside">
+                      {securityWarnings.map((warning, idx) => (
+                        <li key={idx}>{warning}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             ) : (
-              <p className="text-sm text-gray-600">Uploading...</p>
+              <div className="space-y-2">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                <p className="text-sm text-gray-600">Uploading...</p>
+              </div>
             )}
           </div>
         ) : (
@@ -295,6 +364,68 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
           <p className="text-sm">{uploadStatus.message}</p>
         </div>
       )}
+    </div>
+  )
+}
+
+function ProcessingStage({ label, status }: { label: string; status: 'pending' | 'processing' | 'completed' | 'failed' }) {
+  const getStatusIcon = () => {
+    switch (status) {
+      case 'completed':
+        return (
+          <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        )
+      case 'processing':
+        return (
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+        )
+      case 'failed':
+        return (
+          <svg className="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        )
+      default:
+        return (
+          <div className="h-5 w-5 rounded-full border-2 border-gray-300"></div>
+        )
+    }
+  }
+
+  const getStatusColor = () => {
+    switch (status) {
+      case 'completed':
+        return 'text-green-600'
+      case 'processing':
+        return 'text-purple-600'
+      case 'failed':
+        return 'text-red-600'
+      default:
+        return 'text-gray-400'
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex-shrink-0">
+        {getStatusIcon()}
+      </div>
+      <div className="flex-1">
+        <p className={`text-sm font-medium ${getStatusColor()}`}>
+          {label}
+        </p>
+        {status === 'processing' && (
+          <p className="text-xs text-gray-500 mt-1">In progress...</p>
+        )}
+        {status === 'completed' && (
+          <p className="text-xs text-green-600 mt-1">Completed</p>
+        )}
+        {status === 'failed' && (
+          <p className="text-xs text-red-600 mt-1">Failed</p>
+        )}
+      </div>
     </div>
   )
 }

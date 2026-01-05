@@ -18,6 +18,13 @@ export interface UploadResponse {
   is_duplicate: boolean
   success: boolean
   error?: string
+  processing_stages?: {
+    upload: 'pending' | 'processing' | 'completed' | 'failed'
+    security_check: 'pending' | 'processing' | 'completed' | 'failed'
+    metadata_extraction: 'pending' | 'processing' | 'completed' | 'failed'
+    processing: 'pending' | 'processing' | 'completed' | 'failed'
+  }
+  security_warnings?: string[]
 }
 
 export interface Matter {
