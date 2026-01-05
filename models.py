@@ -184,6 +184,131 @@ class Entity(Base):
     )
 
 
+class DocumentEntity(Base):
+    """Document-Entity relationship."""
+    __tablename__ = "document_entities"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
+    entity_id = Column(UUID(as_uuid=True), ForeignKey("entities.id", ondelete="CASCADE"), nullable=False)
+    mention_text = Column(Text)
+    mention_count = Column(Integer, default=1)
+    first_occurrence_position = Column(Integer)
+    last_occurrence_position = Column(Integer)
+    context_snippets = Column(ARRAY(String))
+    extraction_method = Column(String(50))
+    confidence_score = Column(DECIMAL(5, 4))
+    extracted_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    __table_args__ = (
+        UniqueConstraint("document_id", "entity_id", name="unique_document_entity"),
+    )
+
+
+class Event(Base):
+    """Extracted events."""
+    __tablename__ = "events"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    event_type = Column(String(100), nullable=False)
+    event_name = Column(String(500), nullable=False)
+    description = Column(Text)
+    
+    # Temporal
+    event_date = Column(Date)
+    event_datetime = Column(DateTime(timezone=True))
+    date_confidence = Column(String(20))
+    date_range_start = Column(Date)
+    date_range_end = Column(Date)
+    
+    # Location
+    location_entity_id = Column(UUID(as_uuid=True), ForeignKey("entities.id", ondelete="SET NULL"))
+    location_text = Column(String(500))
+    
+    # Participants
+    participants = Column(JSONB, default=[])
+    
+    # Attributes
+    attributes = Column(JSONB, default={})
+    confidence_score = Column(DECIMAL(5, 4))
+    
+    # Provenance
+    source_document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="SET NULL"))
+    extraction_method = Column(String(50))
+    is_verified = Column(Boolean, default=False)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_by = Column(UUID(as_uuid=True))
+    
+    __table_args__ = (
+        CheckConstraint("date_confidence IN ('exact', 'approximate', 'range', 'unknown')", name="check_date_confidence"),
+    )
+
+
+class DocumentEvent(Base):
+    """Document-Event relationship."""
+    __tablename__ = "document_events"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
+    event_id = Column(UUID(as_uuid=True), ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    mention_context = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    __table_args__ = (
+        UniqueConstraint("document_id", "event_id", name="unique_document_event"),
+    )
+
+
+class Relationship(Base):
+    """Entity relationships."""
+    __tablename__ = "relationships"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    relationship_type_id = Column(UUID(as_uuid=True), ForeignKey("relationship_types.id", ondelete="RESTRICT"), nullable=False)
+    source_entity_id = Column(UUID(as_uuid=True), ForeignKey("entities.id", ondelete="CASCADE"), nullable=False)
+    target_entity_id = Column(UUID(as_uuid=True), ForeignKey("entities.id", ondelete="CASCADE"), nullable=False)
+    
+    # Relationship attributes
+    strength = Column(DECIMAL(5, 4))
+    confidence_score = Column(DECIMAL(5, 4))
+    attributes = Column(JSONB, default={})
+    
+    # Provenance
+    source_document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="SET NULL"))
+    extraction_method = Column(String(50))
+    is_verified = Column(Boolean, default=False)
+    verification_notes = Column(Text)
+    
+    # Temporal
+    start_date = Column(Date)
+    end_date = Column(Date)
+    is_active = Column(Boolean, default=True)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_by = Column(UUID(as_uuid=True))
+    
+    __table_args__ = (
+        CheckConstraint("source_entity_id != target_entity_id", name="no_self_relationship"),
+    )
+
+
+class RelationshipType(Base):
+    """Relationship type catalog."""
+    __tablename__ = "relationship_types"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    type_name = Column(String(100), unique=True, nullable=False)
+    description = Column(Text)
+    is_directional = Column(Boolean, default=True)
+    inverse_type_id = Column(UUID(as_uuid=True), ForeignKey("relationship_types.id", ondelete="SET NULL"))
+    category = Column(String(50))
+
+
 class User(Base):
     """User management."""
     __tablename__ = "users"

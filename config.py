@@ -73,6 +73,30 @@ class Settings(BaseSettings):
     batch_indexing_size: int = 100  # Number of chunks to process in batch
     indexing_timeout: int = 300  # Seconds
     
+    # RAG Settings
+    rag_enabled: bool = True
+    rag_model: str = "gpt-4o-mini"  # LLM model for RAG
+    rag_temperature: float = 0.0
+    rag_max_tokens: int = 2000
+    rag_top_k: int = 5  # Number of chunks to retrieve
+    rag_score_threshold: float = 0.7  # Minimum similarity score
+    rag_include_citations: bool = True
+    rag_max_context_length: int = 8000  # Max context for LLM
+    
+    # Event Extraction Settings
+    event_extraction_enabled: bool = True
+    event_extraction_model: Optional[str] = None  # Use LLM if None
+    event_date_formats: List[str] = ["%Y-%m-%d", "%m/%d/%Y", "%B %d, %Y"]
+    event_min_confidence: float = 0.7
+    
+    # Timeline Settings
+    timeline_default_range_days: int = 365
+    timeline_max_events: int = 1000
+    
+    # Link Analysis Settings
+    link_analysis_max_depth: int = 3
+    link_analysis_max_nodes: int = 100
+    
     class Config:
         env_file = ".env"
         case_sensitive = False
