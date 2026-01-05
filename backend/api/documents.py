@@ -217,6 +217,115 @@ async def get_suggested_facts(
     return formatted_facts
 
 
+@router.post("/{document_id}/review/facts/extract")
+async def extract_facts_manually(
+    document_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Manually trigger fact extraction for a document.
+    Returns the extracted facts.
+    """
+    try:
+        doc_uuid = uuid.UUID(document_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid document ID format: {document_id}")
+    
+    document = db.query(Document).filter(Document.id == doc_uuid).first()
+    
+    if not document:
+        raise HTTPException(status_code=404, detail=f"Document {document_id} not found")
+    
+    if not document.extracted_text:
+        raise HTTPException(
+            status_code=400, 
+            detail="Document text has not been extracted yet. Please wait for document processing to complete."
+        )
+    
+    try:
+        from services.fact_extraction import FactExtractionService
+        fact_service = FactExtractionService(db)
+        extracted_facts = fact_service.extract_facts_from_document(str(doc_uuid), use_llm=fact_service.llm_client is not None)
+        
+        if not extracted_facts:
+            return {
+                'facts': [],
+                'message': 'No facts could be extracted from this document. The document may not contain extractable factual information.',
+                'extracted_count': 0
+            }
+        
+        # Delete existing facts for this document (optional - you might want to keep them)
+        # db.query(Fact).filter(Fact.document_id == doc_uuid).delete()
+        
+        # Save extracted facts
+        saved_count = 0
+        for fact_data in extracted_facts:
+            # Extract issues from tags
+            issues = []
+            tags = fact_data.get('tags', [])
+            issue_tags = ['legal_proceeding', 'deadline', 'contract', 'evidence', 'witness', 'expert']
+            for tag in tags:
+                if tag in issue_tags:
+                    issues.append(tag.replace('_', ' ').title())
+            
+            # Parse event date
+            event_date = None
+            if fact_data.get('event_date'):
+                try:
+                    from datetime import date as date_type
+                    event_date = date_type.fromisoformat(fact_data['event_date'])
+                except:
+                    pass
+            
+            fact = Fact(
+                document_id=doc_uuid,
+                matter_id=document.matter_id,
+                fact_text=fact_data.get('fact', ''),
+                source_text=fact_data.get('source_text'),
+                page_number=fact_data.get('page_number'),
+                event_date=event_date,
+                tags=tags,
+                issues=issues,
+                confidence_score=fact_data.get('confidence', 0.7),
+                review_status='not_reviewed',
+                extraction_method='llm' if fact_service.llm_client else 'pattern',
+                extraction_model=settings.rag_model if fact_service.llm_client else None
+            )
+            db.add(fact)
+            saved_count += 1
+        
+        db.commit()
+        
+        # Re-query facts
+        facts = db.query(Fact).filter(Fact.document_id == doc_uuid).all()
+        formatted_facts = []
+        for fact in facts:
+            formatted_facts.append({
+                'id': str(fact.id),
+                'fact': fact.fact_text,
+                'event_date': fact.event_date.isoformat() if fact.event_date else None,
+                'tags': fact.tags or [],
+                'confidence': float(fact.confidence_score) if fact.confidence_score else 0.7,
+                'source_text': fact.source_text or '',
+                'page_number': fact.page_number,
+                'review_status': fact.review_status
+            })
+        
+        return {
+            'facts': formatted_facts,
+            'extracted_count': saved_count,
+            'message': f'Successfully extracted {saved_count} fact(s) from the document.'
+        }
+    except Exception as e:
+        db.rollback()
+        error_msg = str(e)
+        print(f"Error extracting facts: {error_msg}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to extract facts: {error_msg}"
+        )
+
+
 @router.get("/{document_id}/review/entities")
 async def get_document_entities(
     document_id: str,
@@ -407,6 +516,32 @@ async def update_fact_review_status(
         'id': str(fact.id),
         'review_status': fact.review_status,
         'reviewed_at': fact.reviewed_at.isoformat() if fact.reviewed_at else None
+    }
+
+
+@router.delete("/facts/{fact_id}")
+async def delete_fact(
+    fact_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a fact permanently.
+    """
+    try:
+        fact_uuid = uuid.UUID(fact_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid fact ID format: {fact_id}")
+    
+    fact = db.query(Fact).filter(Fact.id == fact_uuid).first()
+    if not fact:
+        raise HTTPException(status_code=404, detail=f"Fact {fact_id} not found")
+    
+    db.delete(fact)
+    db.commit()
+    
+    return {
+        'id': str(fact_uuid),
+        'deleted': True
     }
 
 

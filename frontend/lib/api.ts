@@ -243,6 +243,13 @@ class ApiClient {
     return this.request<any[]>(`/api/documents/${documentId}/review/facts`)
   }
 
+  async extractFacts(documentId: string): Promise<{ facts: any[]; extracted_count: number; message: string }> {
+    return this.request<{ facts: any[]; extracted_count: number; message: string }>(
+      `/api/documents/${documentId}/review/facts/extract`,
+      { method: 'POST' }
+    )
+  }
+
   async getDocumentEntities(documentId: string): Promise<any[]> {
     return this.request<any[]>(`/api/documents/${documentId}/review/entities`)
   }
@@ -326,6 +333,12 @@ class ApiClient {
       reviewed_at: string | null
     }>(`/api/documents/facts/${factId}/review-status?${params.toString()}`, {
       method: 'PATCH',
+    })
+  }
+
+  async deleteFact(factId: string): Promise<{ id: string; deleted: boolean }> {
+    return this.request<{ id: string; deleted: boolean }>(`/api/documents/facts/${factId}`, {
+      method: 'DELETE',
     })
   }
 }
