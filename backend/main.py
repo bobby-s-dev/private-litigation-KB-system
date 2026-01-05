@@ -10,6 +10,7 @@ from api.versions import router as versions_router
 from api.embeddings import router as embeddings_router
 from api.rag import router as rag_router
 from api.documents import router as documents_router
+from api.matters import router as matters_router
 
 
 @asynccontextmanager
@@ -40,6 +41,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(matters_router)
 app.include_router(ingestion_router)
 app.include_router(versions_router)
 app.include_router(embeddings_router)

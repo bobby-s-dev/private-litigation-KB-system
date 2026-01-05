@@ -16,6 +16,25 @@ from config import settings
 router = APIRouter(prefix="/api/ingestion", tags=["ingestion"])
 
 
+def validate_matter_id(matter_id: str, db: Session) -> Matter:
+    """Validate matter_id and return Matter object. Supports UUID or matter_number."""
+    # Try as UUID first
+    try:
+        matter_uuid = uuid.UUID(matter_id)
+        matter = db.query(Matter).filter(Matter.id == matter_uuid).first()
+        if matter:
+            return matter
+    except ValueError:
+        pass
+    
+    # If not a valid UUID, try as matter_number
+    matter = db.query(Matter).filter(Matter.matter_number == matter_id).first()
+    if matter:
+        return matter
+    
+    raise HTTPException(status_code=404, detail=f"Matter '{matter_id}' not found (tried as UUID and matter_number)")
+
+
 @router.post("/upload")
 async def upload_file(
     matter_id: str = Form(...),
@@ -31,11 +50,12 @@ async def upload_file(
     Upload a single file for ingestion.
     
     Supports: PDF, DOCX, MSG, EML, TXT, CSV, images (with OCR)
+    
+    matter_id can be either a UUID or matter_number.
     """
-    # Verify matter exists
-    matter = db.query(Matter).filter(Matter.id == matter_id).first()
-    if not matter:
-        raise HTTPException(status_code=404, detail=f"Matter {matter_id} not found")
+    # Verify matter exists (supports UUID or matter_number)
+    matter = validate_matter_id(matter_id, db)
+    matter_id = str(matter.id)  # Use the actual UUID for ingestion
     
     # Check file size
     file_content = await file.read()
@@ -104,10 +124,9 @@ async def upload_batch(
     
     Returns results for each file.
     """
-    # Verify matter exists
-    matter = db.query(Matter).filter(Matter.id == matter_id).first()
-    if not matter:
-        raise HTTPException(status_code=404, detail=f"Matter {matter_id} not found")
+    # Verify matter exists (supports UUID or matter_number)
+    matter = validate_matter_id(matter_id, db)
+    matter_id = str(matter.id)  # Use the actual UUID for ingestion
     
     ingestion_run_id = str(uuid.uuid4())
     results = []
@@ -190,10 +209,9 @@ async def import_folder(
     
     Supports recursive directory traversal.
     """
-    # Verify matter exists
-    matter = db.query(Matter).filter(Matter.id == matter_id).first()
-    if not matter:
-        raise HTTPException(status_code=404, detail=f"Matter {matter_id} not found")
+    # Verify matter exists (supports UUID or matter_number)
+    matter = validate_matter_id(matter_id, db)
+    matter_id = str(matter.id)  # Use the actual UUID for ingestion
     
     # Validate folder path
     folder = Path(folder_path)

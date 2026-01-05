@@ -15,11 +15,51 @@ const recentActivities = [
 
 export default function CaseHomePage() {
   const params = useParams()
-  const caseId = params?.caseId as string
+  const caseIdParam = params?.caseId as string
+  const [caseId, setCaseId] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const initializeMatter = async () => {
+      if (!caseIdParam) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        // Try to get the matter by ID or matter_number
+        let matter
+        try {
+          matter = await apiClient.getMatter(caseIdParam)
+        } catch (error) {
+          // If not found, create a new matter with the caseId as matter_number
+          matter = await apiClient.createMatter(
+            caseIdParam,
+            `Case ${caseIdParam}`
+          )
+        }
+        setCaseId(matter.id)
+      } catch (error) {
+        console.error('Error initializing matter:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    initializeMatter()
+  }, [caseIdParam])
 
   const handleUploadSuccess = () => {
     setRefreshKey(prev => prev + 1)
+  }
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="text-gray-600">Loading case...</div>
+      </div>
+    )
   }
 
   return (

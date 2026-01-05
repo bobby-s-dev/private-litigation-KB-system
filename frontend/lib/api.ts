@@ -194,7 +194,38 @@ class ApiClient {
   }
 
   async getMatter(matterId: string): Promise<Matter> {
-    return this.request<Matter>(`/api/matters/${matterId}`)
+    // Try to get by ID first, then by matter_number
+    try {
+      return await this.request<Matter>(`/api/matters/${matterId}`)
+    } catch (error) {
+      // If not found by ID, try by matter_number
+      return await this.request<Matter>(`/api/matters/by-number/${matterId}`)
+    }
+  }
+
+  async createMatter(matterNumber: string, matterName: string): Promise<Matter> {
+    const response = await fetch(`${this.baseUrl}/api/matters`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        matter_number: matterNumber,
+        matter_name: matterName,
+        matter_type: 'other'
+      })
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: response.statusText }))
+      throw new Error(error.detail || `Failed to create matter: ${response.statusText}`)
+    }
+
+    return response.json()
+  }
+
+  async listMatters(): Promise<Matter[]> {
+    return this.request<Matter[]>('/api/matters')
   }
 }
 
