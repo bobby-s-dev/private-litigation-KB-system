@@ -5,6 +5,7 @@ from datetime import datetime, date
 import json
 import re
 import uuid
+from itertools import islice
 
 from openai import OpenAI, AzureOpenAI
 from models import Document
@@ -233,7 +234,7 @@ Return only valid JSON, no other text. Use this format:
         
         for pattern, default_tag in fact_patterns:
             matches = re.finditer(pattern, text, re.IGNORECASE)
-            for match in matches[:5]:  # Limit to 5 per pattern
+            for match in islice(matches, 5):  # Limit to 5 per pattern
                 start_pos = match.start()
                 # Extract sentence
                 sentence_start = max(0, text.rfind('.', 0, start_pos) + 1)
