@@ -1,5 +1,5 @@
 """FastAPI endpoints for document ingestion."""
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, BackgroundTasks, Form
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -18,12 +18,12 @@ router = APIRouter(prefix="/api/ingestion", tags=["ingestion"])
 
 @router.post("/upload")
 async def upload_file(
-    matter_id: str,
+    matter_id: str = Form(...),
     file: UploadFile = File(...),
-    document_type: Optional[str] = None,
-    tags: Optional[List[str]] = None,
-    categories: Optional[List[str]] = None,
-    user_id: Optional[str] = None,
+    document_type: Optional[str] = Form(None),
+    tags: Optional[List[str]] = Form(None),
+    categories: Optional[List[str]] = Form(None),
+    user_id: Optional[str] = Form(None),
     background_tasks: BackgroundTasks = None,
     db: Session = Depends(get_db)
 ):
@@ -91,12 +91,12 @@ async def upload_file(
 
 @router.post("/upload-batch")
 async def upload_batch(
-    matter_id: str,
+    matter_id: str = Form(...),
     files: List[UploadFile] = File(...),
-    document_type: Optional[str] = None,
-    tags: Optional[List[str]] = None,
-    categories: Optional[List[str]] = None,
-    user_id: Optional[str] = None,
+    document_type: Optional[str] = Form(None),
+    tags: Optional[List[str]] = Form(None),
+    categories: Optional[List[str]] = Form(None),
+    user_id: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     """

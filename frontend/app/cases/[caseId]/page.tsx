@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import Sidebar from '@/components/Sidebar'
-import CaseHeader from '@/components/CaseHeader'
 import FeatureCards from '@/components/FeatureCards'
 import RecentlyUploadedSources from '@/components/RecentlyUploadedSources'
 import FactsPerEntity from '@/components/FactsPerEntity'
@@ -25,11 +23,7 @@ export default function CaseHomePage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
-      <div className="ml-16 flex-1">
-        <CaseHeader />
-        <main className="p-6">
+    <div className="p-6">
           <FeatureCards />
 
           <div className="grid grid-cols-2 gap-6 mb-6">
@@ -85,8 +79,6 @@ export default function CaseHomePage() {
             {/* Facts per Entity */}
             <FactsPerEntity />
           </div>
-        </main>
-      </div>
     </div>
   )
 }
