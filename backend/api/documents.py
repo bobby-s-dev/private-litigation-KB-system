@@ -118,6 +118,7 @@ async def get_suggested_facts(
 ):
     """
     Get suggested facts extracted from the document by Document Intelligence engine.
+    Returns facts with event dates and tags.
     """
     try:
         doc_uuid = uuid.UUID(document_id)
@@ -129,29 +130,31 @@ async def get_suggested_facts(
     if not document:
         raise HTTPException(status_code=404, detail=f"Document {document_id} not found")
     
-    # TODO: Implement actual fact extraction using AI/ML
-    # For now, return stub data based on document metadata
-    facts = []
+    # Use fact extraction service
+    from services.fact_extraction import FactExtractionService
     
-    # Extract basic facts from metadata if available
-    if document.metadata_json:
+    fact_service = FactExtractionService(db)
+    facts = fact_service.extract_facts_from_document(str(doc_uuid), use_llm=True)
+    
+    # If no facts extracted, try fallback to metadata
+    if not facts and document.metadata_json:
         extracted_metadata = document.metadata_json.get('extracted_metadata', {})
         dates = extracted_metadata.get('dates', [])
-        entities = extracted_metadata.get('entities', [])
         
-        # Generate some basic facts from extracted data
+        # Generate basic facts from metadata
         fact_id = 1
-        for date in dates[:3]:  # Limit to 3 date-based facts
+        for date_str in dates[:3]:  # Limit to 3 date-based facts
             facts.append({
                 'id': str(fact_id),
-                'fact': f"Document references date: {date}",
-                'confidence': 0.85,
-                'source_text': f"Date mentioned: {date}",
+                'fact': f"Document references date: {date_str}",
+                'event_date': date_str if date_str else None,
+                'tags': ['general'],
+                'confidence': 0.7,
+                'source_text': f"Date mentioned: {date_str}",
                 'page_number': None
             })
             fact_id += 1
     
-    # If no facts from metadata, return empty list with message
     return facts
 
 

@@ -7,6 +7,8 @@ import { apiClient } from '@/lib/api'
 interface SuggestedFact {
   id: string
   fact: string
+  event_date?: string | null
+  tags?: string[]
   confidence: number
   source_text: string
   page_number?: number
@@ -149,6 +151,20 @@ export default function DocumentReviewPage() {
 }
 
 function SuggestedFactsSection({ facts }: { facts: SuggestedFact[] }) {
+  const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return null
+    try {
+      const date = new Date(dateStr)
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      })
+    } catch {
+      return dateStr
+    }
+  }
+
   return (
     <div>
       <div className="mb-4">
@@ -172,22 +188,52 @@ function SuggestedFactsSection({ facts }: { facts: SuggestedFact[] }) {
               key={fact.id}
               className="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors"
             >
-              <div className="flex items-start justify-between mb-2">
-                <p className="text-gray-900 font-medium flex-1">{fact.fact}</p>
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <p className="text-gray-900 font-medium mb-2">{fact.fact}</p>
+                  
+                  {/* Event Date */}
+                  {fact.event_date && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-sm text-gray-600 font-medium">
+                        Event Date: {formatDate(fact.event_date)}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Tags */}
+                  {fact.tags && fact.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {fact.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium"
+                        >
+                          {tag.replace(/_/g, ' ')}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
                 <div className="flex items-center gap-2 ml-4">
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 whitespace-nowrap">
                     {Math.round(fact.confidence * 100)}% confidence
                   </span>
-                  <button className="text-purple-600 hover:text-purple-700 text-sm font-medium">
+                  <button className="text-purple-600 hover:text-purple-700 text-sm font-medium whitespace-nowrap">
                     Accept
                   </button>
-                  <button className="text-gray-400 hover:text-gray-600 text-sm">
+                  <button className="text-gray-400 hover:text-gray-600 text-sm whitespace-nowrap">
                     Reject
                   </button>
                 </div>
               </div>
+              
               {fact.source_text && (
-                <div className="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-600">
+                <div className="mt-3 p-2 bg-gray-50 rounded text-sm text-gray-600">
                   <span className="font-medium">Source:</span> "{fact.source_text}"
                   {fact.page_number && (
                     <span className="ml-2 text-gray-400">(Page {fact.page_number})</span>
