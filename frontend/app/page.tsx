@@ -7,8 +7,8 @@ export default function Home() {
   const router = useRouter()
   
   useEffect(() => {
-    // Redirect to a sample case for now
-    router.push('/cases/sample-case')
+    // Redirect to cases list page
+    router.push('/cases')
   }, [router])
   
   return (
