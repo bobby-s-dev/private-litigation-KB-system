@@ -256,6 +256,54 @@ class ApiClient {
       `/api/documents/matter/${matterId}/facts-per-entity`
     )
   }
+
+  async getMatterFacts(
+    matterId: string,
+    limit: number = 20,
+    offset: number = 0,
+    reviewStatus?: string
+  ): Promise<{
+    total: number
+    limit: number
+    offset: number
+    facts: Array<{
+      id: string
+      date_time: string | null
+      fact: string
+      issues: string[]
+      evidence: string
+      review_status: string
+      confidence: number
+      source_text: string
+      document_id: string
+      document_name: string
+    }>
+  }> {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      offset: offset.toString(),
+    })
+    if (reviewStatus) {
+      params.append('review_status', reviewStatus)
+    }
+    return this.request<{
+      total: number
+      limit: number
+      offset: number
+      facts: Array<{
+        id: string
+        date_time: string | null
+        fact: string
+        issues: string[]
+        evidence: string
+        review_status: string
+        confidence: number
+        source_text: string
+        document_id: string
+        document_name: string
+      }>
+    }>(`/api/documents/matter/${matterId}/facts?${params.toString()}`)
+  }
 }
 
 export const apiClient = new ApiClient()
