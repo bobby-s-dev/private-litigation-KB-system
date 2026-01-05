@@ -1,6 +1,6 @@
 """Configuration settings for the litigation knowledge system."""
 from pydantic_settings import BaseSettings
-from typing import Optional
+from typing import Optional, List
 import os
 
 

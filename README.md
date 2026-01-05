@@ -1,205 +1,114 @@
-# Litigation Knowledge System - Ingestion Service
+# Litigation Knowledge System
 
-A comprehensive document ingestion system for managing litigation documents with deduplication, versioning, and metadata extraction.
+A comprehensive legal case management system with document ingestion, AI-powered analysis, and a modern web interface.
 
-## Features
+## Project Structure
 
-- **Multi-format Support**: PDF, DOCX, MSG, EML, TXT, CSV, and images (with optional OCR)
-- **Deduplication**: Exact duplicate detection via hash comparison and near-duplicate detection via text similarity
-- **Versioning**: Automatic version tracking with similarity scoring
-- **Text Extraction**: Extracts text and structure from various document types
-- **Metadata Extraction**: Stub implementation for entity, date, and topic extraction
-- **Provenance Tracking**: Full audit trail with ingestion run IDs
-- **File Storage**: Organized storage with matter-based directory structure
+```
+.
+├── backend/          # FastAPI backend (Python)
+│   ├── api/         # API endpoints
+│   ├── services/    # Business logic services
+│   ├── main.py      # FastAPI application entry point
+│   └── ...
+│
+└── frontend/        # Next.js frontend (TypeScript + TailwindCSS)
+    ├── app/        # Next.js app directory
+    ├── components/  # React components
+    └── ...
+```
 
-## Setup
+## Quick Start
 
-### Prerequisites
+### Backend Setup
 
-- Python 3.9+
-- PostgreSQL 12+
-- Tesseract OCR (optional, for image OCR)
+1. Navigate to the backend directory:
+```bash
+cd backend
+```
 
-### Installation
-
-1. Install dependencies:
+2. Install Python dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Configure environment:
+3. Configure environment variables:
 ```bash
 cp .env.example .env
 # Edit .env with your database credentials
 ```
 
-3. Initialize database:
+4. Initialize the database:
 ```bash
-# Run the schema.sql against your PostgreSQL database
 psql -U your_user -d your_database -f schema.sql
 ```
 
-4. Run the application:
+5. Run the backend server:
 ```bash
 python main.py
-# Or with uvicorn directly:
+# Or with uvicorn:
 uvicorn main:app --reload
 ```
 
-## API Endpoints
+The API will be available at `http://localhost:8000`
 
-### Upload Single File
-```http
-POST /api/ingestion/upload
-Content-Type: multipart/form-data
+### Frontend Setup
 
-Parameters:
-- matter_id: UUID of the matter
-- file: File to upload
-- document_type: Optional (pdf, docx, email, note, financial_record, other)
-- tags: Optional list of tags
-- categories: Optional list of categories
-- user_id: Optional user ID for audit trail
-```
-
-### Upload Multiple Files
-```http
-POST /api/ingestion/upload-batch
-Content-Type: multipart/form-data
-
-Parameters:
-- matter_id: UUID of the matter
-- files: List of files to upload
-- document_type: Optional
-- tags: Optional
-- categories: Optional
-- user_id: Optional
-```
-
-### Import Folder
-```http
-POST /api/ingestion/import-folder
-
-Body (JSON):
-{
-  "matter_id": "uuid",
-  "folder_path": "/path/to/folder",
-  "document_type": "optional",
-  "tags": ["tag1", "tag2"],
-  "categories": ["cat1"],
-  "user_id": "optional",
-  "recursive": true
-}
-```
-
-### Get Ingestion Status
-```http
-GET /api/ingestion/status/{ingestion_run_id}
-```
-
-## Usage Examples
-
-### Python Client Example
-
-```python
-import requests
-
-# Upload a file
-with open('document.pdf', 'rb') as f:
-    response = requests.post(
-        'http://localhost:8000/api/ingestion/upload',
-        files={'file': f},
-        data={
-            'matter_id': 'your-matter-uuid',
-            'document_type': 'pdf',
-            'tags': 'important,confidential'
-        }
-    )
-    result = response.json()
-    print(f"Document ID: {result['document_id']}")
-    print(f"Is Duplicate: {result['is_duplicate']}")
-```
-
-### cURL Example
-
+1. Navigate to the frontend directory:
 ```bash
-curl -X POST "http://localhost:8000/api/ingestion/upload" \
-  -F "matter_id=your-matter-uuid" \
-  -F "file=@document.pdf" \
-  -F "document_type=pdf"
+cd frontend
 ```
 
-## Architecture
-
-### Services
-
-- **FileStorageService**: Manages file storage and organization
-- **HashingService**: Computes SHA256 and MD5 hashes for deduplication
-- **TextExtractionService**: Extracts text from various file formats
-- **DuplicateDetectionService**: Detects exact and near-duplicates
-- **VersionManagementService**: Manages document versioning
-- **MetadataExtractionService**: Extracts metadata (stub implementation)
-- **IngestionService**: Orchestrates the ingestion process
-
-### Database Schema
-
-The system uses PostgreSQL with the following key tables:
-- `matters`: Legal matters
-- `documents`: Document records with versioning
-- `document_versions`: Version history
-- `entities`: Extracted entities (future)
-- `relationships`: Entity relationships (future)
-- `events`: Extracted events (future)
-- `audit_log`: Audit trail
-
-## Configuration
-
-Key configuration options in `config.py` or `.env`:
-
-- `DATABASE_URL`: PostgreSQL connection string
-- `STORAGE_ROOT`: Root directory for file storage
-- `MAX_FILE_SIZE_MB`: Maximum file size (default: 500 MB)
-- `ENABLE_OCR`: Enable OCR for images (default: False)
-- `EXACT_DUPLICATE_THRESHOLD`: Hash match threshold (default: 1.0)
-- `NEAR_DUPLICATE_THRESHOLD`: Text similarity threshold (default: 0.95)
-
-## Response Format
-
-### Successful Ingestion
-```json
-{
-  "success": true,
-  "document_id": "uuid",
-  "status": "completed",
-  "is_duplicate": false,
-  "is_new_version": false,
-  "version_number": 1,
-  "ingestion_run_id": "uuid",
-  "near_duplicates_found": 0
-}
+2. Install dependencies:
+```bash
+npm install
 ```
 
-### Duplicate Detected
-```json
-{
-  "success": true,
-  "document_id": "existing-uuid",
-  "status": "duplicate",
-  "is_duplicate": true,
-  "existing_document_id": "existing-uuid",
-  "version_number": 1
-}
+3. Run the development server:
+```bash
+npm run dev
 ```
 
-## Future Enhancements
+The frontend will be available at `http://localhost:3000`
 
-- Full NER implementation for entity extraction
-- Topic modeling and classification
-- Advanced relationship extraction
-- Qdrant integration for vector search
-- Timeline builder
-- Contradiction detection
-- Pattern analysis
+## Features
+
+### Backend
+- Multi-format document support (PDF, DOCX, MSG, EML, TXT, CSV, images)
+- Document deduplication (exact and near-duplicate detection)
+- Version management and tracking
+- Metadata extraction
+- Vector embeddings with Qdrant
+- RAG (Retrieval Augmented Generation) capabilities
+- Event extraction and timeline generation
+- Link analysis for entity relationships
+
+### Frontend
+- Modern, responsive UI with TailwindCSS
+- Case management dashboard
+- Document upload and review interface
+- AI-powered features:
+  - Document summarization
+  - Fact search
+  - Claims and issues outlining
+  - Strategic brainstorming
+  - Document search
+- Entity visualization with charts
+- Activity tracking
+
+## Documentation
+
+- Backend documentation: See `backend/README.md`
+- Frontend documentation: See `frontend/README_FRONTEND.md`
+- API documentation: Available at `http://localhost:8000/docs` when backend is running
+
+## Development
+
+Both backend and frontend can be run simultaneously:
+- Backend: `http://localhost:8000`
+- Frontend: `http://localhost:3000`
+
+The frontend is configured to connect to the backend API. Make sure both services are running for full functionality.
 
 ## License
 

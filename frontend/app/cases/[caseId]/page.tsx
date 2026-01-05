@@ -1,0 +1,88 @@
+'use client'
+
+import Sidebar from '@/components/Sidebar'
+import CaseHeader from '@/components/CaseHeader'
+import FeatureCards from '@/components/FeatureCards'
+import RecentlyUploadedSources from '@/components/RecentlyUploadedSources'
+import FactsPerEntity from '@/components/FactsPerEntity'
+
+const recentActivities = [
+  { action: 'You created a task', time: '12/26/2025 at 2:01 pm / 9 days ago' },
+  { action: 'You assigned a user to a case', time: '12/26/2025 at 1:56 pm / 9 days ago' },
+]
+
+export default function CaseHomePage() {
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar />
+      <div className="ml-16 flex-1">
+        <CaseHeader />
+        <main className="p-6">
+          <FeatureCards />
+
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            {/* Case Description */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Case description</h2>
+              <button className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+                + add description
+              </button>
+            </div>
+
+            {/* Add Documents to Review */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Add documents to review</h2>
+              <p className="text-sm text-gray-600 mb-2">
+                Uploads Disabled. To add more documents, please sign up for the{' '}
+                <button className="text-purple-600 hover:text-purple-700 underline">
+                  Standard Plan
+                </button>
+                .
+              </p>
+            </div>
+          </div>
+
+          {/* Resume Review */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Resume review</h2>
+              <button className="text-sm text-purple-600 hover:text-purple-700 font-medium px-3 py-1 border border-purple-200 rounded hover:bg-purple-50">
+                Refresh
+              </button>
+            </div>
+            <p className="text-gray-600 text-sm">No recent sources yet...</p>
+          </div>
+
+          {/* Recently Uploaded Sources */}
+          <div className="mb-6">
+            <RecentlyUploadedSources />
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            {/* Recent Activity */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Recent activity</h2>
+                <button className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+                  View all
+                </button>
+              </div>
+              <div className="space-y-4">
+                {recentActivities.map((activity, index) => (
+                  <div key={index} className="border-b border-gray-100 pb-3 last:border-0">
+                    <p className="text-sm text-gray-900 font-medium">{activity.action}</p>
+                    <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Facts per Entity */}
+            <FactsPerEntity />
+          </div>
+        </main>
+      </div>
+    </div>
+  )
+}
+
