@@ -7,8 +7,22 @@ import os
 class Settings(BaseSettings):
     """Application settings."""
     
-    # Database
-    database_url: str = "postgresql://user:password@localhost:5432/litigation_db"
+    # Database - can be set directly or constructed from individual components
+    database_url: Optional[str] = None
+    postgres_user: str = "postgres"
+    postgres_password: str = ""
+    postgres_db: str = "i.m"
+    postgres_host: str = "localhost"
+    postgres_port: int = 5432
+    
+    def get_database_url(self) -> str:
+        """Get database URL, either from database_url or constructed from components."""
+        if self.database_url:
+            return self.database_url
+        
+        # Construct URL from components
+        password_part = f":{self.postgres_password}" if self.postgres_password else ""
+        return f"postgresql://{self.postgres_user}{password_part}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
     
     # File Storage
     storage_root: str = "./storage"
@@ -100,6 +114,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        env_prefix = ""  # No prefix needed
 
 
 # Global settings instance
