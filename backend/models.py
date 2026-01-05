@@ -29,7 +29,7 @@ class Matter(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     created_by = Column(UUID(as_uuid=True))
-    metadata = Column(JSONB, default={})
+    metadata_json = Column("metadata", JSONB, default={})
     
     # Relationships
     documents = relationship("Document", back_populates="matter", cascade="all, delete-orphan")
@@ -91,7 +91,7 @@ class Document(Base):
     ingested_by = Column(UUID(as_uuid=True))
     
     # Additional metadata
-    metadata = Column(JSONB, default={})
+    metadata_json = Column("metadata", JSONB, default={})
     
     # Relationships
     matter = relationship("Matter", back_populates="documents")
@@ -342,7 +342,7 @@ class AuditLog(Base):
     changes = Column(JSONB)
     description = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    metadata = Column(JSONB, default={})
+    metadata_json = Column("metadata", JSONB, default={})
     
     __table_args__ = (
         CheckConstraint("action_type IN ('create', 'update', 'delete', 'view', 'export', 'import', 'process', 'extract', 'verify', 'merge', 'link', 'unlink')", name="check_action_type"),
@@ -372,7 +372,7 @@ class EmbeddingsMetadata(Base):
     chunk_end_position = Column(Integer)
     
     # Metadata
-    metadata = Column(JSONB, default={})
+    metadata_json = Column("metadata", JSONB, default={})
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     __table_args__ = (

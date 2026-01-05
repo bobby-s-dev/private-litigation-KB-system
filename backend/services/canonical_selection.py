@@ -118,7 +118,7 @@ class CanonicalSelectionService:
                 score += 0.1
             
             # Prefer documents without extraction errors
-            if doc.metadata and 'extraction_error' not in doc.metadata:
+            if doc.metadata_json and 'extraction_error' not in doc.metadata_json:
                 score += 0.2
         
         return min(score, 1.0)
@@ -271,20 +271,20 @@ class CanonicalSelectionService:
         # Mark canonical version
         for doc in document_group:
             # Update metadata to indicate canonical status
-            if doc.metadata is None:
-                doc.metadata = {}
-            elif not isinstance(doc.metadata, dict):
+            if doc.metadata_json is None:
+                doc.metadata_json = {}
+            elif not isinstance(doc.metadata_json, dict):
                 # Handle case where metadata might be JSONB string or other type
-                doc.metadata = {}
+                doc.metadata_json = {}
             
             # Ensure metadata is a dict
-            if not isinstance(doc.metadata, dict):
-                doc.metadata = {}
+            if not isinstance(doc.metadata_json, dict):
+                doc.metadata_json = {}
             
-            doc.metadata['is_canonical'] = (doc.id == canonical.id)
-            doc.metadata['canonical_document_id'] = str(canonical.id)
+            doc.metadata_json['is_canonical'] = (doc.id == canonical.id)
+            doc.metadata_json['canonical_document_id'] = str(canonical.id)
             if doc.id != canonical.id:
-                doc.metadata['canonical_selected_at'] = datetime.utcnow().isoformat()
+                doc.metadata_json['canonical_selected_at'] = datetime.utcnow().isoformat()
         
         self.db.commit()
         

@@ -182,7 +182,7 @@ class IndexingService:
                     chunk_index=chunk.chunk_index,
                     chunk_start_position=chunk.start_position,
                     chunk_end_position=chunk.end_position,
-                    metadata=chunk.metadata or {}
+                    metadata_json=chunk.metadata or {}
                 )
                 embedding_metadata_records.append(embedding_metadata)
             

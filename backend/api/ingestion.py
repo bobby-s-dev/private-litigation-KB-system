@@ -270,12 +270,12 @@ async def get_ingestion_status(
     
     # Get all documents from this ingestion run
     documents = db.query(Document).filter(
-        Document.metadata['ingestion_run_id'].astext == ingestion_run_id
+        Document.metadata_json['ingestion_run_id'].astext == ingestion_run_id
     ).all()
     
     # Get audit log entries
     audit_entries = db.query(AuditLog).filter(
-        AuditLog.metadata['ingestion_run_id'].astext == ingestion_run_id
+        AuditLog.metadata_json['ingestion_run_id'].astext == ingestion_run_id
     ).all()
     
     status_summary = {
@@ -283,7 +283,7 @@ async def get_ingestion_status(
         'total_documents': len(documents),
         'successful': len([d for d in documents if d.processing_status == 'completed']),
         'failed': len([d for d in documents if d.processing_status == 'failed']),
-        'duplicates': len([d for d in documents if 'duplicate' in str(d.metadata)]),
+        'duplicates': len([d for d in documents if 'duplicate' in str(d.metadata_json)]),
         'documents': [
             {
                 'id': str(d.id),

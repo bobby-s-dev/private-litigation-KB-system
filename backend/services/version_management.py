@@ -191,8 +191,8 @@ class VersionManagementService:
             return None
         
         # Check if document has canonical metadata
-        if doc.metadata and doc.metadata.get('canonical_document_id'):
-            canonical_id = doc.metadata.get('canonical_document_id')
+        if doc.metadata_json and doc.metadata_json.get('canonical_document_id'):
+            canonical_id = doc.metadata_json.get('canonical_document_id')
             canonical = self.db.query(Document).filter(Document.id == canonical_id).first()
             if canonical:
                 return canonical
@@ -220,7 +220,7 @@ class VersionManagementService:
             if any(d.id == doc.id for d in group):
                 # Check if canonical is already set
                 has_canonical = any(
-                    d.metadata and d.metadata.get('is_canonical')
+                    d.metadata_json and d.metadata_json.get('is_canonical')
                     for d in group
                 )
                 
@@ -230,7 +230,7 @@ class VersionManagementService:
                 else:
                     # Return existing canonical
                     for d in group:
-                        if d.metadata and d.metadata.get('is_canonical'):
+                        if d.metadata_json and d.metadata_json.get('is_canonical'):
                             return d
         
         # If not in a duplicate group, return the document itself

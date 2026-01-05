@@ -79,7 +79,7 @@ async def get_canonical_version(
     return {
         'document_id': str(canonical.id),
         'version_number': canonical.version_number,
-        'is_canonical': canonical.metadata.get('is_canonical', False) if canonical.metadata else False,
+        'is_canonical': canonical.metadata_json.get('is_canonical', False) if canonical.metadata_json else False,
         'file_name': canonical.file_name,
         'created_at': canonical.created_at.isoformat() if canonical.created_at else None,
     }
@@ -229,12 +229,12 @@ async def get_duplicate_groups(
                         'id': str(doc.id),
                         'version_number': doc.version_number,
                         'file_name': doc.file_name,
-                        'similarity_scores': doc.metadata.get('near_duplicates', []) if doc.metadata else [],
+                        'similarity_scores': doc.metadata_json.get('near_duplicates', []) if doc.metadata_json else [],
                     }
                     for doc in group
                 ],
                 'canonical_document_id': next(
-                    (str(d.id) for d in group if d.metadata and d.metadata.get('is_canonical')),
+                    (str(d.id) for d in group if d.metadata_json and d.metadata_json.get('is_canonical')),
                     None
                 ),
             }
@@ -268,10 +268,10 @@ async def set_group_canonical(
         
         # Mark as canonical
         for doc in group:
-            if not doc.metadata:
-                doc.metadata = {}
-            doc.metadata['is_canonical'] = (doc.id == target_doc.id)
-            doc.metadata['canonical_document_id'] = str(target_doc.id)
+            if not doc.metadata_json:
+                doc.metadata_json = {}
+            doc.metadata_json['is_canonical'] = (doc.id == target_doc.id)
+            doc.metadata_json['canonical_document_id'] = str(target_doc.id)
         
         db.commit()
         canonical = target_doc

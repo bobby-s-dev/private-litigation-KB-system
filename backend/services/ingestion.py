@@ -161,7 +161,7 @@ class IngestionService:
                             document_type,
                             extraction_metadata
                         )
-                        new_version.metadata = {
+                        new_version.metadata_json = {
                             'ingestion_run_id': self.ingestion_run_id,
                             'extraction_metadata': extraction_metadata,
                             'extracted_metadata': metadata_result,
@@ -209,7 +209,7 @@ class IngestionService:
                             resource_id=new_version.id,
                             user_id=uuid.UUID(user_id) if user_id else None,
                             description=f"Created new version of document: {filename}",
-                            metadata={
+                            metadata_json={
                                 'ingestion_run_id': self.ingestion_run_id,
                                 'parent_document_id': str(potential_version_parent.id),
                                 'version_number': new_version.version_number,
@@ -341,7 +341,7 @@ class IngestionService:
                 processing_status='completed',
                 processed_at=datetime.utcnow(),
                 ingested_by=uuid.UUID(user_id) if user_id else None,
-                metadata=doc_metadata,
+                metadata_json=doc_metadata,
             )
             
             self.db.add(document)
@@ -370,7 +370,7 @@ class IngestionService:
                 resource_id=document_id,
                 user_id=uuid.UUID(user_id) if user_id else None,
                 description=f"Imported document: {filename}",
-                metadata={
+                metadata_json={
                     'ingestion_run_id': self.ingestion_run_id,
                     'file_size': file_size,
                     'document_type': document_type,
