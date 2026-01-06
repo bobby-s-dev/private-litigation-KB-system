@@ -268,6 +268,7 @@ class ApiClient {
     matterId: string,
     search?: string,
     entityType?: string,
+    reviewStatus?: string,
     limit: number = 100,
     offset: number = 0
   ): Promise<{
@@ -282,6 +283,7 @@ class ApiClient {
       short_name: string
       email: string
       role: string
+      review_status: string
       related_facts_count: number
       attributes?: any
     }>
@@ -296,6 +298,9 @@ class ApiClient {
     if (entityType) {
       params.append('entity_type', entityType)
     }
+    if (reviewStatus) {
+      params.append('review_status', reviewStatus)
+    }
     return this.request<{
       total: number
       limit: number
@@ -308,10 +313,35 @@ class ApiClient {
         short_name: string
         email: string
         role: string
+        review_status: string
         related_facts_count: number
         attributes?: any
       }>
     }>(`/api/documents/matter/${matterId}/entities?${params.toString()}`)
+  }
+
+  async updateEntityReviewStatus(
+    entityId: string,
+    reviewStatus: 'accepted' | 'rejected' | 'not_reviewed',
+    reviewNotes?: string
+  ): Promise<{
+    id: string
+    review_status: string
+    reviewed_at: string | null
+  }> {
+    const params = new URLSearchParams({
+      review_status: reviewStatus,
+    })
+    if (reviewNotes) {
+      params.append('review_notes', reviewNotes)
+    }
+    return this.request<{
+      id: string
+      review_status: string
+      reviewed_at: string | null
+    }>(`/api/documents/entities/${entityId}/review-status?${params.toString()}`, {
+      method: 'PATCH',
+    })
   }
 
   async getMatterFacts(

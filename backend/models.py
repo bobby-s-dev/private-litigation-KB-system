@@ -171,6 +171,12 @@ class Entity(Base):
     is_verified = Column(Boolean, default=False)
     verification_notes = Column(Text)
     
+    # Review status
+    review_status = Column(String(20), default='not_reviewed')
+    reviewed_at = Column(DateTime(timezone=True))
+    reviewed_by = Column(UUID(as_uuid=True))
+    review_notes = Column(Text)
+    
     # Resolution
     resolved_entity_id = Column(UUID(as_uuid=True), ForeignKey("entities.id", ondelete="SET NULL"))
     
@@ -181,6 +187,7 @@ class Entity(Base):
     
     __table_args__ = (
         UniqueConstraint("entity_type_id", "normalized_name", name="unique_normalized_name_per_type"),
+        CheckConstraint("review_status IN ('not_reviewed', 'accepted', 'rejected')", name="check_entity_review_status"),
     )
 
 

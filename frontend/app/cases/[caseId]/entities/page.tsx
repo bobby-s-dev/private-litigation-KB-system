@@ -12,6 +12,7 @@ interface Entity {
   short_name: string
   email: string
   role: string
+  review_status: string
   related_facts_count: number
   attributes?: any
 }
@@ -28,6 +29,7 @@ export default function EntitiesPage() {
   const [pageSize] = useState(50)
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [reviewStatusFilter, setReviewStatusFilter] = useState<string>('all')
   const [editingEntity, setEditingEntity] = useState<string | null>(null)
   const [editValues, setEditValues] = useState<Partial<Entity>>({})
   const [availableTypes, setAvailableTypes] = useState<string[]>([])
@@ -63,7 +65,7 @@ export default function EntitiesPage() {
     if (caseId) {
       loadEntities()
     }
-  }, [caseId, currentPage, searchQuery, typeFilter])
+  }, [caseId, currentPage, searchQuery, typeFilter, reviewStatusFilter])
 
   const loadEntities = async () => {
     if (!caseId) return
@@ -75,6 +77,7 @@ export default function EntitiesPage() {
         caseId,
         searchQuery || undefined,
         typeFilter !== 'all' ? typeFilter : undefined,
+        reviewStatusFilter !== 'all' ? reviewStatusFilter : undefined,
         pageSize,
         offset
       )
@@ -128,6 +131,24 @@ export default function EntitiesPage() {
   const handleViewFacts = (entity: Entity) => {
     // Navigate to facts page with entity filter
     router.push(`/cases/${caseIdParam}/facts?entity=${encodeURIComponent(entity.name)}`)
+  }
+
+  const handleReviewStatusChange = async (entityId: string, newStatus: string) => {
+    try {
+      await apiClient.updateEntityReviewStatus(
+        entityId,
+        newStatus as 'accepted' | 'rejected' | 'not_reviewed'
+      )
+      // Update local state
+      setEntities(prevEntities =>
+        prevEntities.map(entity =>
+          entity.id === entityId ? { ...entity, review_status: newStatus } : entity
+        )
+      )
+    } catch (error) {
+      console.error('Error updating entity review status:', error)
+      alert('Failed to update review status. Please try again.')
+    }
   }
 
   const totalPages = Math.ceil(total / pageSize)
@@ -185,6 +206,24 @@ export default function EntitiesPage() {
             </select>
           </div>
 
+          {/* Review Status Filter */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">Review Status:</label>
+            <select
+              value={reviewStatusFilter}
+              onChange={(e) => {
+                setReviewStatusFilter(e.target.value)
+                setCurrentPage(1)
+              }}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="all">All</option>
+              <option value="accepted">Accepted</option>
+              <option value="not_reviewed">Not Reviewed</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+
           {/* Edit Column Toggle */}
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-gray-700">Edit Mode:</label>
@@ -237,6 +276,9 @@ export default function EntitiesPage() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Role
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Review Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Action
@@ -302,6 +344,19 @@ export default function EntitiesPage() {
                           <div className="text-sm text-gray-900">{entity.role || '-'}</div>
                         )}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium ${
+                            entity.review_status === 'accepted'
+                              ? 'bg-green-100 text-green-700'
+                              : entity.review_status === 'rejected'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          {entity.review_status === 'accepted' ? 'Accepted' : entity.review_status === 'rejected' ? 'Rejected' : 'Not Reviewed'}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {editingEntity === entity.id ? (
                           <div className="flex items-center gap-2">
@@ -319,13 +374,28 @@ export default function EntitiesPage() {
                             </button>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 flex-wrap">
                             <button
                               onClick={() => handleEdit(entity)}
                               className="text-purple-600 hover:text-purple-700 font-medium"
                             >
                               Edit
                             </button>
+                            {entity.review_status === 'not_reviewed' ? (
+                              <button
+                                onClick={() => handleReviewStatusChange(entity.id, 'accepted')}
+                                className="text-green-600 hover:text-green-700 font-medium"
+                              >
+                                Accept
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleReviewStatusChange(entity.id, 'not_reviewed')}
+                                className="text-gray-600 hover:text-gray-700"
+                              >
+                                Undo
+                              </button>
+                            )}
                             <button
                               onClick={() => handleViewFacts(entity)}
                               className="text-blue-600 hover:text-blue-700 font-medium"

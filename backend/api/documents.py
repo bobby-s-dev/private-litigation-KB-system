@@ -448,6 +448,7 @@ async def get_matter_entities(
     matter_id: str,
     search: Optional[str] = Query(None, description="Search entities by name"),
     entity_type: Optional[str] = Query(None, description="Filter by entity type"),
+    review_status: Optional[str] = Query(None, description="Filter by review status: accepted, not_reviewed, rejected"),
     limit: int = Query(100, description="Maximum number of entities to return"),
     offset: int = Query(0, description="Number of entities to skip"),
     db: Session = Depends(get_db)
@@ -512,6 +513,10 @@ async def get_matter_entities(
     if entity_type:
         query = query.filter(EntityType.type_name == entity_type)
     
+    # Apply review status filter
+    if review_status:
+        query = query.filter(Entity.review_status == review_status)
+    
     # Get all entities
     entity_results = query.all()
     
@@ -551,6 +556,7 @@ async def get_matter_entities(
                 'short_name': short_name,
                 'email': email,
                 'role': role,
+                'review_status': entity.review_status or 'not_reviewed',
                 'related_facts_count': fact_count,
                 'attributes': attributes
             }
@@ -671,6 +677,42 @@ async def update_fact_review_status(
         'id': str(fact.id),
         'review_status': fact.review_status,
         'reviewed_at': fact.reviewed_at.isoformat() if fact.reviewed_at else None
+    }
+
+
+@router.patch("/entities/{entity_id}/review-status")
+async def update_entity_review_status(
+    entity_id: str,
+    review_status: str = Query(..., description="New review status: accepted, rejected, not_reviewed"),
+    review_notes: Optional[str] = Query(None, description="Optional review notes"),
+    db: Session = Depends(get_db)
+):
+    """
+    Update the review status of an entity.
+    """
+    try:
+        entity_uuid = uuid.UUID(entity_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid entity ID format: {entity_id}")
+    
+    if review_status not in ['accepted', 'rejected', 'not_reviewed']:
+        raise HTTPException(status_code=400, detail=f"Invalid review status: {review_status}")
+    
+    entity = db.query(Entity).filter(Entity.id == entity_uuid).first()
+    if not entity:
+        raise HTTPException(status_code=404, detail=f"Entity {entity_id} not found")
+    
+    entity.review_status = review_status
+    entity.reviewed_at = datetime.utcnow()
+    if review_notes:
+        entity.review_notes = review_notes
+    
+    db.commit()
+    
+    return {
+        'id': str(entity.id),
+        'review_status': entity.review_status,
+        'reviewed_at': entity.reviewed_at.isoformat() if entity.reviewed_at else None
     }
 
 
