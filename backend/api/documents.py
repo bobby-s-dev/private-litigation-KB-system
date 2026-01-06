@@ -1,6 +1,7 @@
 """FastAPI endpoints for document retrieval."""
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, and_
 from typing import Optional, List
 from datetime import datetime
 import uuid
@@ -440,6 +441,138 @@ async def get_document_entities(
                 print(f"Error extracting entities from text: {str(e)}")
     
     return entities
+
+
+@router.get("/matter/{matter_id}/entities")
+async def get_matter_entities(
+    matter_id: str,
+    search: Optional[str] = Query(None, description="Search entities by name"),
+    entity_type: Optional[str] = Query(None, description="Filter by entity type"),
+    limit: int = Query(100, description="Maximum number of entities to return"),
+    offset: int = Query(0, description="Number of entities to skip"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all entities for a matter with their details and fact counts.
+    Returns entities with name, type, normalized name, short name, email, role, and related facts count.
+    """
+    try:
+        matter_uuid = uuid.UUID(matter_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid matter ID format: {matter_id}")
+    
+    # Get all documents for this matter
+    documents = db.query(Document).filter(
+        Document.matter_id == matter_uuid,
+        Document.is_current_version == True
+    ).all()
+    
+    doc_ids = [doc.id for doc in documents]
+    
+    if not doc_ids:
+        return {
+            'total': 0,
+            'limit': limit,
+            'offset': offset,
+            'entities': []
+        }
+    
+    # Get distinct entity IDs from document_entities
+    entity_ids = db.query(DocumentEntity.entity_id).filter(
+        DocumentEntity.document_id.in_(doc_ids)
+    ).distinct().all()
+    entity_id_list = [eid[0] for eid in entity_ids]
+    
+    if not entity_id_list:
+        return {
+            'total': 0,
+            'limit': limit,
+            'offset': offset,
+            'entities': []
+        }
+    
+    # Build query for entities
+    query = db.query(Entity).join(
+        EntityType, Entity.entity_type_id == EntityType.id
+    ).filter(
+        Entity.id.in_(entity_id_list)
+    )
+    
+    # Apply search filter
+    if search:
+        search_term = f"%{search.lower()}%"
+        query = query.filter(
+            or_(
+                Entity.display_name.ilike(search_term),
+                Entity.normalized_name.ilike(search_term)
+            )
+        )
+    
+    # Apply type filter
+    if entity_type:
+        query = query.filter(EntityType.type_name == entity_type)
+    
+    # Get all entities
+    entity_results = query.all()
+    
+    # Build entity map with aggregated data
+    entity_map = {}
+    for entity in entity_results:
+        entity_id = str(entity.id)
+        if entity_id not in entity_map:
+            # Get entity type
+            entity_type_obj = db.query(EntityType).filter(
+                EntityType.id == entity.entity_type_id
+            ).first()
+            # Get fact count for this entity
+            # Count facts that mention this entity in their text
+            entity_name = entity.display_name or entity.normalized_name
+            fact_count = db.query(Fact).filter(
+                and_(
+                    Fact.matter_id == matter_uuid,
+                    or_(
+                        Fact.fact_text.ilike(f"%{entity_name}%"),
+                        Fact.source_text.ilike(f"%{entity_name}%")
+                    )
+                )
+            ).count()
+            
+            # Extract attributes
+            attributes = entity.attributes or {}
+            email = attributes.get('email', '')
+            role = attributes.get('role', '')
+            short_name = attributes.get('short_name', '') or attributes.get('shortName', '')
+            
+            entity_map[entity_id] = {
+                'id': entity_id,
+                'name': entity.display_name or entity.normalized_name,
+                'type': entity_type_obj.type_name if entity_type_obj else 'unknown',
+                '@name': entity.normalized_name,
+                'short_name': short_name,
+                'email': email,
+                'role': role,
+                'related_facts_count': fact_count,
+                'attributes': attributes
+            }
+    
+    # Convert to list and sort
+    entities_list = list(entity_map.values())
+    
+    # Sort by name
+    entities_list.sort(key=lambda x: x['name'].lower())
+    
+    # Get total count
+    total = len(entities_list)
+    
+    # Apply pagination
+    paginated_entities = entities_list[offset:offset + limit]
+    
+    return {
+        'total': total,
+        'limit': limit,
+        'offset': offset,
+        'entities': paginated_entities
+    }
 
 
 @router.get("/matter/{matter_id}/facts")

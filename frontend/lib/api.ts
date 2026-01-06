@@ -264,6 +264,56 @@ class ApiClient {
     )
   }
 
+  async getMatterEntities(
+    matterId: string,
+    search?: string,
+    entityType?: string,
+    limit: number = 100,
+    offset: number = 0
+  ): Promise<{
+    total: number
+    limit: number
+    offset: number
+    entities: Array<{
+      id: string
+      name: string
+      type: string
+      '@name': string
+      short_name: string
+      email: string
+      role: string
+      related_facts_count: number
+      attributes?: any
+    }>
+  }> {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      offset: offset.toString(),
+    })
+    if (search) {
+      params.append('search', search)
+    }
+    if (entityType) {
+      params.append('entity_type', entityType)
+    }
+    return this.request<{
+      total: number
+      limit: number
+      offset: number
+      entities: Array<{
+        id: string
+        name: string
+        type: string
+        '@name': string
+        short_name: string
+        email: string
+        role: string
+        related_facts_count: number
+        attributes?: any
+      }>
+    }>(`/api/documents/matter/${matterId}/entities?${params.toString()}`)
+  }
+
   async getMatterFacts(
     matterId: string,
     limit: number = 20,

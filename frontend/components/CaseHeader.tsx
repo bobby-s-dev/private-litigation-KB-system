@@ -11,7 +11,7 @@ export default function CaseHeader() {
   const tabs = [
     { name: 'Case Home', path: caseId ? `/cases/${caseId}` : '#' },
     { name: 'Facts', path: caseId ? `/cases/${caseId}/facts` : '#' },
-    { name: 'Entities', path: '#' },
+    { name: 'Entities', path: caseId ? `/cases/${caseId}/entities` : '#' },
     { name: 'Issues', path: '#' },
     { name: 'Sources', path: '#' },
     { name: 'Search', path: '#' },
@@ -25,6 +25,7 @@ export default function CaseHeader() {
     if (!pathname || !caseId) return 0
     if (pathname === `/cases/${caseId}`) return 0
     if (pathname === `/cases/${caseId}/facts`) return 1
+    if (pathname === `/cases/${caseId}/entities`) return 2
     return -1
   }
 
