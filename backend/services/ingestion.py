@@ -492,6 +492,112 @@ class IngestionService:
                 # Don't fail ingestion if fact extraction fails
                 print(f"Error extracting facts during ingestion: {str(e)}")
                 result['facts_extracted'] = 0
+            
+            # Extract and save entities
+            entities_extracted = 0
+            try:
+                from models import Entity, EntityType, DocumentEntity
+                
+                if extracted_text:
+                    # Extract entities from text
+                    extracted_entities = self.metadata_extraction.extract_entities(extracted_text)
+                    
+                    # Count mentions for each entity
+                    entity_counts = {}
+                    for entity_data in extracted_entities:
+                        entity_value = entity_data.get('value', '').strip()
+                        entity_type_name = entity_data.get('type', 'unknown')
+                        confidence = entity_data.get('confidence', 0.7)
+                        
+                        if not entity_value or len(entity_value) < 2:
+                            continue
+                        
+                        key = f"{entity_type_name}:{entity_value.lower()}"
+                        if key not in entity_counts:
+                            entity_counts[key] = {
+                                'value': entity_value,
+                                'type': entity_type_name,
+                                'count': 0,
+                                'confidence': confidence
+                            }
+                        entity_counts[key]['count'] += 1
+                    
+                    # Save entities to database
+                    for entity_info in entity_counts.values():
+                        entity_value = entity_info['value'].strip()
+                        entity_type_name = entity_info['type']
+                        mention_count = entity_info['count']
+                        confidence = entity_info['confidence']
+                        
+                        if not entity_value or len(entity_value) < 2:
+                            continue
+                        
+                        # Get or create entity type
+                        entity_type = self.db.query(EntityType).filter(
+                            EntityType.type_name == entity_type_name
+                        ).first()
+                        
+                        if not entity_type:
+                            entity_type = EntityType(
+                                type_name=entity_type_name,
+                                category='other',
+                                description=f"Auto-created entity type: {entity_type_name}"
+                            )
+                            self.db.add(entity_type)
+                            self.db.flush()
+                        
+                        # Normalize entity name
+                        normalized_name = entity_value.lower().strip()
+                        display_name = entity_value.strip()
+                        
+                        # Get or create entity
+                        entity = self.db.query(Entity).filter(
+                            Entity.entity_type_id == entity_type.id,
+                            Entity.normalized_name == normalized_name
+                        ).first()
+                        
+                        if not entity:
+                            entity = Entity(
+                                entity_type_id=entity_type.id,
+                                normalized_name=normalized_name,
+                                display_name=display_name,
+                                confidence_score=confidence,
+                                review_status='not_reviewed'
+                            )
+                            self.db.add(entity)
+                            self.db.flush()
+                        
+                        # Create or update document-entity relationship
+                        doc_entity = self.db.query(DocumentEntity).filter(
+                            DocumentEntity.document_id == document_id,
+                            DocumentEntity.entity_id == entity.id
+                        ).first()
+                        
+                        if not doc_entity:
+                            doc_entity = DocumentEntity(
+                                document_id=document_id,
+                                entity_id=entity.id,
+                                mention_text=display_name,
+                                mention_count=mention_count,
+                                extraction_method='ner',
+                                confidence_score=confidence
+                            )
+                            self.db.add(doc_entity)
+                            entities_extracted += 1
+                        else:
+                            # Update mention count if relationship exists
+                            doc_entity.mention_count = max(doc_entity.mention_count or 0, mention_count)
+                    
+                    self.db.commit()
+                    result['entities_extracted'] = entities_extracted
+                else:
+                    result['entities_extracted'] = 0
+            except Exception as e:
+                # Don't fail ingestion if entity extraction fails
+                print(f"Error extracting entities during ingestion: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                result['entities_extracted'] = 0
                 result['fact_extraction_error'] = str(e)
             
             result['success'] = True
