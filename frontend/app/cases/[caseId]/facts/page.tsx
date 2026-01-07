@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { apiClient } from '@/lib/api'
 
 interface Fact {
@@ -20,6 +20,7 @@ interface Fact {
 export default function FactsPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const caseIdParam = params?.caseId as string
   const [caseId, setCaseId] = useState<string | null>(null)
   const [facts, setFacts] = useState<Fact[]>([])
@@ -29,6 +30,7 @@ export default function FactsPage() {
   const [pageSize] = useState(20)
   const [reviewStatusFilter, setReviewStatusFilter] = useState<string>('all')
   const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list')
+  const [entityFilter, setEntityFilter] = useState<string>('')
 
   useEffect(() => {
     const initializeMatter = async () => {
@@ -56,6 +58,14 @@ export default function FactsPage() {
 
     initializeMatter()
   }, [caseIdParam])
+
+  // Read entity filter from URL query parameters
+  useEffect(() => {
+    const entityParam = searchParams?.get('entity')
+    if (entityParam) {
+      setEntityFilter(entityParam)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     if (caseId) {
@@ -120,14 +130,45 @@ export default function FactsPage() {
     }
   }
 
+  // Highlight entity in text
+  const highlightEntity = (text: string) => {
+    if (!entityFilter || !text) return text
+    
+    const regex = new RegExp(`(${entityFilter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+    const parts = text.split(regex)
+    
+    return parts.map((part, index) => 
+      regex.test(part) ? (
+        <span key={index} className="bg-yellow-200 font-semibold">{part}</span>
+      ) : (
+        part
+      )
+    )
+  }
+
+  // Filter facts by entity if entity filter is active
+  const filteredFacts = entityFilter 
+    ? facts.filter(fact => 
+        fact.fact.toLowerCase().includes(entityFilter.toLowerCase()) ||
+        fact.evidence.toLowerCase().includes(entityFilter.toLowerCase()) ||
+        fact.source_text.toLowerCase().includes(entityFilter.toLowerCase())
+      )
+    : facts
+
   const totalPages = Math.ceil(total / pageSize)
 
   // Sort facts by date for timeline view
-  const sortedFacts = [...facts].sort((a, b) => {
+  const sortedFacts = [...filteredFacts].sort((a, b) => {
     if (!a.date_time) return 1
     if (!b.date_time) return -1
     return new Date(b.date_time).getTime() - new Date(a.date_time).getTime()
   })
+
+  // Clear entity filter
+  const clearEntityFilter = () => {
+    setEntityFilter('')
+    router.push(`/cases/${caseIdParam}/facts`)
+  }
 
   // Group facts by date for timeline
   const groupFactsByDate = () => {
@@ -242,7 +283,7 @@ export default function FactsPage() {
 
                           {/* Fact text */}
                           <p className="text-sm text-gray-900 mb-3 line-clamp-4" title={fact.fact}>
-                            {fact.fact}
+                            {highlightEntity(fact.fact)}
                           </p>
 
                           {/* Issues */}
@@ -324,7 +365,7 @@ export default function FactsPage() {
                   </div>
 
                   {/* Fact text */}
-                  <p className="text-sm text-gray-900 mb-3">{fact.fact}</p>
+                  <p className="text-sm text-gray-900 mb-3">{highlightEntity(fact.fact)}</p>
 
                   {/* Issues */}
                   {fact.issues.length > 0 && (
@@ -396,6 +437,35 @@ export default function FactsPage() {
         <p className="text-gray-600">Review and manage all facts extracted from case documents</p>
       </div>
 
+      {/* Active Entity Filter Indicator */}
+      {entityFilter && (
+        <div className="bg-purple-50 border-l-4 border-purple-500 p-4 mb-6 rounded-r-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-purple-900">
+                  Filtering by entity: <span className="font-bold">"{entityFilter}"</span>
+                </p>
+                <p className="text-xs text-purple-700 mt-0.5">
+                  Showing {filteredFacts.length} of {facts.length} facts
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={clearEntityFilter}
+              className="flex-shrink-0 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Clear Filter
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Filters and View Toggle */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
         <div className="flex items-center gap-4">
@@ -441,7 +511,11 @@ export default function FactsPage() {
           </div>
           
           <div className="text-sm text-gray-600">
-            Total: {total} facts
+            {entityFilter ? (
+              <>Showing: {filteredFacts.length} facts</>
+            ) : (
+              <>Total: {total} facts</>
+            )}
           </div>
         </div>
       </div>
@@ -452,10 +526,24 @@ export default function FactsPage() {
           renderTimelineView()
         ) : loading ? (
           <div className="p-12 text-center text-gray-500">Loading facts...</div>
-        ) : facts.length === 0 ? (
+        ) : filteredFacts.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
-            <p>No facts found.</p>
-            <p className="text-sm mt-2">Upload and process documents to extract facts.</p>
+            {entityFilter ? (
+              <>
+                <p>No facts found for entity "{entityFilter}".</p>
+                <button
+                  onClick={clearEntityFilter}
+                  className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium"
+                >
+                  Clear Filter
+                </button>
+              </>
+            ) : (
+              <>
+                <p>No facts found.</p>
+                <p className="text-sm mt-2">Upload and process documents to extract facts.</p>
+              </>
+            )}
           </div>
         ) : (
           <>
@@ -484,13 +572,13 @@ export default function FactsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {facts.map((fact) => (
+                  {filteredFacts.map((fact) => (
                     <tr key={fact.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {formatDate(fact.date_time)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900 max-w-md">
-                        <div className="line-clamp-2">{fact.fact}</div>
+                        <div className="line-clamp-2">{highlightEntity(fact.fact)}</div>
                         {fact.source_text && (
                           <div className="text-xs text-gray-500 mt-1 italic">
                             Source: "{fact.source_text.substring(0, 100)}..."
@@ -558,8 +646,8 @@ export default function FactsPage() {
               </table>
             </div>
 
-            {/* Pagination - Only show in list view */}
-            {viewMode === 'list' && totalPages > 1 && (
+            {/* Pagination - Only show in list view and when not filtering by entity */}
+            {viewMode === 'list' && !entityFilter && totalPages > 1 && (
               <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                 <div className="text-sm text-gray-700">
                   Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, total)} of {total} facts
