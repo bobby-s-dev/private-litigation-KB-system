@@ -939,6 +939,7 @@ async def get_matter_facts(
     limit: int = Query(20, description="Number of facts per page"),
     offset: int = Query(0, description="Number of facts to skip"),
     review_status: Optional[str] = Query(None, description="Filter by review status: accepted, not_reviewed, rejected"),
+    entity: Optional[str] = Query(None, description="Filter by entity name"),
     db: Session = Depends(get_db)
 ):
     """
@@ -956,6 +957,17 @@ async def get_matter_facts(
     # Filter by review status if provided
     if review_status:
         query = query.filter(Fact.review_status == review_status)
+    
+    # Filter by entity if provided
+    if entity:
+        # Search for entity name in fact_text or source_text (case-insensitive)
+        entity_lower = entity.lower()
+        query = query.filter(
+            or_(
+                Fact.fact_text.ilike(f'%{entity_lower}%'),
+                Fact.source_text.ilike(f'%{entity_lower}%')
+            )
+        )
     
     # Get total count
     total = query.count()

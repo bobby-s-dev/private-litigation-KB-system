@@ -357,7 +357,8 @@ class ApiClient {
     matterId: string,
     limit: number = 20,
     offset: number = 0,
-    reviewStatus?: string
+    reviewStatus?: string,
+    entity?: string
   ): Promise<{
     total: number
     limit: number
@@ -381,6 +382,9 @@ class ApiClient {
     })
     if (reviewStatus) {
       params.append('review_status', reviewStatus)
+    }
+    if (entity) {
+      params.append('entity', entity)
     }
     return this.request<{
       total: number

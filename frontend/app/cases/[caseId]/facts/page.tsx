@@ -64,6 +64,7 @@ export default function FactsPage() {
     const entityParam = searchParams?.get('entity')
     if (entityParam) {
       setEntityFilter(entityParam)
+      setCurrentPage(1) // Reset to first page when filtering by entity
     }
   }, [searchParams])
 
@@ -71,7 +72,7 @@ export default function FactsPage() {
     if (caseId) {
       loadFacts()
     }
-  }, [caseId, currentPage, reviewStatusFilter])
+  }, [caseId, currentPage, reviewStatusFilter, entityFilter])
 
   const loadFacts = async () => {
     if (!caseId) return
@@ -83,7 +84,8 @@ export default function FactsPage() {
         caseId,
         pageSize,
         offset,
-        reviewStatusFilter !== 'all' ? reviewStatusFilter : undefined
+        reviewStatusFilter !== 'all' ? reviewStatusFilter : undefined,
+        entityFilter || undefined
       )
       setFacts(response.facts)
       setTotal(response.total)
@@ -146,19 +148,10 @@ export default function FactsPage() {
     )
   }
 
-  // Filter facts by entity if entity filter is active
-  const filteredFacts = entityFilter 
-    ? facts.filter(fact => 
-        fact.fact.toLowerCase().includes(entityFilter.toLowerCase()) ||
-        fact.evidence.toLowerCase().includes(entityFilter.toLowerCase()) ||
-        fact.source_text.toLowerCase().includes(entityFilter.toLowerCase())
-      )
-    : facts
-
   const totalPages = Math.ceil(total / pageSize)
 
   // Sort facts by date for timeline view
-  const sortedFacts = [...filteredFacts].sort((a, b) => {
+  const sortedFacts = [...facts].sort((a, b) => {
     if (!a.date_time) return 1
     if (!b.date_time) return -1
     return new Date(b.date_time).getTime() - new Date(a.date_time).getTime()
@@ -452,7 +445,7 @@ export default function FactsPage() {
                   Filtering by entity: <span className="font-bold">"{entityFilter}"</span>
                 </p>
                 <p className="text-xs text-purple-700 mt-0.5">
-                  Showing {filteredFacts.length} of {facts.length} facts
+                  Showing {total} facts
                 </p>
               </div>
             </div>
@@ -512,7 +505,7 @@ export default function FactsPage() {
           
           <div className="text-sm text-gray-600">
             {entityFilter ? (
-              <>Showing: {filteredFacts.length} facts</>
+              <>Showing: {total} facts</>
             ) : (
               <>Total: {total} facts</>
             )}
@@ -526,7 +519,7 @@ export default function FactsPage() {
           renderTimelineView()
         ) : loading ? (
           <div className="p-12 text-center text-gray-500">Loading facts...</div>
-        ) : filteredFacts.length === 0 ? (
+        ) : facts.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
             {entityFilter ? (
               <>
@@ -572,7 +565,7 @@ export default function FactsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredFacts.map((fact) => (
+                  {facts.map((fact) => (
                     <tr key={fact.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {formatDate(fact.date_time)}
@@ -646,8 +639,8 @@ export default function FactsPage() {
               </table>
             </div>
 
-            {/* Pagination - Only show in list view and when not filtering by entity */}
-            {viewMode === 'list' && !entityFilter && totalPages > 1 && (
+            {/* Pagination - Only show in list view */}
+            {viewMode === 'list' && totalPages > 1 && (
               <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                 <div className="text-sm text-gray-700">
                   Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, total)} of {total} facts
