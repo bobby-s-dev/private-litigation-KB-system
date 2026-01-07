@@ -625,7 +625,7 @@ class IngestionService:
             facts_extracted = 0
             try:
                 from services.fact_extraction import FactExtractionService
-                from models import Fact, Document
+                from models import Fact
                 
                 # Verify document exists in database
                 document = self.db.query(Document).filter(Document.id == document_id).first()
@@ -735,7 +735,7 @@ class IngestionService:
             # Extract and save entities
             entities_extracted = 0
             try:
-                from models import Entity, EntityType, DocumentEntity, Document
+                from models import Entity, EntityType, DocumentEntity
                 
                 # Verify document exists in database
                 document = self.db.query(Document).filter(Document.id == document_id).first()
