@@ -377,8 +377,15 @@ class IngestionService:
                                             print(f"[Entity Extraction] Error saving entity: {str(entity_error)}")
                                             continue
                                     
+                                    # Ensure all changes are flushed before commit
+                                    self.db.flush()
                                     self.db.commit()
-                                    print(f"[Entity Extraction] Successfully saved {entities_extracted} entities for version document")
+                                    
+                                    # Verify entities were saved
+                                    saved_count = self.db.query(DocumentEntity).filter(
+                                        DocumentEntity.document_id == new_version.id
+                                    ).count()
+                                    print(f"[Entity Extraction] Successfully saved {entities_extracted} entities for version document (verified: {saved_count} in DB)")
                         except Exception as e:
                             print(f"[Entity Extraction] Error extracting entities for version: {str(e)}")
                             self.db.rollback()
@@ -605,9 +612,14 @@ class IngestionService:
             # Extract and save entities
             entities_extracted = 0
             try:
-                from models import Entity, EntityType, DocumentEntity
+                from models import Entity, EntityType, DocumentEntity, Document
                 
-                if not extracted_text:
+                # Verify document exists in database
+                document = self.db.query(Document).filter(Document.id == document_id).first()
+                if not document:
+                    print(f"[Entity Extraction] Document {document_id} not found in database, skipping entity extraction")
+                    result['entities_extracted'] = 0
+                elif not extracted_text:
                     print(f"[Entity Extraction] No extracted text available for document {document_id}")
                     result['entities_extracted'] = 0
                 else:
@@ -691,14 +703,21 @@ class IngestionService:
                                     print(f"[Entity Extraction] Created new entity: {display_name} (type: {entity_type_name})")
                                 
                                 # Create or update document-entity relationship
+                                # Ensure document_id is UUID type
+                                if isinstance(document_id, str):
+                                    import uuid
+                                    document_id_uuid = uuid.UUID(document_id)
+                                else:
+                                    document_id_uuid = document_id
+                                
                                 doc_entity = self.db.query(DocumentEntity).filter(
-                                    DocumentEntity.document_id == document_id,
+                                    DocumentEntity.document_id == document_id_uuid,
                                     DocumentEntity.entity_id == entity.id
                                 ).first()
                                 
                                 if not doc_entity:
                                     doc_entity = DocumentEntity(
-                                        document_id=document_id,
+                                        document_id=document_id_uuid,
                                         entity_id=entity.id,
                                         mention_text=display_name,
                                         mention_count=mention_count,
@@ -719,15 +738,32 @@ class IngestionService:
                                 traceback.print_exc()
                                 continue
                         
+                        # Ensure all changes are flushed before commit
+                        self.db.flush()
                         self.db.commit()
-                        print(f"[Entity Extraction] Successfully saved {entities_extracted} entities to database")
+                        
+                        # Verify entities were saved
+                        if isinstance(document_id, str):
+                            import uuid
+                            document_id_uuid = uuid.UUID(document_id)
+                        else:
+                            document_id_uuid = document_id
+                        
+                        saved_count = self.db.query(DocumentEntity).filter(
+                            DocumentEntity.document_id == document_id_uuid
+                        ).count()
+                        print(f"[Entity Extraction] Successfully saved {entities_extracted} entities to database (verified: {saved_count} in DB)")
                         result['entities_extracted'] = entities_extracted
+                        result['entities_saved_count'] = saved_count
             except Exception as e:
                 # Don't fail ingestion if entity extraction fails
                 print(f"[Entity Extraction] Error extracting entities during ingestion: {str(e)}")
                 import traceback
                 traceback.print_exc()
-                self.db.rollback()
+                try:
+                    self.db.rollback()
+                except:
+                    pass
                 result['entities_extracted'] = 0
                 result['entity_extraction_error'] = str(e)
             
