@@ -568,11 +568,13 @@ async def get_matter_entities(
     entity_ids = db.query(DocumentEntity.entity_id).filter(
         DocumentEntity.document_id.in_(doc_ids)
     ).distinct().all()
-    entity_id_list = [eid[0] for eid in entity_ids]
+    # Extract UUIDs from the query results
+    entity_id_list = [eid[0] for eid in entity_ids if eid and eid[0]]
     
     # If no entities found, try to extract and save them from documents
     if not entity_id_list:
         # Extract entities from all documents and save them
+        entities_saved = 0
         for document in documents:
             if not document.extracted_text:
                 continue
@@ -662,15 +664,19 @@ async def get_matter_entities(
                         doc_entity.mention_count = max(doc_entity.mention_count or 0, mention_count)
                 
                 db.commit()
+                entities_saved += len(entity_counts)
             except Exception as e:
                 db.rollback()
                 print(f"Error extracting entities from document {document.id}: {str(e)}")
+                import traceback
+                traceback.print_exc()
         
         # Re-query entity IDs after extraction
-        entity_ids = db.query(DocumentEntity.entity_id).filter(
-            DocumentEntity.document_id.in_(doc_ids)
-        ).distinct().all()
-        entity_id_list = [eid[0] for eid in entity_ids]
+        if entities_saved > 0:
+            entity_ids = db.query(DocumentEntity.entity_id).filter(
+                DocumentEntity.document_id.in_(doc_ids)
+            ).distinct().all()
+            entity_id_list = [eid[0] for eid in entity_ids if eid and eid[0]]
     
     if not entity_id_list:
         return {
