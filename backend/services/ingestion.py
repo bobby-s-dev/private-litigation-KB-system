@@ -275,6 +275,115 @@ class IngestionService:
                                     'error': str(e)
                                 }
                         
+                        # Extract and save entities for version
+                        entities_extracted = 0
+                        try:
+                            from models import Entity, EntityType, DocumentEntity
+                            
+                            if extracted_text:
+                                print(f"[Entity Extraction] Starting extraction for version document {new_version.id}, text length: {len(extracted_text)}")
+                                extracted_entities = self.metadata_extraction.extract_entities(extracted_text)
+                                print(f"[Entity Extraction] Extracted {len(extracted_entities)} raw entities from text")
+                                
+                                if extracted_entities:
+                                    # Count mentions for each entity
+                                    entity_counts = {}
+                                    for entity_data in extracted_entities:
+                                        entity_value = entity_data.get('value', '').strip()
+                                        entity_type_name = entity_data.get('type', 'unknown')
+                                        confidence = entity_data.get('confidence', 0.7)
+                                        
+                                        if not entity_value or len(entity_value) < 2:
+                                            continue
+                                        
+                                        key = f"{entity_type_name}:{entity_value.lower()}"
+                                        if key not in entity_counts:
+                                            entity_counts[key] = {
+                                                'value': entity_value,
+                                                'type': entity_type_name,
+                                                'count': 0,
+                                                'confidence': confidence
+                                            }
+                                        entity_counts[key]['count'] += 1
+                                    
+                                    print(f"[Entity Extraction] Found {len(entity_counts)} unique entities after deduplication")
+                                    
+                                    # Save entities to database
+                                    for entity_info in entity_counts.values():
+                                        try:
+                                            entity_value = entity_info['value'].strip()
+                                            entity_type_name = entity_info['type']
+                                            mention_count = entity_info['count']
+                                            confidence = entity_info['confidence']
+                                            
+                                            if not entity_value or len(entity_value) < 2:
+                                                continue
+                                            
+                                            # Get or create entity type
+                                            entity_type = self.db.query(EntityType).filter(
+                                                EntityType.type_name == entity_type_name
+                                            ).first()
+                                            
+                                            if not entity_type:
+                                                entity_type = EntityType(
+                                                    type_name=entity_type_name,
+                                                    category='other',
+                                                    description=f"Auto-created entity type: {entity_type_name}"
+                                                )
+                                                self.db.add(entity_type)
+                                                self.db.flush()
+                                            
+                                            # Normalize entity name
+                                            normalized_name = entity_value.lower().strip()
+                                            display_name = entity_value.strip()
+                                            
+                                            # Get or create entity
+                                            entity = self.db.query(Entity).filter(
+                                                Entity.entity_type_id == entity_type.id,
+                                                Entity.normalized_name == normalized_name
+                                            ).first()
+                                            
+                                            if not entity:
+                                                entity = Entity(
+                                                    entity_type_id=entity_type.id,
+                                                    normalized_name=normalized_name,
+                                                    display_name=display_name,
+                                                    confidence_score=confidence,
+                                                    review_status='not_reviewed'
+                                                )
+                                                self.db.add(entity)
+                                                self.db.flush()
+                                            
+                                            # Create or update document-entity relationship
+                                            doc_entity = self.db.query(DocumentEntity).filter(
+                                                DocumentEntity.document_id == new_version.id,
+                                                DocumentEntity.entity_id == entity.id
+                                            ).first()
+                                            
+                                            if not doc_entity:
+                                                doc_entity = DocumentEntity(
+                                                    document_id=new_version.id,
+                                                    entity_id=entity.id,
+                                                    mention_text=display_name,
+                                                    mention_count=mention_count,
+                                                    extraction_method='ner',
+                                                    confidence_score=confidence
+                                                )
+                                                self.db.add(doc_entity)
+                                                entities_extracted += 1
+                                            else:
+                                                doc_entity.mention_count = max(doc_entity.mention_count or 0, mention_count)
+                                        except Exception as entity_error:
+                                            print(f"[Entity Extraction] Error saving entity: {str(entity_error)}")
+                                            continue
+                                    
+                                    self.db.commit()
+                                    print(f"[Entity Extraction] Successfully saved {entities_extracted} entities for version document")
+                        except Exception as e:
+                            print(f"[Entity Extraction] Error extracting entities for version: {str(e)}")
+                            self.db.rollback()
+                        
+                        result['entities_extracted'] = entities_extracted
                         return result
                     except Exception as e:
                         # If version creation fails, fall through to create new document
@@ -498,107 +607,129 @@ class IngestionService:
             try:
                 from models import Entity, EntityType, DocumentEntity
                 
-                if extracted_text:
+                if not extracted_text:
+                    print(f"[Entity Extraction] No extracted text available for document {document_id}")
+                    result['entities_extracted'] = 0
+                else:
+                    print(f"[Entity Extraction] Starting extraction for document {document_id}, text length: {len(extracted_text)}")
                     # Extract entities from text
                     extracted_entities = self.metadata_extraction.extract_entities(extracted_text)
+                    print(f"[Entity Extraction] Extracted {len(extracted_entities)} raw entities from text")
                     
-                    # Count mentions for each entity
-                    entity_counts = {}
-                    for entity_data in extracted_entities:
-                        entity_value = entity_data.get('value', '').strip()
-                        entity_type_name = entity_data.get('type', 'unknown')
-                        confidence = entity_data.get('confidence', 0.7)
+                    if not extracted_entities:
+                        print(f"[Entity Extraction] No entities found in document text")
+                        result['entities_extracted'] = 0
+                    else:
+                        # Count mentions for each entity
+                        entity_counts = {}
+                        for entity_data in extracted_entities:
+                            entity_value = entity_data.get('value', '').strip()
+                            entity_type_name = entity_data.get('type', 'unknown')
+                            confidence = entity_data.get('confidence', 0.7)
+                            
+                            if not entity_value or len(entity_value) < 2:
+                                continue
+                            
+                            key = f"{entity_type_name}:{entity_value.lower()}"
+                            if key not in entity_counts:
+                                entity_counts[key] = {
+                                    'value': entity_value,
+                                    'type': entity_type_name,
+                                    'count': 0,
+                                    'confidence': confidence
+                                }
+                            entity_counts[key]['count'] += 1
                         
-                        if not entity_value or len(entity_value) < 2:
-                            continue
+                        print(f"[Entity Extraction] Found {len(entity_counts)} unique entities after deduplication")
                         
-                        key = f"{entity_type_name}:{entity_value.lower()}"
-                        if key not in entity_counts:
-                            entity_counts[key] = {
-                                'value': entity_value,
-                                'type': entity_type_name,
-                                'count': 0,
-                                'confidence': confidence
-                            }
-                        entity_counts[key]['count'] += 1
-                    
-                    # Save entities to database
-                    for entity_info in entity_counts.values():
-                        entity_value = entity_info['value'].strip()
-                        entity_type_name = entity_info['type']
-                        mention_count = entity_info['count']
-                        confidence = entity_info['confidence']
+                        # Save entities to database
+                        for entity_info in entity_counts.values():
+                            try:
+                                entity_value = entity_info['value'].strip()
+                                entity_type_name = entity_info['type']
+                                mention_count = entity_info['count']
+                                confidence = entity_info['confidence']
+                                
+                                if not entity_value or len(entity_value) < 2:
+                                    continue
+                                
+                                # Get or create entity type
+                                entity_type = self.db.query(EntityType).filter(
+                                    EntityType.type_name == entity_type_name
+                                ).first()
+                                
+                                if not entity_type:
+                                    entity_type = EntityType(
+                                        type_name=entity_type_name,
+                                        category='other',
+                                        description=f"Auto-created entity type: {entity_type_name}"
+                                    )
+                                    self.db.add(entity_type)
+                                    self.db.flush()
+                                    print(f"[Entity Extraction] Created new entity type: {entity_type_name}")
+                                
+                                # Normalize entity name
+                                normalized_name = entity_value.lower().strip()
+                                display_name = entity_value.strip()
+                                
+                                # Get or create entity
+                                entity = self.db.query(Entity).filter(
+                                    Entity.entity_type_id == entity_type.id,
+                                    Entity.normalized_name == normalized_name
+                                ).first()
+                                
+                                if not entity:
+                                    entity = Entity(
+                                        entity_type_id=entity_type.id,
+                                        normalized_name=normalized_name,
+                                        display_name=display_name,
+                                        confidence_score=confidence,
+                                        review_status='not_reviewed'
+                                    )
+                                    self.db.add(entity)
+                                    self.db.flush()
+                                    print(f"[Entity Extraction] Created new entity: {display_name} (type: {entity_type_name})")
+                                
+                                # Create or update document-entity relationship
+                                doc_entity = self.db.query(DocumentEntity).filter(
+                                    DocumentEntity.document_id == document_id,
+                                    DocumentEntity.entity_id == entity.id
+                                ).first()
+                                
+                                if not doc_entity:
+                                    doc_entity = DocumentEntity(
+                                        document_id=document_id,
+                                        entity_id=entity.id,
+                                        mention_text=display_name,
+                                        mention_count=mention_count,
+                                        extraction_method='ner',
+                                        confidence_score=confidence
+                                    )
+                                    self.db.add(doc_entity)
+                                    entities_extracted += 1
+                                    print(f"[Entity Extraction] Linked entity {display_name} to document (mentions: {mention_count})")
+                                else:
+                                    # Update mention count if relationship exists
+                                    old_count = doc_entity.mention_count or 0
+                                    doc_entity.mention_count = max(old_count, mention_count)
+                                    print(f"[Entity Extraction] Updated mention count for {display_name}: {old_count} -> {doc_entity.mention_count}")
+                            except Exception as entity_error:
+                                print(f"[Entity Extraction] Error saving entity {entity_info.get('value', 'unknown')}: {str(entity_error)}")
+                                import traceback
+                                traceback.print_exc()
+                                continue
                         
-                        if not entity_value or len(entity_value) < 2:
-                            continue
-                        
-                        # Get or create entity type
-                        entity_type = self.db.query(EntityType).filter(
-                            EntityType.type_name == entity_type_name
-                        ).first()
-                        
-                        if not entity_type:
-                            entity_type = EntityType(
-                                type_name=entity_type_name,
-                                category='other',
-                                description=f"Auto-created entity type: {entity_type_name}"
-                            )
-                            self.db.add(entity_type)
-                            self.db.flush()
-                        
-                        # Normalize entity name
-                        normalized_name = entity_value.lower().strip()
-                        display_name = entity_value.strip()
-                        
-                        # Get or create entity
-                        entity = self.db.query(Entity).filter(
-                            Entity.entity_type_id == entity_type.id,
-                            Entity.normalized_name == normalized_name
-                        ).first()
-                        
-                        if not entity:
-                            entity = Entity(
-                                entity_type_id=entity_type.id,
-                                normalized_name=normalized_name,
-                                display_name=display_name,
-                                confidence_score=confidence,
-                                review_status='not_reviewed'
-                            )
-                            self.db.add(entity)
-                            self.db.flush()
-                        
-                        # Create or update document-entity relationship
-                        doc_entity = self.db.query(DocumentEntity).filter(
-                            DocumentEntity.document_id == document_id,
-                            DocumentEntity.entity_id == entity.id
-                        ).first()
-                        
-                        if not doc_entity:
-                            doc_entity = DocumentEntity(
-                                document_id=document_id,
-                                entity_id=entity.id,
-                                mention_text=display_name,
-                                mention_count=mention_count,
-                                extraction_method='ner',
-                                confidence_score=confidence
-                            )
-                            self.db.add(doc_entity)
-                            entities_extracted += 1
-                        else:
-                            # Update mention count if relationship exists
-                            doc_entity.mention_count = max(doc_entity.mention_count or 0, mention_count)
-                    
-                    self.db.commit()
-                    result['entities_extracted'] = entities_extracted
-                else:
-                    result['entities_extracted'] = 0
+                        self.db.commit()
+                        print(f"[Entity Extraction] Successfully saved {entities_extracted} entities to database")
+                        result['entities_extracted'] = entities_extracted
             except Exception as e:
                 # Don't fail ingestion if entity extraction fails
-                print(f"Error extracting entities during ingestion: {str(e)}")
+                print(f"[Entity Extraction] Error extracting entities during ingestion: {str(e)}")
                 import traceback
                 traceback.print_exc()
+                self.db.rollback()
                 result['entities_extracted'] = 0
-                result['fact_extraction_error'] = str(e)
+                result['entity_extraction_error'] = str(e)
             
             result['success'] = True
             result['document_id'] = str(document_id)
