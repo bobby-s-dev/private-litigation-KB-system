@@ -11,6 +11,8 @@ export interface Document {
   file_size?: number
   citations?: number
   relatedFacts?: number
+  facts_count?: number
+  entities_count?: number
 }
 
 export interface UploadResponse {

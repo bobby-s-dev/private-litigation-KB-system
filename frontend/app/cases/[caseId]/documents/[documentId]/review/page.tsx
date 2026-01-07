@@ -46,7 +46,16 @@ export default function DocumentReviewPage() {
     if (documentId) {
       loadReviewData()
     }
-  }, [documentId])
+    
+    // Auto-refresh every 5 seconds if document is still processing
+    const interval = setInterval(() => {
+      if (documentId && document?.processing_status === 'processing') {
+        loadReviewData()
+      }
+    }, 5000)
+    
+    return () => clearInterval(interval)
+  }, [documentId, document?.processing_status])
 
   const loadReviewData = async () => {
     try {
@@ -103,9 +112,20 @@ export default function DocumentReviewPage() {
           </svg>
           Back
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Review: {document?.file_name || 'Document'}
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Review: {document?.file_name || 'Document'}
+          </h1>
+          <button
+            onClick={loadReviewData}
+            className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -120,6 +140,11 @@ export default function DocumentReviewPage() {
             }`}
           >
             Suggested Facts
+            {suggestedFacts.length > 0 && (
+              <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                {suggestedFacts.length}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab('entities')}
@@ -130,6 +155,11 @@ export default function DocumentReviewPage() {
             }`}
           >
             Entities
+            {entities.length > 0 && (
+              <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                {entities.length}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab('summary')}
@@ -291,10 +321,16 @@ function SuggestedFactsSection({
           <p className="text-sm mt-2">
             {isExtracting 
               ? 'Extracting facts from the document...' 
-              : 'Click "Extract Facts" to extract facts from this document, or wait for automatic extraction during processing.'}
+              : 'Facts are automatically extracted during document upload. Click "Extract Facts" to manually trigger extraction, or refresh the page.'}
           </p>
         </div>
       ) : (
+        <>
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-800">
+              ✓ Found {facts.length} fact{facts.length !== 1 ? 's' : ''} extracted from this document
+            </p>
+          </div>
         <div className="space-y-4">
           {facts.map((fact) => (
             <div
@@ -482,10 +518,16 @@ function EntitiesSection({ entities: initialEntities, documentId, onEntitiesExtr
           <p className="text-sm mt-2">
             {isExtracting 
               ? 'Extracting entities from the document...' 
-              : 'Click "Extract Entities" to extract entities from this document, or wait for automatic extraction during processing.'}
+              : 'Entities are automatically extracted during document upload. Click "Extract Entities" to manually trigger extraction, or refresh the page.'}
           </p>
         </div>
       ) : (
+        <>
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              ✓ Found {entities.length} entit{entities.length !== 1 ? 'ies' : 'y'} extracted from this document
+            </p>
+          </div>
         <div className="space-y-6">
           {Object.entries(groupedEntities).map(([type, typeEntities]) => (
             <div key={type}>
@@ -514,7 +556,8 @@ function EntitiesSection({ entities: initialEntities, documentId, onEntitiesExtr
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        </>
       )}
     </div>
   )

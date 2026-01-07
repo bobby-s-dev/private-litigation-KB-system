@@ -275,6 +275,86 @@ class IngestionService:
                                     'error': str(e)
                                 }
                         
+                        # Extract and save facts for version
+                        facts_extracted = 0
+                        try:
+                            from services.fact_extraction import FactExtractionService
+                            from models import Fact
+                            
+                            if extracted_text:
+                                print(f"[Fact Extraction] Starting extraction for version document {new_version.id}, text length: {len(extracted_text)}")
+                                fact_service = FactExtractionService(self.db)
+                                extracted_facts = fact_service.extract_facts_from_document(
+                                    str(new_version.id),
+                                    use_llm=fact_service.llm_client is not None
+                                )
+                                print(f"[Fact Extraction] Extracted {len(extracted_facts)} raw facts from version document")
+                                
+                                if extracted_facts:
+                                    for fact_data in extracted_facts:
+                                        try:
+                                            fact_text_raw = fact_data.get('fact', '').strip()
+                                            if not fact_text_raw:
+                                                continue
+                                            
+                                            event_date = None
+                                            if fact_data.get('event_date'):
+                                                try:
+                                                    from datetime import date as date_type
+                                                    event_date = date_type.fromisoformat(fact_data['event_date'])
+                                                except:
+                                                    pass
+                                            
+                                            fact_text = fact_text_raw[:500]
+                                            existing_fact = self.db.query(Fact).filter(
+                                                Fact.document_id == new_version.id,
+                                                Fact.fact_text == fact_text,
+                                                Fact.event_date == event_date
+                                            ).first()
+                                            
+                                            if existing_fact:
+                                                continue
+                                            
+                                            issues = []
+                                            tags = fact_data.get('tags', [])
+                                            issue_tags = ['legal_proceeding', 'deadline', 'contract', 'evidence', 'witness', 'expert']
+                                            for tag in tags:
+                                                if tag in issue_tags:
+                                                    issues.append(tag.replace('_', ' ').title())
+                                            
+                                            fact = Fact(
+                                                document_id=new_version.id,
+                                                matter_id=new_version.matter_id,
+                                                fact_text=fact_text_raw,
+                                                source_text=fact_data.get('source_text'),
+                                                page_number=fact_data.get('page_number'),
+                                                event_date=event_date,
+                                                tags=tags,
+                                                issues=issues,
+                                                confidence_score=fact_data.get('confidence', 0.7),
+                                                review_status='not_reviewed',
+                                                extraction_method='llm' if fact_service.llm_client else 'pattern',
+                                                extraction_model=settings.rag_model if fact_service.llm_client else None
+                                            )
+                                            self.db.add(fact)
+                                            facts_extracted += 1
+                                        except Exception as fact_error:
+                                            print(f"[Fact Extraction] Error saving fact for version: {str(fact_error)}")
+                                            continue
+                                    
+                                    self.db.flush()
+                                    self.db.commit()
+                                    
+                                    saved_facts_count = self.db.query(Fact).filter(
+                                        Fact.document_id == new_version.id
+                                    ).count()
+                                    print(f"[Fact Extraction] Successfully saved {facts_extracted} facts for version document (verified: {saved_facts_count} in DB)")
+                        except Exception as e:
+                            print(f"[Fact Extraction] Error extracting facts for version: {str(e)}")
+                            self.db.rollback()
+                        
+                        result['facts_extracted'] = facts_extracted
+                        
                         # Extract and save entities for version
                         entities_extracted = 0
                         try:
@@ -545,69 +625,112 @@ class IngestionService:
             facts_extracted = 0
             try:
                 from services.fact_extraction import FactExtractionService
-                from models import Fact
+                from models import Fact, Document
                 
-                fact_service = FactExtractionService(self.db)
-                extracted_facts = fact_service.extract_facts_from_document(
-                    str(document_id),
-                    use_llm=fact_service.llm_client is not None
-                )
-                
-                for fact_data in extracted_facts:
-                    # Parse event date first
-                    event_date = None
-                    event_datetime = None
-                    if fact_data.get('event_date'):
-                        try:
-                            from datetime import date as date_type
-                            event_date = date_type.fromisoformat(fact_data['event_date'])
-                        except:
-                            pass
-                    
-                    # Check if fact already exists
-                    fact_text = fact_data.get('fact', '')[:500]  # Truncate for comparison
-                    existing_fact = self.db.query(Fact).filter(
-                        Fact.document_id == document_id,
-                        Fact.fact_text == fact_text,
-                        Fact.event_date == event_date
-                    ).first()
-                    
-                    if existing_fact:
-                        continue
-                    
-                    # Extract issues from tags
-                    issues = []
-                    tags = fact_data.get('tags', [])
-                    issue_tags = ['legal_proceeding', 'deadline', 'contract', 'evidence', 'witness', 'expert']
-                    for tag in tags:
-                        if tag in issue_tags:
-                            issues.append(tag.replace('_', ' ').title())
-                    
-                    # Create fact record
-                    fact = Fact(
-                        document_id=document_id,
-                        matter_id=matter_id,
-                        fact_text=fact_data.get('fact', ''),
-                        source_text=fact_data.get('source_text'),
-                        page_number=fact_data.get('page_number'),
-                        event_date=event_date,
-                        event_datetime=event_datetime,
-                        tags=tags,
-                        issues=issues,
-                        confidence_score=fact_data.get('confidence', 0.7),
-                        review_status='not_reviewed',
-                        extraction_method='llm' if fact_service.llm_client else 'pattern',
-                        extraction_model=settings.rag_model if fact_service.llm_client else None
+                # Verify document exists in database
+                document = self.db.query(Document).filter(Document.id == document_id).first()
+                if not document:
+                    print(f"[Fact Extraction] Document {document_id} not found in database, skipping fact extraction")
+                    result['facts_extracted'] = 0
+                elif not extracted_text:
+                    print(f"[Fact Extraction] No extracted text available for document {document_id}")
+                    result['facts_extracted'] = 0
+                else:
+                    print(f"[Fact Extraction] Starting extraction for document {document_id}, text length: {len(extracted_text)}")
+                    fact_service = FactExtractionService(self.db)
+                    extracted_facts = fact_service.extract_facts_from_document(
+                        str(document_id),
+                        use_llm=fact_service.llm_client is not None
                     )
-                    self.db.add(fact)
-                    facts_extracted += 1
-                
-                self.db.commit()
-                result['facts_extracted'] = facts_extracted
+                    print(f"[Fact Extraction] Extracted {len(extracted_facts)} raw facts from document")
+                    
+                    if not extracted_facts:
+                        print(f"[Fact Extraction] No facts found in document text")
+                        result['facts_extracted'] = 0
+                    else:
+                        for fact_data in extracted_facts:
+                            try:
+                                # Skip facts with empty fact text
+                                fact_text_raw = fact_data.get('fact', '').strip()
+                                if not fact_text_raw:
+                                    continue
+                                
+                                # Parse event date first
+                                event_date = None
+                                event_datetime = None
+                                if fact_data.get('event_date'):
+                                    try:
+                                        from datetime import date as date_type
+                                        event_date = date_type.fromisoformat(fact_data['event_date'])
+                                    except:
+                                        pass
+                                
+                                # Check if fact already exists
+                                fact_text = fact_text_raw[:500]  # Truncate for comparison
+                                existing_fact = self.db.query(Fact).filter(
+                                    Fact.document_id == document_id,
+                                    Fact.fact_text == fact_text,
+                                    Fact.event_date == event_date
+                                ).first()
+                                
+                                if existing_fact:
+                                    continue
+                                
+                                # Extract issues from tags
+                                issues = []
+                                tags = fact_data.get('tags', [])
+                                issue_tags = ['legal_proceeding', 'deadline', 'contract', 'evidence', 'witness', 'expert']
+                                for tag in tags:
+                                    if tag in issue_tags:
+                                        issues.append(tag.replace('_', ' ').title())
+                                
+                                # Create fact record
+                                fact = Fact(
+                                    document_id=document_id,
+                                    matter_id=matter_id,
+                                    fact_text=fact_text_raw,
+                                    source_text=fact_data.get('source_text'),
+                                    page_number=fact_data.get('page_number'),
+                                    event_date=event_date,
+                                    event_datetime=event_datetime,
+                                    tags=tags,
+                                    issues=issues,
+                                    confidence_score=fact_data.get('confidence', 0.7),
+                                    review_status='not_reviewed',
+                                    extraction_method='llm' if fact_service.llm_client else 'pattern',
+                                    extraction_model=settings.rag_model if fact_service.llm_client else None
+                                )
+                                self.db.add(fact)
+                                facts_extracted += 1
+                                print(f"[Fact Extraction] Saved fact: {fact_text_raw[:100]}...")
+                            except Exception as fact_error:
+                                print(f"[Fact Extraction] Error saving fact: {str(fact_error)}")
+                                import traceback
+                                traceback.print_exc()
+                                continue
+                        
+                        # Ensure all changes are flushed before commit
+                        self.db.flush()
+                        self.db.commit()
+                        
+                        # Verify facts were saved
+                        saved_count = self.db.query(Fact).filter(
+                            Fact.document_id == document_id
+                        ).count()
+                        print(f"[Fact Extraction] Successfully saved {facts_extracted} facts to database (verified: {saved_count} in DB)")
+                        result['facts_extracted'] = facts_extracted
+                        result['facts_saved_count'] = saved_count
             except Exception as e:
                 # Don't fail ingestion if fact extraction fails
-                print(f"Error extracting facts during ingestion: {str(e)}")
+                print(f"[Fact Extraction] Error extracting facts during ingestion: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                try:
+                    self.db.rollback()
+                except:
+                    pass
                 result['facts_extracted'] = 0
+                result['fact_extraction_error'] = str(e)
             
             # Extract and save entities
             entities_extracted = 0
@@ -752,9 +875,19 @@ class IngestionService:
                         saved_count = self.db.query(DocumentEntity).filter(
                             DocumentEntity.document_id == document_id_uuid
                         ).count()
-                        print(f"[Entity Extraction] Successfully saved {entities_extracted} entities to database (verified: {saved_count} in DB)")
+                        
+                        # Also verify entities table
+                        entity_count = self.db.query(Entity).join(
+                            DocumentEntity, Entity.id == DocumentEntity.entity_id
+                        ).filter(
+                            DocumentEntity.document_id == document_id_uuid
+                        ).distinct().count()
+                        
+                        print(f"[Entity Extraction] Successfully saved {entities_extracted} entities to database")
+                        print(f"[Entity Extraction] Verification: {saved_count} document-entity links, {entity_count} unique entities")
                         result['entities_extracted'] = entities_extracted
                         result['entities_saved_count'] = saved_count
+                        result['entities_unique_count'] = entity_count
             except Exception as e:
                 # Don't fail ingestion if entity extraction fails
                 print(f"[Entity Extraction] Error extracting entities during ingestion: {str(e)}")

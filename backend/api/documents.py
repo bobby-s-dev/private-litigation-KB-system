@@ -53,9 +53,16 @@ async def get_documents(
     # Apply pagination and ordering
     documents = query.order_by(Document.ingested_at.desc()).offset(offset).limit(limit).all()
     
-    # Format response
-    result = [
-        {
+    # Format response with facts and entities counts
+    result = []
+    for doc in documents:
+        # Get facts count for this document
+        facts_count = db.query(Fact).filter(Fact.document_id == doc.id).count()
+        
+        # Get entities count for this document
+        entities_count = db.query(DocumentEntity).filter(DocumentEntity.document_id == doc.id).count()
+        
+        result.append({
             'id': str(doc.id),
             'filename': doc.file_name,
             'file_name': doc.file_name,
@@ -68,9 +75,9 @@ async def get_documents(
             'ingested_at': doc.ingested_at.isoformat() if doc.ingested_at else None,
             'tags': doc.tags or [],
             'categories': doc.categories or [],
-        }
-        for doc in documents
-    ]
+            'facts_count': facts_count,
+            'entities_count': entities_count,
+        })
     
     return {
         'total': total,

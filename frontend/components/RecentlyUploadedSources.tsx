@@ -9,6 +9,8 @@ interface Source {
   citations: number
   uploaded: string
   relatedFacts?: number
+  factsCount?: number
+  entitiesCount?: number
   id: string
 }
 
@@ -66,7 +68,9 @@ export default function RecentlyUploadedSources({ matterId, refreshKey }: Recent
             name: doc.file_name || doc.filename,
             citations: doc.citations || 0,
             uploaded: formattedDate,
-            relatedFacts: doc.citations || 0,
+            relatedFacts: doc.facts_count || doc.citations || 0,
+            factsCount: doc.facts_count || 0,
+            entitiesCount: doc.entities_count || 0,
           }
         })
         
@@ -123,7 +127,8 @@ export default function RecentlyUploadedSources({ matterId, refreshKey }: Recent
           <thead>
             <tr className="border-b border-gray-200">
               <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Name</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Number of Citations</th>
+              <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Facts</th>
+              <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Entities</th>
               <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Uploaded</th>
               <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700"></th>
             </tr>
@@ -133,13 +138,37 @@ export default function RecentlyUploadedSources({ matterId, refreshKey }: Recent
               <tr key={source.id} className="border-b border-gray-100 hover:bg-gray-50">
                 <td className="py-3 px-4">
                   <div className="font-medium text-gray-900">{source.name}</div>
-                  {source.relatedFacts && (
-                    <button className="text-sm text-purple-600 hover:text-purple-700 mt-1">
-                      View {source.relatedFacts} related fact{source.relatedFacts !== 1 ? 's' : ''}
-                    </button>
+                </td>
+                <td className="py-3 px-4">
+                  {source.factsCount !== undefined ? (
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        source.factsCount > 0 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {source.factsCount} fact{source.factsCount !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 text-sm">-</span>
                   )}
                 </td>
-                <td className="py-3 px-4 text-gray-700">{source.citations}</td>
+                <td className="py-3 px-4">
+                  {source.entitiesCount !== undefined ? (
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        source.entitiesCount > 0 
+                          ? 'bg-blue-100 text-blue-700' 
+                          : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {source.entitiesCount} entit{source.entitiesCount !== 1 ? 'ies' : 'y'}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 text-sm">-</span>
+                  )}
+                </td>
                 <td className="py-3 px-4 text-gray-600 text-sm">{source.uploaded}</td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
