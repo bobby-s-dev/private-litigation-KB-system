@@ -317,6 +317,109 @@ export default function EntitiesPage() {
               </div>
             )
           })()}
+
+          {/* Detailed Entity Table */}
+          <div className="mt-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-700">All Entities with Facts</h3>
+              <span className="text-xs text-gray-500">{factsPerEntity.length} entities</span>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        #
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Entity Name
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Fact Count
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Percentage
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {factsPerEntity
+                      .sort((a, b) => b.value - a.value)
+                      .map((entity, index) => {
+                        const totalFacts = factsPerEntity.reduce((sum, e) => sum + e.value, 0)
+                        const percentage = ((entity.value / totalFacts) * 100).toFixed(1)
+                        
+                        return (
+                          <tr key={index} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                              {index + 1}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 w-2 h-2 rounded-full mr-2" style={{ backgroundColor: entity.color }} />
+                                <span className="text-sm font-medium text-gray-900" title={entity.name}>
+                                  {entity.name.length > 40 ? entity.name.substring(0, 40) + '...' : entity.name}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <span
+                                className="px-2 py-1 rounded text-xs font-medium"
+                                style={{
+                                  backgroundColor: entity.color + '20',
+                                  color: entity.color
+                                }}
+                              >
+                                {entity.type}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <span className="text-sm font-semibold text-purple-600">{entity.value}</span>
+                                <span className="text-xs text-gray-500 ml-1">facts</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 w-20 bg-gray-200 rounded-full h-1.5">
+                                  <div
+                                    className="h-1.5 rounded-full transition-all"
+                                    style={{
+                                      width: `${percentage}%`,
+                                      backgroundColor: entity.color
+                                    }}
+                                  />
+                                </div>
+                                <span className="text-xs font-medium text-gray-600 w-10 text-right">
+                                  {percentage}%
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <button
+                                onClick={() => {
+                                  router.push(`/cases/${caseIdParam}/facts?entity=${encodeURIComponent(entity.name)}`)
+                                }}
+                                className="text-xs text-purple-600 hover:text-purple-700 font-medium hover:underline"
+                              >
+                                View Facts →
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
