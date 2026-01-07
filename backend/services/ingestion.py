@@ -437,27 +437,27 @@ class IngestionService:
                                                 Entity.normalized_name == normalized_name
                                             ).first()
                                             
-                                if not entity:
-                                    # Create entity - only include review_status if database column exists
-                                    # (Schema might be out of sync - handle gracefully)
-                                    try:
-                                        entity = Entity(
-                                            entity_type_id=entity_type.id,
-                                            normalized_name=normalized_name,
-                                            display_name=display_name,
-                                            confidence_score=confidence,
-                                            review_status='not_reviewed'
-                                        )
-                                    except Exception:
-                                        # If review_status causes issues, create without it
-                                        entity = Entity(
-                                            entity_type_id=entity_type.id,
-                                            normalized_name=normalized_name,
-                                            display_name=display_name,
-                                            confidence_score=confidence
-                                        )
-                                    self.db.add(entity)
-                                    self.db.flush()
+                                            if not entity:
+                                                # Create entity - only include review_status if database column exists
+                                                # (Schema might be out of sync - handle gracefully)
+                                                try:
+                                                    entity = Entity(
+                                                        entity_type_id=entity_type.id,
+                                                        normalized_name=normalized_name,
+                                                        display_name=display_name,
+                                                        confidence_score=confidence,
+                                                        review_status='not_reviewed'
+                                                    )
+                                                except Exception:
+                                                    # If review_status causes issues, create without it
+                                                    entity = Entity(
+                                                        entity_type_id=entity_type.id,
+                                                        normalized_name=normalized_name,
+                                                        display_name=display_name,
+                                                        confidence_score=confidence
+                                                    )
+                                                self.db.add(entity)
+                                                self.db.flush()
                                             
                                             # Create or update document-entity relationship
                                             doc_entity = self.db.query(DocumentEntity).filter(
