@@ -388,7 +388,8 @@ class IngestionService:
                                     
                                     print(f"[Entity Extraction] Found {len(entity_counts)} unique entities after deduplication")
                                     
-                                    # Save entities to database
+                                    # Save entities to database - ensure ALL found entities are saved
+                                    entities_to_save = []
                                     for entity_info in entity_counts.values():
                                         try:
                                             entity_value = entity_info['value'].strip()
@@ -451,15 +452,26 @@ class IngestionService:
                                                 )
                                                 self.db.add(doc_entity)
                                                 entities_extracted += 1
+                                                entities_to_save.append(display_name)
                                             else:
                                                 doc_entity.mention_count = max(doc_entity.mention_count or 0, mention_count)
+                                                entities_to_save.append(display_name)
                                         except Exception as entity_error:
                                             print(f"[Entity Extraction] Error saving entity: {str(entity_error)}")
+                                            import traceback
+                                            traceback.print_exc()
+                                            # Continue to next entity - don't fail entire extraction
                                             continue
                                     
-                                    # Ensure all changes are flushed before commit
-                                    self.db.flush()
-                                    self.db.commit()
+                                    # Ensure all changes are flushed and committed - save ALL entities found
+                                    try:
+                                        self.db.flush()
+                                        self.db.commit()
+                                        print(f"[Entity Extraction] Committed {len(entities_to_save)} entities for version document to database")
+                                    except Exception as commit_error:
+                                        print(f"[Entity Extraction] Error committing entities for version: {str(commit_error)}")
+                                        self.db.rollback()
+                                        raise  # Re-raise to be caught by outer exception handler
                                     
                                     # Verify entities were saved
                                     saved_count = self.db.query(DocumentEntity).filter(
@@ -777,7 +789,8 @@ class IngestionService:
                         
                         print(f"[Entity Extraction] Found {len(entity_counts)} unique entities after deduplication")
                         
-                        # Save entities to database
+                        # Save entities to database - ensure ALL found entities are saved
+                        entities_to_save = []
                         for entity_info in entity_counts.values():
                             try:
                                 entity_value = entity_info['value'].strip()
@@ -848,21 +861,30 @@ class IngestionService:
                                     )
                                     self.db.add(doc_entity)
                                     entities_extracted += 1
+                                    entities_to_save.append(display_name)
                                     print(f"[Entity Extraction] Linked entity {display_name} to document (mentions: {mention_count})")
                                 else:
                                     # Update mention count if relationship exists
                                     old_count = doc_entity.mention_count or 0
                                     doc_entity.mention_count = max(old_count, mention_count)
+                                    entities_to_save.append(display_name)
                                     print(f"[Entity Extraction] Updated mention count for {display_name}: {old_count} -> {doc_entity.mention_count}")
                             except Exception as entity_error:
                                 print(f"[Entity Extraction] Error saving entity {entity_info.get('value', 'unknown')}: {str(entity_error)}")
                                 import traceback
                                 traceback.print_exc()
+                                # Continue to next entity - don't fail entire extraction
                                 continue
                         
-                        # Ensure all changes are flushed before commit
-                        self.db.flush()
-                        self.db.commit()
+                        # Ensure all changes are flushed and committed - save ALL entities found
+                        try:
+                            self.db.flush()
+                            self.db.commit()
+                            print(f"[Entity Extraction] Committed {len(entities_to_save)} entities to database")
+                        except Exception as commit_error:
+                            print(f"[Entity Extraction] Error committing entities: {str(commit_error)}")
+                            self.db.rollback()
+                            raise  # Re-raise to be caught by outer exception handler
                         
                         # Verify entities were saved
                         if isinstance(document_id, str):
