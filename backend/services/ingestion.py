@@ -366,11 +366,24 @@ class IngestionService:
                                 print(f"[Entity Extraction] Extracted {len(extracted_entities)} raw entities from text")
                                 
                                 if extracted_entities:
+                                    # Normalize entity types (map to standard type names)
+                                    entity_type_mapping = {
+                                        'email': 'email_address',
+                                        'phone': 'phone_number',
+                                        'person': 'person',
+                                        'organization': 'organization',
+                                        'location': 'location',
+                                        'case_number': 'case_number',
+                                        'unknown': 'unknown'
+                                    }
+                                    
                                     # Count mentions for each entity
                                     entity_counts = {}
                                     for entity_data in extracted_entities:
                                         entity_value = entity_data.get('value', '').strip()
-                                        entity_type_name = entity_data.get('type', 'unknown')
+                                        raw_type = entity_data.get('type', 'unknown')
+                                        # Normalize entity type name
+                                        entity_type_name = entity_type_mapping.get(raw_type, raw_type)
                                         confidence = entity_data.get('confidence', 0.7)
                                         
                                         if not entity_value or len(entity_value) < 2:
@@ -769,11 +782,24 @@ class IngestionService:
                         print(f"[Entity Extraction] No entities found in document text")
                         result['entities_extracted'] = 0
                     else:
+                        # Normalize entity types (map to standard type names)
+                        entity_type_mapping = {
+                            'email': 'email_address',
+                            'phone': 'phone_number',
+                            'person': 'person',
+                            'organization': 'organization',
+                            'location': 'location',
+                            'case_number': 'case_number',
+                            'unknown': 'unknown'
+                        }
+                        
                         # Count mentions for each entity
                         entity_counts = {}
                         for entity_data in extracted_entities:
                             entity_value = entity_data.get('value', '').strip()
-                            entity_type_name = entity_data.get('type', 'unknown')
+                            raw_type = entity_data.get('type', 'unknown')
+                            # Normalize entity type name
+                            entity_type_name = entity_type_mapping.get(raw_type, raw_type)
                             confidence = entity_data.get('confidence', 0.7)
                             
                             if not entity_value or len(entity_value) < 2:
@@ -838,7 +864,9 @@ class IngestionService:
                                     )
                                     self.db.add(entity)
                                     self.db.flush()
-                                    print(f"[Entity Extraction] Created new entity: {display_name} (type: {entity_type_name})")
+                                    print(f"[Entity Extraction] ✓ Created new Entity record in 'entities' table: {display_name} (type: {entity_type_name}, id: {entity.id})")
+                                else:
+                                    print(f"[Entity Extraction] ✓ Found existing Entity in 'entities' table: {display_name} (id: {entity.id})")
                                 
                                 # Create or update document-entity relationship
                                 # Ensure document_id is UUID type
@@ -864,7 +892,7 @@ class IngestionService:
                                     self.db.add(doc_entity)
                                     entities_extracted += 1
                                     entities_to_save.append(display_name)
-                                    print(f"[Entity Extraction] Linked entity {display_name} to document (mentions: {mention_count})")
+                                    print(f"[Entity Extraction] ✓ Created DocumentEntity record in 'document_entities' table: {display_name} -> document {document_id_uuid} (mentions: {mention_count})")
                                 else:
                                     # Update mention count if relationship exists
                                     old_count = doc_entity.mention_count or 0
@@ -930,6 +958,13 @@ class IngestionService:
                         
                         print(f"[Entity Extraction] VERIFICATION: {saved_count} document-entity links found in DB, {entity_count} unique entities")
                         print(f"[Entity Extraction] Expected: {entities_extracted} new links created, {len(entities_to_save)} entities processed")
+                        print(f"[Entity Extraction] ✓ Entities saved to 'entities' and 'document_entities' tables (NOT 'facts' table)")
+                        
+                        # Verify we're NOT saving to facts table by checking
+                        from models import Fact
+                        facts_count = self.db.query(Fact).filter(Fact.document_id == document_id_uuid).count()
+                        if facts_count > 0:
+                            print(f"[Entity Extraction] NOTE: {facts_count} facts found in 'facts' table (separate from entities)")
                         
                         if saved_count == 0 and len(entities_to_save) > 0:
                             print(f"[Entity Extraction] WARNING: No entities found in DB but {len(entities_to_save)} were processed!")

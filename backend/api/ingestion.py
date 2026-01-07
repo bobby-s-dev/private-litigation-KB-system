@@ -139,13 +139,23 @@ async def upload_batch(
     
     for file in files:
         try:
-            # Skip files without a filename
-            filename = file.filename
-            if not filename or not filename.strip():
+            # Get filename - handle missing filename
+            filename = file.filename or 'unknown'
+            if not filename or not filename.strip() or filename == 'unknown':
+                results.append({
+                    'filename': filename or 'unknown',
+                    'success': False,
+                    'error': 'File has no filename'
+                })
                 continue
             
-            # Skip system files like .DS_Store
+            # Skip system files like .DS_Store but report them
             if filename.startswith('.') or filename.endswith('.DS_Store') or '.DS_Store' in filename:
+                results.append({
+                    'filename': filename,
+                    'success': False,
+                    'error': 'System file skipped (e.g., .DS_Store)'
+                })
                 continue
             
             # Extract just the filename (not the relative path) for processing
@@ -153,8 +163,14 @@ async def upload_batch(
             file_path_obj = Path(filename)
             base_filename = file_path_obj.name
             
-            # Check if file extension is supported
-            if file_path_obj.suffix.lower() not in supported_extensions:
+            # Check if file extension is supported - report unsupported extensions
+            file_extension = file_path_obj.suffix.lower()
+            if file_extension not in supported_extensions:
+                results.append({
+                    'filename': filename,
+                    'success': False,
+                    'error': f'Unsupported file extension: {file_extension}. Supported extensions: {", ".join(sorted(supported_extensions))}'
+                })
                 continue
             
             # Check file size
@@ -231,9 +247,16 @@ async def upload_batch(
         except:
             pass
     
+    # Calculate summary statistics
+    successful = len([r for r in results if r.get('success', False) is not False])
+    failed = len([r for r in results if r.get('success', False) is False])
+    
     return JSONResponse(content={
         'ingestion_run_id': ingestion_run_id,
         'total_files': len(files),
+        'files_processed': len(results),
+        'successful': successful,
+        'failed': failed,
         'results': results
     })
 
