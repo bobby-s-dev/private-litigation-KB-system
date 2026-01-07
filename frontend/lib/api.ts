@@ -254,6 +254,13 @@ class ApiClient {
     return this.request<any[]>(`/api/documents/${documentId}/review/entities`)
   }
 
+  async extractEntities(documentId: string): Promise<{ entities: any[]; extracted_count: number; message: string }> {
+    return this.request<{ entities: any[]; extracted_count: number; message: string }>(
+      `/api/documents/${documentId}/review/entities/extract`,
+      { method: 'POST' }
+    )
+  }
+
   async getDocumentSummary(documentId: string): Promise<any> {
     return this.request<any>(`/api/documents/${documentId}/review/summary`)
   }

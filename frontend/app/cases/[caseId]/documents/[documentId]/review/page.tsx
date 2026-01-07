@@ -150,7 +150,7 @@ export default function DocumentReviewPage() {
           <SuggestedFactsSection facts={suggestedFacts} documentId={documentId} onFactsExtracted={loadReviewData} />
         )}
         {activeTab === 'entities' && (
-          <EntitiesSection entities={entities} />
+          <EntitiesSection entities={entities} documentId={documentId} onEntitiesExtracted={loadReviewData} />
         )}
         {activeTab === 'summary' && (
           <DocumentSummarySection summary={summary} />
@@ -409,7 +409,37 @@ function SuggestedFactsSection({
   )
 }
 
-function EntitiesSection({ entities }: { entities: Entity[] }) {
+function EntitiesSection({ entities: initialEntities, documentId, onEntitiesExtracted }: { entities: Entity[]; documentId: string; onEntitiesExtracted?: () => void }) {
+  const [entities, setEntities] = useState<Entity[]>(initialEntities)
+  const [isExtracting, setIsExtracting] = useState(false)
+  const [extractionError, setExtractionError] = useState<string | null>(null)
+
+  // Update entities when initialEntities changes
+  useEffect(() => {
+    setEntities(initialEntities)
+  }, [initialEntities])
+
+  const handleExtractEntities = async () => {
+    setIsExtracting(true)
+    setExtractionError(null)
+    try {
+      const result = await apiClient.extractEntities(documentId)
+      setEntities(result.entities)
+      if (onEntitiesExtracted) {
+        onEntitiesExtracted()
+      }
+      if (result.extracted_count === 0) {
+        setExtractionError(result.message || 'No entities could be extracted from this document.')
+      }
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Failed to extract entities. Please try again.'
+      setExtractionError(errorMessage)
+      console.error('Error extracting entities:', error)
+    } finally {
+      setIsExtracting(false)
+    }
+  }
+
   const groupedEntities = entities.reduce((acc, entity) => {
     if (!acc[entity.type]) {
       acc[entity.type] = []
@@ -421,18 +451,39 @@ function EntitiesSection({ entities }: { entities: Entity[] }) {
   return (
     <div>
       <div className="mb-4">
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">
-          Entities
-        </h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Entities
+          </h2>
+          {entities.length === 0 && (
+            <button
+              onClick={handleExtractEntities}
+              disabled={isExtracting}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            >
+              {isExtracting ? 'Extracting...' : 'Extract Entities'}
+            </button>
+          )}
+        </div>
         <p className="text-sm text-gray-600">
           View entities (persons, businesses, etc.) related to this source.
         </p>
       </div>
 
+      {extractionError && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-sm text-yellow-800">{extractionError}</p>
+        </div>
+      )}
+
       {entities.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           <p>No entities found in this document.</p>
-          <p className="text-sm mt-2">Entities will be extracted automatically as the document is processed.</p>
+          <p className="text-sm mt-2">
+            {isExtracting 
+              ? 'Extracting entities from the document...' 
+              : 'Click "Extract Entities" to extract entities from this document, or wait for automatic extraction during processing.'}
+          </p>
         </div>
       ) : (
         <div className="space-y-6">

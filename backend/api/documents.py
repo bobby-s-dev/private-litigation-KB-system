@@ -529,6 +529,157 @@ async def get_document_entities(
     return entities
 
 
+@router.post("/{document_id}/review/entities/extract")
+async def extract_entities_manually(
+    document_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Manually trigger entity extraction for a document.
+    Returns the extracted entities.
+    """
+    try:
+        doc_uuid = uuid.UUID(document_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid document ID format: {document_id}")
+    
+    document = db.query(Document).filter(Document.id == doc_uuid).first()
+    
+    if not document:
+        raise HTTPException(status_code=404, detail=f"Document {document_id} not found")
+    
+    if not document.extracted_text:
+        raise HTTPException(
+            status_code=400, 
+            detail="Document text has not been extracted yet. Please wait for document processing to complete."
+        )
+    
+    try:
+        from services.metadata_extraction import MetadataExtractionService
+        metadata_service = MetadataExtractionService()
+        extracted_entities = metadata_service.extract_entities(document.extracted_text)
+        
+        if not extracted_entities:
+            return {
+                'entities': [],
+                'message': 'No entities could be extracted from this document.',
+                'extracted_count': 0
+            }
+        
+        # Count mentions for each entity
+        entity_counts = {}
+        for entity_data in extracted_entities:
+            entity_value = entity_data.get('value', '')
+            entity_type = entity_data.get('type', 'unknown')
+            key = f"{entity_type}:{entity_value.lower()}"
+            if key not in entity_counts:
+                entity_counts[key] = {
+                    'value': entity_value,
+                    'type': entity_type,
+                    'count': 0,
+                    'confidence': entity_data.get('confidence', 0.7)
+                }
+            entity_counts[key]['count'] += 1
+        
+        # Save extracted entities to database
+        saved_count = 0
+        saved_entities = []
+        
+        for entity_info in entity_counts.values():
+            entity_value = entity_info['value'].strip()
+            entity_type_name = entity_info['type']
+            mention_count = entity_info['count']
+            confidence = entity_info['confidence']
+            
+            if not entity_value or len(entity_value) < 2:
+                continue
+            
+            # Get or create entity type
+            entity_type = db.query(EntityType).filter(
+                EntityType.type_name == entity_type_name
+            ).first()
+            
+            if not entity_type:
+                # Create entity type if it doesn't exist
+                entity_type = EntityType(
+                    type_name=entity_type_name,
+                    category='other',
+                    description=f"Auto-created entity type: {entity_type_name}"
+                )
+                db.add(entity_type)
+                db.flush()
+            
+            # Normalize entity name (lowercase for matching)
+            normalized_name = entity_value.lower().strip()
+            display_name = entity_value.strip()
+            
+            # Get or create entity
+            entity = db.query(Entity).filter(
+                Entity.entity_type_id == entity_type.id,
+                Entity.normalized_name == normalized_name
+            ).first()
+            
+            if not entity:
+                entity = Entity(
+                    entity_type_id=entity_type.id,
+                    normalized_name=normalized_name,
+                    display_name=display_name,
+                    confidence_score=confidence,
+                    review_status='not_reviewed'
+                )
+                db.add(entity)
+                db.flush()
+            
+            # Create or update document-entity relationship
+            doc_entity = db.query(DocumentEntity).filter(
+                DocumentEntity.document_id == doc_uuid,
+                DocumentEntity.entity_id == entity.id
+            ).first()
+            
+            if not doc_entity:
+                doc_entity = DocumentEntity(
+                    document_id=doc_uuid,
+                    entity_id=entity.id,
+                    mention_text=display_name,
+                    mention_count=mention_count,
+                    extraction_method='ner',
+                    confidence_score=confidence
+                )
+                db.add(doc_entity)
+                saved_count += 1
+            else:
+                # Update mention count if relationship exists
+                doc_entity.mention_count = max(doc_entity.mention_count or 0, mention_count)
+            
+            # Format for response
+            entity_type_obj = db.query(EntityType).filter(EntityType.id == entity.entity_type_id).first()
+            saved_entities.append({
+                'id': str(entity.id),
+                'name': entity.display_name or entity.normalized_name,
+                'type': entity_type_obj.type_name if entity_type_obj else 'unknown',
+                'mentions': mention_count,
+                'confidence': float(confidence)
+            })
+        
+        db.commit()
+        
+        return {
+            'entities': saved_entities,
+            'extracted_count': saved_count,
+            'message': f'Successfully extracted {saved_count} entity/entities from the document.'
+        }
+    except Exception as e:
+        db.rollback()
+        error_msg = str(e)
+        print(f"Error extracting entities: {error_msg}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to extract entities: {error_msg}"
+        )
+
+
 @router.get("/matter/{matter_id}/entities")
 async def get_matter_entities(
     matter_id: str,
