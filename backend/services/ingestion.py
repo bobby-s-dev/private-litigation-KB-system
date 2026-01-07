@@ -615,6 +615,7 @@ class IngestionService:
             self.db.add(audit_entry)
             
             self.db.commit()
+            print(f"[Ingestion] Document {document_id} committed to database")
             
             # Auto-index if enabled
             if settings.auto_index_on_ingestion:
@@ -744,7 +745,7 @@ class IngestionService:
                 result['facts_extracted'] = 0
                 result['fact_extraction_error'] = str(e)
             
-            # Extract and save entities
+            # Extract and save entities - MUST happen after document is committed
             entities_extracted = 0
             try:
                 from models import Entity, EntityType, DocumentEntity
@@ -752,10 +753,11 @@ class IngestionService:
                 # Verify document exists in database
                 document = self.db.query(Document).filter(Document.id == document_id).first()
                 if not document:
-                    print(f"[Entity Extraction] Document {document_id} not found in database, skipping entity extraction")
+                    print(f"[Entity Extraction] ERROR: Document {document_id} not found in database, skipping entity extraction")
                     result['entities_extracted'] = 0
+                    result['entity_extraction_error'] = "Document not found in database"
                 elif not extracted_text:
-                    print(f"[Entity Extraction] No extracted text available for document {document_id}")
+                    print(f"[Entity Extraction] WARNING: No extracted text available for document {document_id}")
                     result['entities_extracted'] = 0
                 else:
                     print(f"[Entity Extraction] Starting extraction for document {document_id}, text length: {len(extracted_text)}")
@@ -878,23 +880,46 @@ class IngestionService:
                         
                         # Ensure all changes are flushed and committed - save ALL entities found
                         try:
+                            print(f"[Entity Extraction] Flushing {len(entities_to_save)} entities to database...")
                             self.db.flush()
+                            print(f"[Entity Extraction] Committing entities to database...")
                             self.db.commit()
-                            print(f"[Entity Extraction] Committed {len(entities_to_save)} entities to database")
+                            print(f"[Entity Extraction] SUCCESS: Committed {len(entities_to_save)} entities to database")
                         except Exception as commit_error:
-                            print(f"[Entity Extraction] Error committing entities: {str(commit_error)}")
-                            self.db.rollback()
-                            raise  # Re-raise to be caught by outer exception handler
+                            print(f"[Entity Extraction] ERROR committing entities: {str(commit_error)}")
+                            import traceback
+                            traceback.print_exc()
+                            try:
+                                self.db.rollback()
+                                print(f"[Entity Extraction] Rolled back transaction")
+                            except Exception as rollback_error:
+                                print(f"[Entity Extraction] ERROR during rollback: {str(rollback_error)}")
+                            # Don't re-raise - we want to continue and verify what was saved
+                            result['entity_extraction_error'] = f"Commit error: {str(commit_error)}"
                         
-                        # Verify entities were saved
+                        # Verify entities were saved - CRITICAL CHECK
                         if isinstance(document_id, str):
                             document_id_uuid = uuid.UUID(document_id)
                         else:
                             document_id_uuid = document_id
                         
+                        # Refresh session to see committed data
+                        self.db.expire_all()
+                        
+                        # Use a fresh query to verify entities were saved
+                        # This ensures we're reading from the database, not from session cache
                         saved_count = self.db.query(DocumentEntity).filter(
                             DocumentEntity.document_id == document_id_uuid
                         ).count()
+                        
+                        # Double-check with a direct query
+                        if saved_count == 0 and len(entities_to_save) > 0:
+                            # Try one more time with explicit refresh
+                            self.db.commit()  # Ensure any pending changes are committed
+                            saved_count = self.db.query(DocumentEntity).filter(
+                                DocumentEntity.document_id == document_id_uuid
+                            ).count()
+                            print(f"[Entity Extraction] Re-checked after explicit commit: {saved_count} entities found")
                         
                         # Also verify entities table
                         entity_count = self.db.query(Entity).join(
@@ -903,20 +928,26 @@ class IngestionService:
                             DocumentEntity.document_id == document_id_uuid
                         ).distinct().count()
                         
-                        print(f"[Entity Extraction] Successfully saved {entities_extracted} entities to database")
-                        print(f"[Entity Extraction] Verification: {saved_count} document-entity links, {entity_count} unique entities")
+                        print(f"[Entity Extraction] VERIFICATION: {saved_count} document-entity links found in DB, {entity_count} unique entities")
+                        print(f"[Entity Extraction] Expected: {entities_extracted} new links created, {len(entities_to_save)} entities processed")
+                        
+                        if saved_count == 0 and len(entities_to_save) > 0:
+                            print(f"[Entity Extraction] WARNING: No entities found in DB but {len(entities_to_save)} were processed!")
+                            result['entity_extraction_error'] = f"Entities processed but not found in database. Expected {len(entities_to_save)}, found {saved_count}"
+                        
                         result['entities_extracted'] = entities_extracted
                         result['entities_saved_count'] = saved_count
                         result['entities_unique_count'] = entity_count
             except Exception as e:
-                # Don't fail ingestion if entity extraction fails
-                print(f"[Entity Extraction] Error extracting entities during ingestion: {str(e)}")
+                # Don't fail ingestion if entity extraction fails, but log the error
+                print(f"[Entity Extraction] CRITICAL ERROR extracting entities during ingestion: {str(e)}")
                 import traceback
                 traceback.print_exc()
                 try:
                     self.db.rollback()
-                except:
-                    pass
+                    print(f"[Entity Extraction] Rolled back after error")
+                except Exception as rollback_error:
+                    print(f"[Entity Extraction] ERROR during rollback: {str(rollback_error)}")
                 result['entities_extracted'] = 0
                 result['entity_extraction_error'] = str(e)
             
