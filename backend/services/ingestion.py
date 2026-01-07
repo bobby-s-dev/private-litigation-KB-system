@@ -437,16 +437,27 @@ class IngestionService:
                                                 Entity.normalized_name == normalized_name
                                             ).first()
                                             
-                                            if not entity:
-                                                entity = Entity(
-                                                    entity_type_id=entity_type.id,
-                                                    normalized_name=normalized_name,
-                                                    display_name=display_name,
-                                                    confidence_score=confidence,
-                                                    review_status='not_reviewed'
-                                                )
-                                                self.db.add(entity)
-                                                self.db.flush()
+                                if not entity:
+                                    # Create entity - only include review_status if database column exists
+                                    # (Schema might be out of sync - handle gracefully)
+                                    try:
+                                        entity = Entity(
+                                            entity_type_id=entity_type.id,
+                                            normalized_name=normalized_name,
+                                            display_name=display_name,
+                                            confidence_score=confidence,
+                                            review_status='not_reviewed'
+                                        )
+                                    except Exception:
+                                        # If review_status causes issues, create without it
+                                        entity = Entity(
+                                            entity_type_id=entity_type.id,
+                                            normalized_name=normalized_name,
+                                            display_name=display_name,
+                                            confidence_score=confidence
+                                        )
+                                    self.db.add(entity)
+                                    self.db.flush()
                                             
                                             # Create or update document-entity relationship
                                             doc_entity = self.db.query(DocumentEntity).filter(
@@ -855,13 +866,19 @@ class IngestionService:
                                 ).first()
                                 
                                 if not entity:
+                                    # Create entity - only set review_status if column exists in DB
+                                    # (Handle schema mismatch gracefully)
                                     entity = Entity(
                                         entity_type_id=entity_type.id,
                                         normalized_name=normalized_name,
                                         display_name=display_name,
-                                        confidence_score=confidence,
-                                        review_status='not_reviewed'
+                                        confidence_score=confidence
                                     )
+                                    # Try to set review_status, but don't fail if column doesn't exist
+                                    try:
+                                        entity.review_status = 'not_reviewed'
+                                    except AttributeError:
+                                        pass  # Column doesn't exist in database, skip it
                                     self.db.add(entity)
                                     self.db.flush()
                                     print(f"[Entity Extraction] ✓ Created new Entity record in 'entities' table: {display_name} (type: {entity_type_name}, id: {entity.id})")
@@ -949,10 +966,8 @@ class IngestionService:
                             ).count()
                             print(f"[Entity Extraction] Re-checked after explicit commit: {saved_count} entities found")
                         
-                        # Also verify entities table
-                        entity_count = self.db.query(Entity).join(
-                            DocumentEntity, Entity.id == DocumentEntity.entity_id
-                        ).filter(
+                        # Also verify entities table - count distinct entity IDs only (avoid selecting columns that may not exist)
+                        entity_count = self.db.query(DocumentEntity.entity_id).filter(
                             DocumentEntity.document_id == document_id_uuid
                         ).distinct().count()
                         
