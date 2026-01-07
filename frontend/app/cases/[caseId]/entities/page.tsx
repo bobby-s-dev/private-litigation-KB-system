@@ -33,6 +33,8 @@ export default function EntitiesPage() {
   const [editingEntity, setEditingEntity] = useState<string | null>(null)
   const [editValues, setEditValues] = useState<Partial<Entity>>({})
   const [availableTypes, setAvailableTypes] = useState<string[]>([])
+  const [factsPerEntity, setFactsPerEntity] = useState<Array<{ name: string; value: number; color: string; type: string }>>([])
+  const [loadingStats, setLoadingStats] = useState(true)
 
   useEffect(() => {
     const initializeMatter = async () => {
@@ -64,6 +66,7 @@ export default function EntitiesPage() {
   useEffect(() => {
     if (caseId) {
       loadEntities()
+      loadFactsPerEntity()
     }
   }, [caseId, currentPage, searchQuery, typeFilter, reviewStatusFilter])
 
@@ -96,6 +99,21 @@ export default function EntitiesPage() {
       setTotal(0)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadFactsPerEntity = async () => {
+    if (!caseId) return
+
+    try {
+      setLoadingStats(true)
+      const data = await apiClient.getFactsPerEntity(caseId)
+      setFactsPerEntity(data)
+    } catch (error) {
+      console.error('Error loading facts per entity:', error)
+      setFactsPerEntity([])
+    } finally {
+      setLoadingStats(false)
     }
   }
 
@@ -168,6 +186,139 @@ export default function EntitiesPage() {
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Entities</h1>
         <p className="text-gray-600">View and manage all entities extracted from case documents</p>
       </div>
+
+      {/* Entity Statistics from Facts */}
+      {!loadingStats && factsPerEntity.length > 0 && (
+        <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-200 p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Entity Insights from Facts</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Total Entities with Facts */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Entities with Facts</p>
+                  <p className="text-3xl font-bold text-purple-600 mt-1">{factsPerEntity.length}</p>
+                </div>
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <span className="text-2xl">👥</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Total Facts Linked */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Total Facts Linked</p>
+                  <p className="text-3xl font-bold text-blue-600 mt-1">
+                    {factsPerEntity.reduce((sum, e) => sum + e.value, 0)}
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <span className="text-2xl">📊</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Entity Types Count */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Entity Types</p>
+                  <p className="text-3xl font-bold text-green-600 mt-1">
+                    {new Set(factsPerEntity.map(e => e.type)).size}
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <span className="text-2xl">🏷️</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Top Entities by Fact Count */}
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Top Entities by Fact Count</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {factsPerEntity
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 6)
+                .map((entity, index) => (
+                  <div
+                    key={index}
+                    className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 hover:border-purple-300 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate" title={entity.name}>
+                          {entity.name}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          <span
+                            className="inline-block px-2 py-0.5 rounded text-xs font-medium"
+                            style={{ backgroundColor: entity.color + '20', color: entity.color }}
+                          >
+                            {entity.type}
+                          </span>
+                        </p>
+                      </div>
+                      <div className="ml-3 flex-shrink-0">
+                        <div className="flex items-center gap-1">
+                          <span className="text-lg font-bold text-purple-600">{entity.value}</span>
+                          <span className="text-xs text-gray-500">facts</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          {/* Entity Type Distribution */}
+          {(() => {
+            const typeDistribution = factsPerEntity.reduce((acc, entity) => {
+              acc[entity.type] = (acc[entity.type] || 0) + entity.value
+              return acc
+            }, {} as Record<string, number>)
+
+            const sortedTypes = Object.entries(typeDistribution)
+              .sort(([, a], [, b]) => b - a)
+              .slice(0, 5)
+
+            return (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Facts by Entity Type</h3>
+                <div className="space-y-2">
+                  {sortedTypes.map(([type, count]) => {
+                    const maxCount = sortedTypes[0][1]
+                    const percentage = (count / maxCount) * 100
+                    const entityColor = factsPerEntity.find(e => e.type === type)?.color || '#9333ea'
+
+                    return (
+                      <div key={type} className="bg-white rounded-lg p-3 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-700">{type}</span>
+                          <span className="text-sm font-semibold text-gray-900">{count} facts</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="h-2 rounded-full transition-all duration-500"
+                            style={{
+                              width: `${percentage}%`,
+                              backgroundColor: entityColor
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
+        </div>
+      )}
 
       {/* Search and Filters */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
