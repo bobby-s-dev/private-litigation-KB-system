@@ -828,7 +828,6 @@ class IngestionService:
                                 # Create or update document-entity relationship
                                 # Ensure document_id is UUID type
                                 if isinstance(document_id, str):
-                                    import uuid
                                     document_id_uuid = uuid.UUID(document_id)
                                 else:
                                     document_id_uuid = document_id
@@ -867,7 +866,6 @@ class IngestionService:
                         
                         # Verify entities were saved
                         if isinstance(document_id, str):
-                            import uuid
                             document_id_uuid = uuid.UUID(document_id)
                         else:
                             document_id_uuid = document_id

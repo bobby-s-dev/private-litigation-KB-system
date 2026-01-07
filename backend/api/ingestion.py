@@ -131,58 +131,103 @@ async def upload_batch(
     ingestion_run_id = str(uuid.uuid4())
     results = []
     
+    # Supported file extensions
+    supported_extensions = {
+        '.pdf', '.docx', '.doc', '.msg', '.eml', '.txt', '.csv',
+        '.xlsx', '.xls', '.jpg', '.jpeg', '.png', '.gif', '.tiff', '.bmp'
+    }
+    
     for file in files:
         try:
+            # Skip files without a filename
+            filename = file.filename
+            if not filename or not filename.strip():
+                continue
+            
+            # Skip system files like .DS_Store
+            if filename.startswith('.') or filename.endswith('.DS_Store') or '.DS_Store' in filename:
+                continue
+            
+            # Extract just the filename (not the relative path) for processing
+            # But preserve relative path info for subdirectory creation
+            file_path_obj = Path(filename)
+            base_filename = file_path_obj.name
+            
+            # Check if file extension is supported
+            if file_path_obj.suffix.lower() not in supported_extensions:
+                continue
+            
             # Check file size
             file_content = await file.read()
             file_size_mb = len(file_content) / (1024 * 1024)
             if file_size_mb > settings.max_file_size_mb:
                 results.append({
-                    'filename': file.filename,
+                    'filename': filename,
                     'success': False,
                     'error': f"File size exceeds maximum ({settings.max_file_size_mb} MB)"
                 })
                 continue
             
             # Save file temporarily
+            # Handle relative paths by creating subdirectories if needed
             temp_dir = Path(settings.upload_dir) / "temp" / ingestion_run_id
             temp_dir.mkdir(parents=True, exist_ok=True)
-            temp_file_path = temp_dir / file.filename
             
+            # If filename contains path separators, create subdirectories
+            if '/' in filename or '\\' in filename:
+                # Create subdirectory structure
+                relative_dir = file_path_obj.parent
+                if relative_dir and str(relative_dir) != '.':
+                    subdir = temp_dir / relative_dir
+                    subdir.mkdir(parents=True, exist_ok=True)
+                    temp_file_path = subdir / base_filename
+                else:
+                    temp_file_path = temp_dir / base_filename
+            else:
+                temp_file_path = temp_dir / base_filename
+            
+            # Write file content
             with open(temp_file_path, 'wb') as f:
                 f.write(file_content)
             
-            # Ingest file
+            # Ingest file using just the base filename
             ingestion_service = IngestionService(db, ingestion_run_id)
             result = ingestion_service.ingest_file(
                 file_path=temp_file_path,
                 matter_id=matter_id,
-                filename=file.filename,
+                filename=base_filename,  # Use just the filename, not the path
                 document_type=document_type,
                 user_id=user_id,
                 tags=tags,
                 categories=categories
             )
             
-            result['filename'] = file.filename
+            result['filename'] = filename  # Keep original filename with path for reference
             results.append(result)
             
             # Clean up temp file
             if temp_file_path.exists():
                 temp_file_path.unlink()
+                # Try to remove parent directory if empty
+                try:
+                    if temp_file_path.parent != temp_dir and temp_file_path.parent.exists():
+                        if not any(temp_file_path.parent.iterdir()):
+                            temp_file_path.parent.rmdir()
+                except:
+                    pass
         
         except Exception as e:
             results.append({
-                'filename': file.filename,
+                'filename': file.filename if hasattr(file, 'filename') else 'unknown',
                 'success': False,
                 'error': str(e)
             })
     
-    # Clean up temp directory
+    # Clean up temp directory (recursively remove all contents)
     temp_dir = Path(settings.upload_dir) / "temp" / ingestion_run_id
     if temp_dir.exists():
         try:
-            temp_dir.rmdir()
+            shutil.rmtree(temp_dir)
         except:
             pass
     
