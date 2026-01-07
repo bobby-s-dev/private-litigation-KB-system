@@ -129,6 +129,32 @@ export default function FactsPage() {
     return new Date(b.date_time).getTime() - new Date(a.date_time).getTime()
   })
 
+  // Group facts by date for timeline
+  const groupFactsByDate = () => {
+    const grouped: { [key: string]: Fact[] } = {}
+    
+    sortedFacts.forEach(fact => {
+      if (fact.date_time) {
+        const date = new Date(fact.date_time).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        })
+        if (!grouped[date]) {
+          grouped[date] = []
+        }
+        grouped[date].push(fact)
+      } else {
+        if (!grouped['No Date']) {
+          grouped['No Date'] = []
+        }
+        grouped['No Date'].push(fact)
+      }
+    })
+    
+    return grouped
+  }
+
   // Render Timeline View
   const renderTimelineView = () => {
     if (loading) {
@@ -144,112 +170,212 @@ export default function FactsPage() {
       )
     }
 
-    return (
-      <div className="relative">
-        {/* Timeline line */}
-        <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gray-200" />
-        
-        {/* Timeline items */}
-        <div className="space-y-6 pb-8">
-          {sortedFacts.map((fact, index) => (
-            <div key={fact.id} className="relative pl-20 pr-4">
-              {/* Timeline dot */}
-              <div className="absolute left-6 top-6 w-4 h-4 rounded-full border-4 border-purple-600 bg-white" />
-              
-              {/* Fact card */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                {/* Date/Time Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="text-lg font-semibold text-gray-900">
-                      {formatDate(fact.date_time)}
-                    </div>
-                    {fact.date_time && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        {new Date(fact.date_time).toLocaleTimeString('en-US', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit'
-                        })}
-                      </div>
-                    )}
-                  </div>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      fact.review_status === 'accepted'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}
-                  >
-                    {fact.review_status === 'accepted' ? 'Accepted' : 'Not Reviewed'}
-                  </span>
-                </div>
+    const groupedFacts = groupFactsByDate()
+    const dates = Object.keys(groupedFacts).filter(d => d !== 'No Date')
+    const noDateFacts = groupedFacts['No Date'] || []
 
-                {/* Fact Content */}
-                <div className="mb-4">
-                  <p className="text-gray-900 leading-relaxed">{fact.fact}</p>
-                  {fact.source_text && (
-                    <div className="mt-3 p-3 bg-gray-50 rounded border border-gray-200">
-                      <div className="text-xs font-medium text-gray-500 mb-1">Source Text:</div>
-                      <div className="text-sm text-gray-600 italic">
-                        "{fact.source_text.substring(0, 200)}..."
+    return (
+      <div className="bg-gradient-to-b from-purple-50 to-white rounded-lg p-6">
+        {/* Horizontal Timeline */}
+        <div className="overflow-x-auto pb-8">
+          <div className="min-w-max">
+            {/* Timeline axis */}
+            <div className="relative mb-8">
+              {/* Horizontal line */}
+              <div className="absolute top-6 left-0 right-0 h-1 bg-gradient-to-r from-purple-300 via-purple-500 to-purple-300" />
+              
+              {/* Date markers */}
+              <div className="flex justify-between items-start relative">
+                {dates.map((date, index) => (
+                  <div key={date} className="flex flex-col items-center min-w-[200px]">
+                    {/* Marker */}
+                    <div className="w-4 h-4 rounded-full bg-purple-600 border-4 border-white shadow-lg z-10 mb-2" />
+                    {/* Date label */}
+                    <div className="text-sm font-semibold text-purple-900 mb-1">{date}</div>
+                    <div className="text-xs text-gray-500">
+                      {groupedFacts[date].length} {groupedFacts[date].length === 1 ? 'fact' : 'facts'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Facts grouped by date */}
+            <div className="flex gap-6">
+              {dates.map((date, dateIndex) => (
+                <div key={date} className="min-w-[200px] max-w-[300px] flex-shrink-0">
+                  <div className="space-y-4">
+                    {groupedFacts[date].map((fact, factIndex) => (
+                      <div
+                        key={fact.id}
+                        className="relative"
+                      >
+                        {/* Connecting line from timeline */}
+                        {factIndex === 0 && (
+                          <div className="absolute -top-8 left-1/2 w-0.5 h-8 bg-purple-300" />
+                        )}
+                        
+                        {/* Fact card */}
+                        <div className="bg-white border-2 border-purple-200 rounded-lg p-4 hover:shadow-lg hover:border-purple-400 transition-all">
+                          {/* Time */}
+                          {fact.date_time && (
+                            <div className="text-xs font-medium text-purple-600 mb-2">
+                              {new Date(fact.date_time).toLocaleTimeString('en-US', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          )}
+                          
+                          {/* Status badge */}
+                          <div className="flex justify-between items-start mb-2">
+                            <span
+                              className={`px-2 py-1 rounded text-xs font-medium ${
+                                fact.review_status === 'accepted'
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-gray-100 text-gray-700'
+                              }`}
+                            >
+                              {fact.review_status === 'accepted' ? '✓ Accepted' : '○ Review'}
+                            </span>
+                          </div>
+
+                          {/* Fact text */}
+                          <p className="text-sm text-gray-900 mb-3 line-clamp-4" title={fact.fact}>
+                            {fact.fact}
+                          </p>
+
+                          {/* Issues */}
+                          {fact.issues.length > 0 && (
+                            <div className="mb-3">
+                              <div className="flex flex-wrap gap-1">
+                                {fact.issues.slice(0, 2).map((issue, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs"
+                                  >
+                                    {issue}
+                                  </span>
+                                ))}
+                                {fact.issues.length > 2 && (
+                                  <span className="text-xs text-gray-500">
+                                    +{fact.issues.length - 2} more
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Actions */}
+                          <div className="flex flex-col gap-2 pt-3 border-t border-gray-100">
+                            <button
+                              onClick={() => router.push(`/cases/${caseIdParam}/documents/${fact.document_id}/review`)}
+                              className="text-xs text-purple-600 hover:text-purple-700 font-medium text-left"
+                            >
+                              📄 View Document
+                            </button>
+                            {fact.review_status === 'not_reviewed' ? (
+                              <button
+                                onClick={() => handleReviewStatusChange(fact.id, 'accepted')}
+                                className="w-full px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 text-xs font-medium"
+                              >
+                                Accept
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleReviewStatusChange(fact.id, 'not_reviewed')}
+                                className="w-full px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs font-medium"
+                              >
+                                Undo
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Facts without dates */}
+        {noDateFacts.length > 0 && (
+          <div className="mt-8 pt-8 border-t-2 border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-700 mb-4">Facts Without Dates</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {noDateFacts.map((fact) => (
+                <div
+                  key={fact.id}
+                  className="bg-white border border-gray-300 rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
+                  {/* Status badge */}
+                  <div className="flex justify-between items-start mb-2">
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-medium ${
+                        fact.review_status === 'accepted'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {fact.review_status === 'accepted' ? '✓ Accepted' : '○ Review'}
+                    </span>
+                  </div>
+
+                  {/* Fact text */}
+                  <p className="text-sm text-gray-900 mb-3">{fact.fact}</p>
+
+                  {/* Issues */}
+                  {fact.issues.length > 0 && (
+                    <div className="mb-3">
+                      <div className="flex flex-wrap gap-1">
+                        {fact.issues.slice(0, 2).map((issue, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs"
+                          >
+                            {issue}
+                          </span>
+                        ))}
+                        {fact.issues.length > 2 && (
+                          <span className="text-xs text-gray-500">
+                            +{fact.issues.length - 2} more
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}
-                </div>
 
-                {/* Issues */}
-                {fact.issues.length > 0 && (
-                  <div className="mb-4">
-                    <div className="text-xs font-medium text-gray-500 mb-2">Related Issues:</div>
-                    <div className="flex flex-wrap gap-2">
-                      {fact.issues.map((issue, idx) => (
-                        <span
-                          key={idx}
-                          className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium"
-                        >
-                          {issue}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Evidence and Actions */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                  <div className="flex items-center gap-4">
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium">Evidence:</span> {fact.evidence}
-                    </div>
+                  {/* Actions */}
+                  <div className="flex flex-col gap-2 pt-3 border-t border-gray-100">
                     <button
                       onClick={() => router.push(`/cases/${caseIdParam}/documents/${fact.document_id}/review`)}
-                      className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                      className="text-xs text-purple-600 hover:text-purple-700 font-medium text-left"
                     >
-                      View Document →
+                      📄 View Document
                     </button>
-                  </div>
-                  <div>
                     {fact.review_status === 'not_reviewed' ? (
                       <button
                         onClick={() => handleReviewStatusChange(fact.id, 'accepted')}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition-colors"
+                        className="w-full px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 text-xs font-medium"
                       >
                         Accept
                       </button>
                     ) : (
                       <button
                         onClick={() => handleReviewStatusChange(fact.id, 'not_reviewed')}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm font-medium transition-colors"
+                        className="w-full px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs font-medium"
                       >
                         Undo
                       </button>
                     )}
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
     )
   }
