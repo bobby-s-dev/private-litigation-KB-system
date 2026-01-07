@@ -42,21 +42,6 @@ export default function DocumentReviewPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'facts' | 'entities' | 'summary'>('facts')
 
-  useEffect(() => {
-    if (documentId) {
-      loadReviewData()
-    }
-    
-    // Auto-refresh every 5 seconds if document is still processing
-    const interval = setInterval(() => {
-      if (documentId && document?.processing_status === 'processing') {
-        loadReviewData()
-      }
-    }, 5000)
-    
-    return () => clearInterval(interval)
-  }, [documentId, document?.processing_status])
-
   const loadReviewData = async () => {
     try {
       setLoading(true)
@@ -90,6 +75,22 @@ export default function DocumentReviewPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (documentId) {
+      loadReviewData()
+    }
+    
+    // Auto-refresh every 5 seconds if document is still processing
+    const interval = setInterval(() => {
+      if (documentId && document?.processing_status === 'processing') {
+        loadReviewData()
+      }
+    }, 5000)
+    
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentId])
 
   if (loading) {
     return (
@@ -331,7 +332,7 @@ function SuggestedFactsSection({
               ✓ Found {facts.length} fact{facts.length !== 1 ? 's' : ''} extracted from this document
             </p>
           </div>
-        <div className="space-y-4">
+          <div className="space-y-4">
           {facts.map((fact) => (
             <div
               key={fact.id}
@@ -413,7 +414,8 @@ function SuggestedFactsSection({
               )}
             </div>
           ))}
-        </div>
+          </div>
+        </>
       )}
 
       {/* Confirmation Dialog */}
