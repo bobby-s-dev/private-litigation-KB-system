@@ -36,6 +36,70 @@ export default function KnowledgeBasePage() {
   
   // Active tab
   const [activeTab, setActiveTab] = useState<'patterns' | 'query' | 'summary'>('patterns')
+  
+  // Filter state
+  const [filters, setFilters] = useState({
+    startDate: '',
+    endDate: '',
+    datePreset: 'all' as 'all' | '30d' | '3m' | '1y' | '5y' | 'custom',
+    documentTypes: [] as string[],
+    minConfidence: 0.0,
+    entityIds: [] as string[]
+  })
+  const [showFilters, setShowFilters] = useState(false)
+  const [availableDocumentTypes, setAvailableDocumentTypes] = useState<string[]>([])
+
+  const loadPatternSummary = async () => {
+    if (!caseId) return
+    
+    try {
+      setLoadingPatterns(true)
+      
+      // Apply date preset
+      let startDate = filters.startDate
+      let endDate = filters.endDate
+      
+      if (filters.datePreset !== 'custom' && filters.datePreset !== 'all') {
+        const today = new Date()
+        const end = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+        let start = new Date()
+        
+        switch (filters.datePreset) {
+          case '30d':
+            start.setDate(start.getDate() - 30)
+            break
+          case '3m':
+            start.setMonth(start.getMonth() - 3)
+            break
+          case '1y':
+            start.setFullYear(start.getFullYear() - 1)
+            break
+          case '5y':
+            start.setFullYear(start.getFullYear() - 5)
+            break
+        }
+        
+        startDate = start.toISOString().split('T')[0]
+        endDate = end.toISOString().split('T')[0]
+      }
+      
+      const summary = await apiClient.getMatterPatternSummary(
+        caseId,
+        filters.datePreset === 'all' ? undefined : startDate,
+        filters.datePreset === 'all' ? undefined : endDate,
+        filters.documentTypes.length > 0 ? filters.documentTypes : undefined,
+        filters.minConfidence > 0 ? filters.minConfidence : undefined
+      )
+      setPatterns(summary.rico_patterns)
+      setInconsistencies(summary.inconsistencies)
+      setSuggestions(summary.suggestions)
+    } catch (error) {
+      console.error('Error loading patterns:', error)
+    } finally {
+      setLoadingPatterns(false)
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     const initializeMatter = async () => {
@@ -55,7 +119,6 @@ export default function KnowledgeBasePage() {
           )
         }
         setCaseId(matter.id)
-        loadPatternSummary()
       } catch (error) {
         console.error('Error initializing matter:', error)
         setLoading(false)
@@ -64,22 +127,50 @@ export default function KnowledgeBasePage() {
 
     initializeMatter()
   }, [caseIdParam])
-
-  const loadPatternSummary = async () => {
-    if (!caseId) return
-    
-    try {
-      setLoadingPatterns(true)
-      const summary = await apiClient.getMatterPatternSummary(caseId)
-      setPatterns(summary.rico_patterns)
-      setInconsistencies(summary.inconsistencies)
-      setSuggestions(summary.suggestions)
-    } catch (error) {
-      console.error('Error loading patterns:', error)
-    } finally {
-      setLoadingPatterns(false)
-      setLoading(false)
+  
+  // Load available document types
+  useEffect(() => {
+    const loadDocumentTypes = async () => {
+      if (!caseId) return
+      try {
+        const documents = await apiClient.getDocumentsByMatter(caseId)
+        const types = Array.from(new Set(documents.map(d => d.document_type).filter(Boolean)))
+        setAvailableDocumentTypes(types as string[])
+      } catch (error) {
+        console.error('Error loading document types:', error)
+      }
     }
+    if (caseId) {
+      loadDocumentTypes()
+    }
+  }, [caseId])
+  
+  // Reload when filters change
+  useEffect(() => {
+    if (caseId && activeTab === 'patterns') {
+      loadPatternSummary()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.datePreset, filters.startDate, filters.endDate, filters.documentTypes, filters.minConfidence, caseId, activeTab])
+  
+  const handleDatePresetChange = (preset: 'all' | '30d' | '3m' | '1y' | '5y' | 'custom') => {
+    setFilters(prev => ({
+      ...prev,
+      datePreset: preset,
+      startDate: preset === 'custom' ? prev.startDate : '',
+      endDate: preset === 'custom' ? prev.endDate : ''
+    }))
+  }
+  
+  const clearFilters = () => {
+    setFilters({
+      startDate: '',
+      endDate: '',
+      datePreset: 'all',
+      documentTypes: [],
+      minConfidence: 0.0,
+      entityIds: []
+    })
   }
 
   const handleQuery = async () => {
@@ -168,6 +259,163 @@ export default function KnowledgeBasePage() {
       {/* Pattern Detection Tab */}
       {activeTab === 'patterns' && (
         <div className="space-y-6">
+          {/* Filters Panel */}
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={clearFilters}
+                  className="text-sm text-gray-600 hover:text-gray-900 px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+                >
+                  Clear All
+                </button>
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="text-sm text-purple-600 hover:text-purple-700 px-3 py-1 border border-purple-200 rounded hover:bg-purple-50"
+                >
+                  {showFilters ? '▼ Hide' : '▶ Show'} Filters
+                </button>
+              </div>
+            </div>
+            
+            {showFilters && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
+                {/* Date Range Preset */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Time Period
+                  </label>
+                  <select
+                    value={filters.datePreset}
+                    onChange={(e) => handleDatePresetChange(e.target.value as any)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="all">All Time</option>
+                    <option value="30d">Last 30 Days</option>
+                    <option value="3m">Last 3 Months</option>
+                    <option value="1y">Last Year</option>
+                    <option value="5y">Last 5 Years</option>
+                    <option value="custom">Custom Range</option>
+                  </select>
+                </div>
+                
+                {/* Custom Date Range */}
+                {filters.datePreset === 'custom' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        value={filters.startDate}
+                        onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        End Date
+                      </label>
+                      <input
+                        type="date"
+                        value={filters.endDate}
+                        onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                  </>
+                )}
+                
+                {/* Document Types */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Document Types
+                  </label>
+                  <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-2">
+                    {availableDocumentTypes.length === 0 ? (
+                      <p className="text-xs text-gray-500">No document types available</p>
+                    ) : (
+                      availableDocumentTypes.map((type) => (
+                        <label key={type} className="flex items-center gap-2 py-1">
+                          <input
+                            type="checkbox"
+                            checked={filters.documentTypes.includes(type)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFilters(prev => ({
+                                  ...prev,
+                                  documentTypes: [...prev.documentTypes, type]
+                                }))
+                              } else {
+                                setFilters(prev => ({
+                                  ...prev,
+                                  documentTypes: prev.documentTypes.filter(t => t !== type)
+                                }))
+                              }
+                            }}
+                            className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                          />
+                          <span className="text-sm text-gray-700 capitalize">{type.replace('_', ' ')}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </div>
+                
+                {/* Confidence Score */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Min Confidence: {(filters.minConfidence * 100).toFixed(0)}%
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={filters.minConfidence}
+                    onChange={(e) => setFilters(prev => ({ ...prev, minConfidence: parseFloat(e.target.value) }))}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>0%</span>
+                    <span>50%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Active Filters Summary */}
+            {(filters.datePreset !== 'all' || filters.documentTypes.length > 0 || filters.minConfidence > 0) && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <p className="text-xs text-gray-600 mb-2">Active Filters:</p>
+                <div className="flex flex-wrap gap-2">
+                  {filters.datePreset !== 'all' && (
+                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
+                      {filters.datePreset === 'custom' 
+                        ? `Custom: ${filters.startDate} to ${filters.endDate}`
+                        : filters.datePreset === '30d' ? 'Last 30 Days'
+                        : filters.datePreset === '3m' ? 'Last 3 Months'
+                        : filters.datePreset === '1y' ? 'Last Year'
+                        : 'Last 5 Years'}
+                    </span>
+                  )}
+                  {filters.documentTypes.map(type => (
+                    <span key={type} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                      {type.replace('_', ' ')}
+                    </span>
+                  ))}
+                  {filters.minConfidence > 0 && (
+                    <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
+                      Min Confidence: {(filters.minConfidence * 100).toFixed(0)}%
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           {loadingPatterns ? (
             <div className="text-center py-12 text-gray-500">Analyzing patterns...</div>
           ) : (

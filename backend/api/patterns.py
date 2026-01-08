@@ -2,6 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List
+from datetime import datetime
 
 from database import get_db
 from services.pattern_detection import PatternDetectionService
@@ -16,6 +17,10 @@ router = APIRouter(prefix="/api/patterns", tags=["patterns"])
 async def detect_rico_patterns(
     matter_id: Optional[str] = Query(None, description="Filter by matter ID"),
     entity_ids: Optional[List[str]] = Query(None, description="Filter by entity IDs"),
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    document_types: Optional[List[str]] = Query(None, description="Filter by document types"),
+    min_confidence: Optional[float] = Query(None, description="Minimum confidence score (0.0-1.0)"),
     db: Session = Depends(get_db)
 ):
     """
@@ -31,11 +36,32 @@ async def detect_rico_patterns(
     """
     try:
         service = PatternDetectionService(db)
+        
+        # Parse dates
+        start_dt = None
+        end_dt = None
+        if start_date:
+            try:
+                start_dt = datetime.fromisoformat(start_date)
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid start_date format: {start_date}. Use YYYY-MM-DD")
+        if end_date:
+            try:
+                end_dt = datetime.fromisoformat(end_date)
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid end_date format: {end_date}. Use YYYY-MM-DD")
+        
         patterns = service.detect_rico_patterns(
             matter_id=matter_id,
-            entity_ids=entity_ids
+            entity_ids=entity_ids,
+            start_date=start_dt,
+            end_date=end_dt,
+            document_types=document_types,
+            min_confidence=min_confidence
         )
         return patterns
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error detecting patterns: {str(e)}")
 
@@ -43,6 +69,9 @@ async def detect_rico_patterns(
 @router.get("/detect/inconsistencies")
 async def detect_inconsistencies(
     matter_id: Optional[str] = Query(None, description="Filter by matter ID"),
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    document_types: Optional[List[str]] = Query(None, description="Filter by document types"),
     db: Session = Depends(get_db)
 ):
     """
@@ -53,11 +82,33 @@ async def detect_inconsistencies(
     """
     try:
         service = PatternDetectionService(db)
-        inconsistencies = service.detect_inconsistencies(matter_id=matter_id)
+        
+        # Parse dates
+        start_dt = None
+        end_dt = None
+        if start_date:
+            try:
+                start_dt = datetime.fromisoformat(start_date)
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid start_date format: {start_date}")
+        if end_date:
+            try:
+                end_dt = datetime.fromisoformat(end_date)
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid end_date format: {end_date}")
+        
+        inconsistencies = service.detect_inconsistencies(
+            matter_id=matter_id,
+            start_date=start_dt,
+            end_date=end_dt,
+            document_types=document_types
+        )
         return {
             'inconsistencies': inconsistencies,
             'count': len(inconsistencies)
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error detecting inconsistencies: {str(e)}")
 
@@ -91,6 +142,10 @@ async def suggest_patterns(
 @router.get("/matter/{matter_id}/summary")
 async def get_matter_pattern_summary(
     matter_id: str,
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    document_types: Optional[List[str]] = Query(None, description="Filter by document types"),
+    min_confidence: Optional[float] = Query(None, description="Minimum confidence score"),
     db: Session = Depends(get_db)
 ):
     """
@@ -102,9 +157,34 @@ async def get_matter_pattern_summary(
     try:
         service = PatternDetectionService(db)
         
-        # Get all patterns
-        rico_patterns = service.detect_rico_patterns(matter_id=matter_id)
-        inconsistencies = service.detect_inconsistencies(matter_id=matter_id)
+        # Parse dates
+        start_dt = None
+        end_dt = None
+        if start_date:
+            try:
+                start_dt = datetime.fromisoformat(start_date)
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid start_date format: {start_date}")
+        if end_date:
+            try:
+                end_dt = datetime.fromisoformat(end_date)
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid end_date format: {end_date}")
+        
+        # Get all patterns with filters
+        rico_patterns = service.detect_rico_patterns(
+            matter_id=matter_id,
+            start_date=start_dt,
+            end_date=end_dt,
+            document_types=document_types,
+            min_confidence=min_confidence
+        )
+        inconsistencies = service.detect_inconsistencies(
+            matter_id=matter_id,
+            start_date=start_dt,
+            end_date=end_dt,
+            document_types=document_types
+        )
         suggestions = service.suggest_patterns(matter_id=matter_id, use_ai=True)
         
         return {

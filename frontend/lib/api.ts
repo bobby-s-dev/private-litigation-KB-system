@@ -478,7 +478,14 @@ class ApiClient {
   }
 
   // Pattern Detection & Knowledge Base APIs
-  async detectRicoPatterns(matterId?: string, entityIds?: string[]): Promise<{
+  async detectRicoPatterns(
+    matterId?: string,
+    entityIds?: string[],
+    startDate?: string,
+    endDate?: string,
+    documentTypes?: string[],
+    minConfidence?: number
+  ): Promise<{
     recurring_actors: any[]
     timing_sequences: any[]
     coordinated_actions: any[]
@@ -489,6 +496,10 @@ class ApiClient {
     const params = new URLSearchParams()
     if (matterId) params.append('matter_id', matterId)
     if (entityIds) entityIds.forEach(id => params.append('entity_ids', id))
+    if (startDate) params.append('start_date', startDate)
+    if (endDate) params.append('end_date', endDate)
+    if (documentTypes) documentTypes.forEach(type => params.append('document_types', type))
+    if (minConfidence !== undefined) params.append('min_confidence', minConfidence.toString())
     
     return this.request<{
       recurring_actors: any[]
@@ -500,12 +511,20 @@ class ApiClient {
     }>(`/api/patterns/detect/rico?${params.toString()}`)
   }
 
-  async detectInconsistencies(matterId?: string): Promise<{
+  async detectInconsistencies(
+    matterId?: string,
+    startDate?: string,
+    endDate?: string,
+    documentTypes?: string[]
+  ): Promise<{
     inconsistencies: any[]
     count: number
   }> {
     const params = new URLSearchParams()
     if (matterId) params.append('matter_id', matterId)
+    if (startDate) params.append('start_date', startDate)
+    if (endDate) params.append('end_date', endDate)
+    if (documentTypes) documentTypes.forEach(type => params.append('document_types', type))
     
     return this.request<{
       inconsistencies: any[]
@@ -527,7 +546,13 @@ class ApiClient {
     }>(`/api/patterns/suggest?${params.toString()}`)
   }
 
-  async getMatterPatternSummary(matterId: string): Promise<{
+  async getMatterPatternSummary(
+    matterId: string,
+    startDate?: string,
+    endDate?: string,
+    documentTypes?: string[],
+    minConfidence?: number
+  ): Promise<{
     matter_id: string
     rico_patterns: any
     inconsistencies: any[]
@@ -539,6 +564,15 @@ class ApiClient {
       overall_confidence: number
     }
   }> {
+    const params = new URLSearchParams()
+    if (startDate) params.append('start_date', startDate)
+    if (endDate) params.append('end_date', endDate)
+    if (documentTypes) documentTypes.forEach(type => params.append('document_types', type))
+    if (minConfidence !== undefined) params.append('min_confidence', minConfidence.toString())
+    
+    const queryString = params.toString()
+    const url = `/api/patterns/matter/${matterId}/summary${queryString ? `?${queryString}` : ''}`
+    
     return this.request<{
       matter_id: string
       rico_patterns: any
@@ -550,7 +584,7 @@ class ApiClient {
         total_suggestions: number
         overall_confidence: number
       }
-    }>(`/api/patterns/matter/${matterId}/summary`)
+    }>(url)
   }
 
   async classifyDocument(documentId: string): Promise<{

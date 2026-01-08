@@ -21,7 +21,11 @@ class PatternDetectionService:
     def detect_rico_patterns(
         self,
         matter_id: Optional[str] = None,
-        entity_ids: Optional[List[str]] = None
+        entity_ids: Optional[List[str]] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        document_types: Optional[List[str]] = None,
+        min_confidence: Optional[float] = None
     ) -> Dict:
         """
         Detect potential RICO-related patterns:
@@ -43,10 +47,33 @@ class PatternDetectionService:
             'overall_confidence': 0.0
         }
         
-        # Get documents for analysis
+        # Get documents for analysis with filters
         query = self.db.query(Document).filter(Document.is_current_version == True)
         if matter_id:
             query = query.filter(Document.matter_id == matter_id)
+        
+        # Date range filter
+        if start_date:
+            query = query.filter(
+                or_(
+                    Document.received_date >= start_date,
+                    Document.created_date >= start_date,
+                    Document.ingested_at >= start_date
+                )
+            )
+        if end_date:
+            query = query.filter(
+                or_(
+                    Document.received_date <= end_date,
+                    Document.created_date <= end_date,
+                    Document.ingested_at <= end_date
+                )
+            )
+        
+        # Document type filter
+        if document_types:
+            query = query.filter(Document.document_type.in_(document_types))
+        
         documents = query.all()
         
         if not documents:
@@ -56,7 +83,7 @@ class PatternDetectionService:
         patterns['recurring_actors'] = self._detect_recurring_actors(documents, entity_ids)
         
         # 2. Detect timing sequences
-        patterns['timing_sequences'] = self._detect_timing_sequences(documents, entity_ids)
+        patterns['timing_sequences'] = self._detect_timing_sequences(documents, entity_ids, start_date, end_date)
         
         # 3. Detect coordinated actions
         patterns['coordinated_actions'] = self._detect_coordinated_actions(documents, entity_ids)
@@ -66,6 +93,15 @@ class PatternDetectionService:
         
         # 5. Detect communication patterns
         patterns['communication_patterns'] = self._detect_communication_patterns(documents)
+        
+        # Apply confidence filter if specified
+        if min_confidence is not None:
+            for pattern_type in ['recurring_actors', 'timing_sequences', 'coordinated_actions', 
+                                'financial_patterns', 'communication_patterns']:
+                patterns[pattern_type] = [
+                    p for p in patterns[pattern_type]
+                    if p.get('confidence', 0.0) >= min_confidence
+                ]
         
         # Calculate overall confidence
         all_patterns = (
@@ -144,19 +180,29 @@ class PatternDetectionService:
     def _detect_timing_sequences(
         self,
         documents: List[Document],
-        entity_ids: Optional[List[str]] = None
+        entity_ids: Optional[List[str]] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None
     ) -> List[Dict]:
         """Detect timing sequences suggesting coordination."""
         patterns = []
         
         # Get events with dates
         doc_ids = [d.id for d in documents]
-        events = self.db.query(Event).filter(
+        query = self.db.query(Event).filter(
             and_(
                 Event.source_document_id.in_(doc_ids),
                 Event.event_date.isnot(None)
             )
-        ).order_by(Event.event_date.asc()).all()
+        )
+        
+        # Apply date filters
+        if start_date:
+            query = query.filter(Event.event_date >= start_date)
+        if end_date:
+            query = query.filter(Event.event_date <= end_date)
+        
+        events = query.order_by(Event.event_date.asc()).all()
         
         if len(events) < 2:
             return patterns
@@ -420,7 +466,10 @@ class PatternDetectionService:
     
     def detect_inconsistencies(
         self,
-        matter_id: Optional[str] = None
+        matter_id: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        document_types: Optional[List[str]] = None
     ) -> List[Dict]:
         """
         Detect inconsistencies across documents:
@@ -430,10 +479,33 @@ class PatternDetectionService:
         """
         inconsistencies = []
         
-        # Get documents
+        # Get documents with filters
         query = self.db.query(Document).filter(Document.is_current_version == True)
         if matter_id:
             query = query.filter(Document.matter_id == matter_id)
+        
+        # Date range filter
+        if start_date:
+            query = query.filter(
+                or_(
+                    Document.received_date >= start_date,
+                    Document.created_date >= start_date,
+                    Document.ingested_at >= start_date
+                )
+            )
+        if end_date:
+            query = query.filter(
+                or_(
+                    Document.received_date <= end_date,
+                    Document.created_date <= end_date,
+                    Document.ingested_at <= end_date
+                )
+            )
+        
+        # Document type filter
+        if document_types:
+            query = query.filter(Document.document_type.in_(document_types))
+        
         documents = query.all()
         
         if len(documents) < 2:
