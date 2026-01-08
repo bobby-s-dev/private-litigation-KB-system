@@ -1,7 +1,7 @@
 """FastAPI endpoints for document retrieval."""
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, and_, func
 from typing import Optional, List
 from datetime import datetime
 import uuid
@@ -940,6 +940,7 @@ async def get_matter_facts(
     offset: int = Query(0, description="Number of facts to skip"),
     review_status: Optional[str] = Query(None, description="Filter by review status: accepted, not_reviewed, rejected"),
     entity: Optional[str] = Query(None, description="Filter by entity name"),
+    search: Optional[str] = Query(None, description="Search in fact text, source text, issues, and evidence"),
     db: Session = Depends(get_db)
 ):
     """
@@ -968,6 +969,24 @@ async def get_matter_facts(
                 Fact.source_text.ilike(f'%{entity_lower}%')
             )
         )
+    
+    # Filter by search query if provided
+    if search:
+        search_lower = search.lower()
+        # Join with Document to search in document name (evidence)
+        query = query.join(Document, Fact.document_id == Document.id)
+        # Build search conditions
+        search_conditions = [
+            Fact.fact_text.ilike(f'%{search_lower}%'),
+            Fact.source_text.ilike(f'%{search_lower}%'),
+            Document.file_name.ilike(f'%{search_lower}%')
+        ]
+        # Search in issues array (PostgreSQL array contains check)
+        # Use array_to_string to convert array to text for searching
+        search_conditions.append(
+            func.array_to_string(Fact.issues, ' ').ilike(f'%{search_lower}%')
+        )
+        query = query.filter(or_(*search_conditions))
     
     # Get total count
     total = query.count()

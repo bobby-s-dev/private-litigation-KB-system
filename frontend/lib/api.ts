@@ -358,7 +358,8 @@ class ApiClient {
     limit: number = 20,
     offset: number = 0,
     reviewStatus?: string,
-    entity?: string
+    entity?: string,
+    search?: string
   ): Promise<{
     total: number
     limit: number
@@ -385,6 +386,9 @@ class ApiClient {
     }
     if (entity) {
       params.append('entity', entity)
+    }
+    if (search) {
+      params.append('search', search)
     }
     return this.request<{
       total: number

@@ -31,6 +31,7 @@ export default function FactsPage() {
   const [reviewStatusFilter, setReviewStatusFilter] = useState<string>('all')
   const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list')
   const [entityFilter, setEntityFilter] = useState<string>('')
+  const [searchQuery, setSearchQuery] = useState<string>('')
 
   useEffect(() => {
     const initializeMatter = async () => {
@@ -72,7 +73,7 @@ export default function FactsPage() {
     if (caseId) {
       loadFacts()
     }
-  }, [caseId, currentPage, reviewStatusFilter, entityFilter])
+  }, [caseId, currentPage, reviewStatusFilter, entityFilter, searchQuery])
 
   const loadFacts = async () => {
     if (!caseId) return
@@ -85,7 +86,8 @@ export default function FactsPage() {
         pageSize,
         offset,
         reviewStatusFilter !== 'all' ? reviewStatusFilter : undefined,
-        entityFilter || undefined
+        entityFilter || undefined,
+        searchQuery || undefined
       )
       setFacts(response.facts)
       setTotal(response.total)
@@ -198,8 +200,45 @@ export default function FactsPage() {
     if (sortedFacts.length === 0) {
       return (
         <div className="p-12 text-center text-gray-500">
-          <p>No facts found.</p>
-          <p className="text-sm mt-2">Upload and process documents to extract facts.</p>
+          {entityFilter || searchQuery ? (
+            <>
+              <p>
+                No facts found
+                {entityFilter && searchQuery
+                  ? ` for entity "${entityFilter}" and search "${searchQuery}"`
+                  : entityFilter
+                  ? ` for entity "${entityFilter}"`
+                  : ` for search "${searchQuery}"`}
+                .
+              </p>
+              <div className="flex gap-2 justify-center mt-4">
+                {entityFilter && (
+                  <button
+                    onClick={clearEntityFilter}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium"
+                  >
+                    Clear Entity Filter
+                  </button>
+                )}
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('')
+                      setCurrentPage(1)
+                    }}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium"
+                  >
+                    Clear Search
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <p>No facts found.</p>
+              <p className="text-sm mt-2">Upload and process documents to extract facts.</p>
+            </>
+          )}
         </div>
       )
     }
@@ -461,7 +500,49 @@ export default function FactsPage() {
 
       {/* Filters and View Toggle */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
+          {/* Search Box */}
+          <div className="flex-1 min-w-[200px]">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search facts..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setCurrentPage(1)
+                }}
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <svg
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('')
+                    setCurrentPage(1)
+                  }}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+          
           <label className="text-sm font-medium text-gray-700">Review Status:</label>
           <select
             value={reviewStatusFilter}
@@ -521,15 +602,38 @@ export default function FactsPage() {
           <div className="p-12 text-center text-gray-500">Loading facts...</div>
         ) : facts.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
-            {entityFilter ? (
+            {entityFilter || searchQuery ? (
               <>
-                <p>No facts found for entity "{entityFilter}".</p>
-                <button
-                  onClick={clearEntityFilter}
-                  className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium"
-                >
-                  Clear Filter
-                </button>
+                <p>
+                  No facts found
+                  {entityFilter && searchQuery
+                    ? ` for entity "${entityFilter}" and search "${searchQuery}"`
+                    : entityFilter
+                    ? ` for entity "${entityFilter}"`
+                    : ` for search "${searchQuery}"`}
+                  .
+                </p>
+                <div className="flex gap-2 justify-center mt-4">
+                  {entityFilter && (
+                    <button
+                      onClick={clearEntityFilter}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium"
+                    >
+                      Clear Entity Filter
+                    </button>
+                  )}
+                  {searchQuery && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('')
+                        setCurrentPage(1)
+                      }}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium"
+                    >
+                      Clear Search
+                    </button>
+                  )}
+                </div>
               </>
             ) : (
               <>
