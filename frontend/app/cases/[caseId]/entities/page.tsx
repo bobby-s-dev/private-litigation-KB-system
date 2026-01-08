@@ -35,6 +35,8 @@ export default function EntitiesPage() {
   const [availableTypes, setAvailableTypes] = useState<string[]>([])
   const [factsPerEntity, setFactsPerEntity] = useState<Array<{ name: string; value: number; color: string; type: string }>>([])
   const [loadingStats, setLoadingStats] = useState(true)
+  const [savingEntity, setSavingEntity] = useState<string | null>(null)
+  const [deletingEntity, setDeletingEntity] = useState<string | null>(null)
 
   useEffect(() => {
     const initializeMatter = async () => {
@@ -128,17 +130,49 @@ export default function EntitiesPage() {
   }
 
   const handleSave = async (entityId: string) => {
-    // TODO: Implement API call to update entity
-    // For now, just update local state
-    setEntities(prevEntities =>
-      prevEntities.map(entity =>
-        entity.id === entityId
-          ? { ...entity, ...editValues }
-          : entity
+    try {
+      setSavingEntity(entityId)
+      const updatedEntity = await apiClient.updateEntity(entityId, editValues)
+      
+      // Update local state with the response from backend
+      setEntities(prevEntities =>
+        prevEntities.map(entity =>
+          entity.id === entityId
+            ? { ...entity, ...updatedEntity }
+            : entity
+        )
       )
-    )
-    setEditingEntity(null)
-    setEditValues({})
+      setEditingEntity(null)
+      setEditValues({})
+    } catch (error) {
+      console.error('Error updating entity:', error)
+      alert('Failed to update entity. Please try again.')
+    } finally {
+      setSavingEntity(null)
+    }
+  }
+
+  const handleDelete = async (entityId: string, entityName: string) => {
+    if (!confirm(`Are you sure you want to delete the entity "${entityName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      setDeletingEntity(entityId)
+      await apiClient.deleteEntity(entityId)
+      
+      // Remove from local state
+      setEntities(prevEntities => prevEntities.filter(entity => entity.id !== entityId))
+      setTotal(prev => prev - 1)
+      
+      // Reload facts per entity data
+      loadFactsPerEntity()
+    } catch (error) {
+      console.error('Error deleting entity:', error)
+      alert('Failed to delete entity. Please try again.')
+    } finally {
+      setDeletingEntity(null)
+    }
   }
 
   const handleCancel = () => {
@@ -616,45 +650,65 @@ export default function EntitiesPage() {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleSave(entity.id)}
-                              className="text-green-600 hover:text-green-700 font-medium"
+                              disabled={savingEntity === entity.id}
+                              className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Save changes"
                             >
-                              Save
+                              {savingEntity === entity.id ? '⏳ Saving...' : '✓ Save'}
                             </button>
                             <button
                               onClick={handleCancel}
-                              className="text-gray-600 hover:text-gray-700"
+                              disabled={savingEntity === entity.id}
+                              className="px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded font-medium transition-colors disabled:opacity-50"
+                              title="Cancel editing"
                             >
-                              Cancel
+                              ✕ Cancel
                             </button>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-3 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <button
                               onClick={() => handleEdit(entity)}
-                              className="text-purple-600 hover:text-purple-700 font-medium"
+                              disabled={deletingEntity === entity.id}
+                              className="px-3 py-1 text-purple-600 hover:bg-purple-50 rounded font-medium border border-purple-200 hover:border-purple-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Edit entity"
                             >
-                              Edit
+                              ✏️ Edit
                             </button>
                             {entity.review_status === 'not_reviewed' ? (
                               <button
                                 onClick={() => handleReviewStatusChange(entity.id, 'accepted')}
-                                className="text-green-600 hover:text-green-700 font-medium"
+                                disabled={deletingEntity === entity.id}
+                                className="px-3 py-1 text-green-600 hover:bg-green-50 rounded font-medium border border-green-200 hover:border-green-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Accept entity"
                               >
-                                Accept
+                                ✓ Accept
                               </button>
                             ) : (
                               <button
                                 onClick={() => handleReviewStatusChange(entity.id, 'not_reviewed')}
-                                className="text-gray-600 hover:text-gray-700"
+                                disabled={deletingEntity === entity.id}
+                                className="px-3 py-1 text-gray-600 hover:bg-gray-50 rounded border border-gray-300 hover:border-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Mark as not reviewed"
                               >
-                                Undo
+                                ↶ Undo
                               </button>
                             )}
                             <button
                               onClick={() => handleViewFacts(entity)}
-                              className="text-blue-600 hover:text-blue-700 font-medium"
+                              disabled={deletingEntity === entity.id}
+                              className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded font-medium border border-blue-200 hover:border-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="View related facts"
                             >
-                              View {entity.related_facts_count} related facts
+                              📄 View {entity.related_facts_count} facts
+                            </button>
+                            <button
+                              onClick={() => handleDelete(entity.id, entity.name)}
+                              disabled={deletingEntity === entity.id}
+                              className="px-3 py-1 text-red-600 hover:bg-red-50 rounded font-medium border border-red-200 hover:border-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Delete entity"
+                            >
+                              {deletingEntity === entity.id ? '⏳ Deleting...' : '🗑️ Delete'}
                             </button>
                           </div>
                         )}

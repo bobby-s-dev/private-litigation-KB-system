@@ -1080,6 +1080,78 @@ async def update_entity_review_status(
     }
 
 
+@router.patch("/entities/{entity_id}")
+async def update_entity(
+    entity_id: str,
+    name: Optional[str] = Query(None, description="Entity name"),
+    short_name: Optional[str] = Query(None, description="Entity short name"),
+    email: Optional[str] = Query(None, description="Entity email"),
+    role: Optional[str] = Query(None, description="Entity role"),
+    db: Session = Depends(get_db)
+):
+    """
+    Update entity details.
+    """
+    try:
+        entity_uuid = uuid.UUID(entity_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid entity ID format: {entity_id}")
+    
+    entity = db.query(Entity).filter(Entity.id == entity_uuid).first()
+    if not entity:
+        raise HTTPException(status_code=404, detail=f"Entity {entity_id} not found")
+    
+    # Update fields if provided
+    if name is not None:
+        entity.name = name
+    if short_name is not None:
+        entity.short_name = short_name
+    if email is not None:
+        entity.email = email
+    if role is not None:
+        entity.role = role
+    
+    db.commit()
+    db.refresh(entity)
+    
+    return {
+        'id': str(entity.id),
+        'name': entity.name,
+        'short_name': entity.short_name,
+        'email': entity.email,
+        'role': entity.role,
+        'type': entity.type,
+        'review_status': entity.review_status
+    }
+
+
+@router.delete("/entities/{entity_id}")
+async def delete_entity(
+    entity_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete an entity permanently.
+    """
+    try:
+        entity_uuid = uuid.UUID(entity_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid entity ID format: {entity_id}")
+    
+    entity = db.query(Entity).filter(Entity.id == entity_uuid).first()
+    if not entity:
+        raise HTTPException(status_code=404, detail=f"Entity {entity_id} not found")
+    
+    # Delete the entity
+    db.delete(entity)
+    db.commit()
+    
+    return {
+        'id': str(entity_uuid),
+        'deleted': True
+    }
+
+
 @router.delete("/facts/{fact_id}")
 async def delete_fact(
     fact_id: str,

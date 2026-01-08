@@ -434,6 +434,48 @@ class ApiClient {
       method: 'DELETE',
     })
   }
+
+  async updateEntity(
+    entityId: string,
+    updates: {
+      name?: string
+      short_name?: string
+      email?: string
+      role?: string
+    }
+  ): Promise<{
+    id: string
+    name: string
+    short_name: string
+    email: string
+    role: string
+    type: string
+    review_status: string
+  }> {
+    const params = new URLSearchParams()
+    if (updates.name !== undefined) params.append('name', updates.name)
+    if (updates.short_name !== undefined) params.append('short_name', updates.short_name)
+    if (updates.email !== undefined) params.append('email', updates.email)
+    if (updates.role !== undefined) params.append('role', updates.role)
+    
+    return this.request<{
+      id: string
+      name: string
+      short_name: string
+      email: string
+      role: string
+      type: string
+      review_status: string
+    }>(`/api/documents/entities/${entityId}?${params.toString()}`, {
+      method: 'PATCH',
+    })
+  }
+
+  async deleteEntity(entityId: string): Promise<{ id: string; deleted: boolean }> {
+    return this.request<{ id: string; deleted: boolean }>(`/api/documents/entities/${entityId}`, {
+      method: 'DELETE',
+    })
+  }
 }
 
 export const apiClient = new ApiClient()
