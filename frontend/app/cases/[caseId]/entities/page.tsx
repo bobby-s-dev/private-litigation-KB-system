@@ -37,6 +37,7 @@ export default function EntitiesPage() {
   const [loadingStats, setLoadingStats] = useState(true)
   const [savingEntity, setSavingEntity] = useState<string | null>(null)
   const [deletingEntity, setDeletingEntity] = useState<string | null>(null)
+  const [showStatistics, setShowStatistics] = useState(true)
 
   useEffect(() => {
     const initializeMatter = async () => {
@@ -216,15 +217,42 @@ export default function EntitiesPage() {
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Entities</h1>
-        <p className="text-gray-600">View and manage all entities extracted from case documents</p>
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Entities</h1>
+            <p className="text-gray-600">View and manage all entities extracted from case documents</p>
+          </div>
+          {loadingStats && factsPerEntity.length === 0 && (
+            <div className="text-sm text-gray-500 flex items-center gap-2">
+              <svg className="animate-spin h-4 w-4 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Loading insights...
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Entity Statistics from Facts */}
       {!loadingStats && factsPerEntity.length > 0 && (
-        <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Entity Insights from Facts</h2>
+        <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-200 mb-6">
+          {/* Collapsible Header */}
+          <div className="p-6 pb-0">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Entity Insights from Facts</h2>
+              <button
+                onClick={() => setShowStatistics(!showStatistics)}
+                className="px-3 py-1 text-sm bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 rounded-lg font-medium transition-colors"
+              >
+                {showStatistics ? '▲ Collapse' : '▼ Expand'}
+              </button>
+            </div>
+          </div>
+          
+          {showStatistics && (
+            <div className="px-6 pb-6">
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Total Entities with Facts */}
@@ -454,11 +482,13 @@ export default function EntitiesPage() {
               </div>
             </div>
           </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 mb-6">
         <div className="flex items-center gap-4 flex-wrap">
           {/* Search Box */}
           <div className="flex-1 min-w-[200px]">
@@ -512,28 +542,16 @@ export default function EntitiesPage() {
             </select>
           </div>
 
-          {/* Edit Column Toggle */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700">Edit Mode:</label>
-            <button
-              onClick={() => {
-                // Toggle edit mode - for now just show/hide edit buttons
-                // This could be enhanced to show/hide edit columns
-              }}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              {editingEntity ? 'Cancel' : 'Edit'}
-            </button>
-          </div>
-
-          <div className="ml-auto text-sm text-gray-600">
-            Total: {total} entities
+          <div className="ml-auto flex items-center gap-2">
+            <div className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm font-semibold">
+              {total} {total === 1 ? 'entity' : 'entities'}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Entities Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg border-2 border-gray-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-12 text-center text-gray-500">Loading entities...</div>
         ) : entities.length === 0 ? (
@@ -666,49 +684,51 @@ export default function EntitiesPage() {
                             </button>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <button
-                              onClick={() => handleEdit(entity)}
-                              disabled={deletingEntity === entity.id}
-                              className="px-3 py-1 text-purple-600 hover:bg-purple-50 rounded font-medium border border-purple-200 hover:border-purple-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Edit entity"
-                            >
-                              ✏️ Edit
-                            </button>
-                            {entity.review_status === 'not_reviewed' ? (
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-2">
                               <button
-                                onClick={() => handleReviewStatusChange(entity.id, 'accepted')}
+                                onClick={() => handleEdit(entity)}
                                 disabled={deletingEntity === entity.id}
-                                className="px-3 py-1 text-green-600 hover:bg-green-50 rounded font-medium border border-green-200 hover:border-green-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Accept entity"
+                                className="px-2.5 py-1 text-xs text-purple-600 hover:bg-purple-50 rounded font-medium border border-purple-200 hover:border-purple-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Edit entity"
                               >
-                                ✓ Accept
+                                ✏️ Edit
                               </button>
-                            ) : (
+                              {entity.review_status === 'not_reviewed' ? (
+                                <button
+                                  onClick={() => handleReviewStatusChange(entity.id, 'accepted')}
+                                  disabled={deletingEntity === entity.id}
+                                  className="px-2.5 py-1 text-xs text-green-600 hover:bg-green-50 rounded font-medium border border-green-200 hover:border-green-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Accept entity"
+                                >
+                                  ✓ Accept
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleReviewStatusChange(entity.id, 'not_reviewed')}
+                                  disabled={deletingEntity === entity.id}
+                                  className="px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded border border-gray-300 hover:border-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Mark as not reviewed"
+                                >
+                                  ↶ Undo
+                                </button>
+                              )}
                               <button
-                                onClick={() => handleReviewStatusChange(entity.id, 'not_reviewed')}
+                                onClick={() => handleDelete(entity.id, entity.name)}
                                 disabled={deletingEntity === entity.id}
-                                className="px-3 py-1 text-gray-600 hover:bg-gray-50 rounded border border-gray-300 hover:border-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Mark as not reviewed"
+                                className="px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 rounded font-medium border border-red-200 hover:border-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Delete entity"
                               >
-                                ↶ Undo
+                                {deletingEntity === entity.id ? '⏳' : '🗑️'}
                               </button>
-                            )}
+                            </div>
                             <button
                               onClick={() => handleViewFacts(entity)}
                               disabled={deletingEntity === entity.id}
-                              className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded font-medium border border-blue-200 hover:border-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-full px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded font-medium border border-blue-200 hover:border-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               title="View related facts"
                             >
                               📄 View {entity.related_facts_count} facts
-                            </button>
-                            <button
-                              onClick={() => handleDelete(entity.id, entity.name)}
-                              disabled={deletingEntity === entity.id}
-                              className="px-3 py-1 text-red-600 hover:bg-red-50 rounded font-medium border border-red-200 hover:border-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Delete entity"
-                            >
-                              {deletingEntity === entity.id ? '⏳ Deleting...' : '🗑️ Delete'}
                             </button>
                           </div>
                         )}
