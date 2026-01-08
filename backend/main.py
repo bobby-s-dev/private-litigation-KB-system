@@ -11,6 +11,7 @@ from api.embeddings import router as embeddings_router
 from api.rag import router as rag_router
 from api.documents import router as documents_router
 from api.matters import router as matters_router
+from api.patterns import router as patterns_router
 
 
 @asynccontextmanager
@@ -47,6 +48,7 @@ app.include_router(versions_router)
 app.include_router(embeddings_router)
 app.include_router(rag_router)
 app.include_router(documents_router)
+app.include_router(patterns_router)
 
 
 @app.get("/")

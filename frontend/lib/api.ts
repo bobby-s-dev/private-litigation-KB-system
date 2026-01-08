@@ -476,6 +476,192 @@ class ApiClient {
       method: 'DELETE',
     })
   }
+
+  // Pattern Detection & Knowledge Base APIs
+  async detectRicoPatterns(matterId?: string, entityIds?: string[]): Promise<{
+    recurring_actors: any[]
+    timing_sequences: any[]
+    coordinated_actions: any[]
+    financial_patterns: any[]
+    communication_patterns: any[]
+    overall_confidence: number
+  }> {
+    const params = new URLSearchParams()
+    if (matterId) params.append('matter_id', matterId)
+    if (entityIds) entityIds.forEach(id => params.append('entity_ids', id))
+    
+    return this.request<{
+      recurring_actors: any[]
+      timing_sequences: any[]
+      coordinated_actions: any[]
+      financial_patterns: any[]
+      communication_patterns: any[]
+      overall_confidence: number
+    }>(`/api/patterns/detect/rico?${params.toString()}`)
+  }
+
+  async detectInconsistencies(matterId?: string): Promise<{
+    inconsistencies: any[]
+    count: number
+  }> {
+    const params = new URLSearchParams()
+    if (matterId) params.append('matter_id', matterId)
+    
+    return this.request<{
+      inconsistencies: any[]
+      count: number
+    }>(`/api/patterns/detect/inconsistencies?${params.toString()}`)
+  }
+
+  async suggestPatterns(matterId?: string, useAi: boolean = true): Promise<{
+    suggestions: any[]
+    count: number
+  }> {
+    const params = new URLSearchParams()
+    if (matterId) params.append('matter_id', matterId)
+    params.append('use_ai', useAi.toString())
+    
+    return this.request<{
+      suggestions: any[]
+      count: number
+    }>(`/api/patterns/suggest?${params.toString()}`)
+  }
+
+  async getMatterPatternSummary(matterId: string): Promise<{
+    matter_id: string
+    rico_patterns: any
+    inconsistencies: any[]
+    suggestions: any[]
+    summary: {
+      total_patterns: number
+      total_inconsistencies: number
+      total_suggestions: number
+      overall_confidence: number
+    }
+  }> {
+    return this.request<{
+      matter_id: string
+      rico_patterns: any
+      inconsistencies: any[]
+      suggestions: any[]
+      summary: {
+        total_patterns: number
+        total_inconsistencies: number
+        total_suggestions: number
+        overall_confidence: number
+      }
+    }>(`/api/patterns/matter/${matterId}/summary`)
+  }
+
+  async classifyDocument(documentId: string): Promise<{
+    document_type: string
+    categories: string[]
+    topics: string[]
+    matter_tags: string[]
+    suggested_name: string | null
+    confidence: number
+  }> {
+    return this.request<{
+      document_type: string
+      categories: string[]
+      topics: string[]
+      matter_tags: string[]
+      suggested_name: string | null
+      confidence: number
+    }>(`/api/patterns/documents/${documentId}/classify`)
+  }
+
+  async groupDocumentsByIssue(matterId: string): Promise<{
+    matter_id: string
+    groups: Record<string, any[]>
+    group_count: number
+  }> {
+    return this.request<{
+      matter_id: string
+      groups: Record<string, any[]>
+      group_count: number
+    }>(`/api/patterns/matter/${matterId}/group-by-issue`)
+  }
+
+  async applyNamingConvention(
+    documentId: string,
+    convention: 'standard' | 'simple' | 'descriptive' = 'standard'
+  ): Promise<{
+    document_id: string
+    original_name: string
+    suggested_name: string
+    convention: string
+  }> {
+    const params = new URLSearchParams({ convention })
+    return this.request<{
+      document_id: string
+      original_name: string
+      suggested_name: string
+      convention: string
+    }>(`/api/patterns/documents/${documentId}/apply-naming?${params.toString()}`, {
+      method: 'POST',
+    })
+  }
+
+  async ragQueryEnhanced(
+    question: string,
+    matterId?: string,
+    includePatterns: boolean = true
+  ): Promise<{
+    success: boolean
+    answer: string
+    citations: any[]
+    sources_used: number
+    chunks_used: number
+    confidence: number
+    query: string
+    patterns?: any
+  }> {
+    const params = new URLSearchParams({ question })
+    if (matterId) params.append('matter_id', matterId)
+    params.append('include_patterns', includePatterns.toString())
+    
+    return this.request<{
+      success: boolean
+      answer: string
+      citations: any[]
+      sources_used: number
+      chunks_used: number
+      confidence: number
+      query: string
+      patterns?: any
+    }>(`/api/patterns/rag/query-enhanced?${params.toString()}`, {
+      method: 'POST',
+    })
+  }
+
+  async generateSummary(
+    matterId?: string,
+    documentIds?: string[],
+    summaryType: 'comprehensive' | 'timeline' | 'key_facts' = 'comprehensive'
+  ): Promise<{
+    summary_type: string
+    summary: string
+    citations?: any[]
+    timeline?: any[]
+    events_count?: number
+    patterns?: any
+  }> {
+    const params = new URLSearchParams({ summary_type: summaryType })
+    if (matterId) params.append('matter_id', matterId)
+    if (documentIds) documentIds.forEach(id => params.append('document_ids', id))
+    
+    return this.request<{
+      summary_type: string
+      summary: string
+      citations?: any[]
+      timeline?: any[]
+      events_count?: number
+      patterns?: any
+    }>(`/api/patterns/rag/generate-summary?${params.toString()}`, {
+      method: 'POST',
+    })
+  }
 }
 
 export const apiClient = new ApiClient()
