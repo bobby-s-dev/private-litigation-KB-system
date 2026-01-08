@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
 import FeatureCards from '@/components/FeatureCards'
 import RecentlyUploadedSources from '@/components/RecentlyUploadedSources'
 import FactsPerEntity from '@/components/FactsPerEntity'
@@ -65,6 +66,30 @@ export default function CaseHomePage() {
   return (
     <div className="p-6">
           <FeatureCards />
+
+          {/* Knowledge Base Quick Access */}
+          {caseId && (
+            <div className="mb-6">
+              <Link href={`/cases/${caseIdParam}/knowledge`}>
+                <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg border border-purple-200 shadow-lg p-6 text-white hover:shadow-xl transition-shadow cursor-pointer">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold mb-2">AI Knowledge Base</h2>
+                      <p className="text-purple-100 mb-4">
+                        Discover patterns, ask questions, and generate summaries with AI-powered insights
+                      </p>
+                      <div className="flex gap-4 text-sm">
+                        <span className="bg-white/20 px-3 py-1 rounded-full">Pattern Detection</span>
+                        <span className="bg-white/20 px-3 py-1 rounded-full">AI Q&A</span>
+                        <span className="bg-white/20 px-3 py-1 rounded-full">Summary Generation</span>
+                      </div>
+                    </div>
+                    <div className="text-5xl">🧠</div>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-6 mb-6">
             {/* Case Description */}

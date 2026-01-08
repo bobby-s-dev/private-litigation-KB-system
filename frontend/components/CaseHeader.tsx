@@ -12,6 +12,7 @@ export default function CaseHeader() {
     { name: 'Case Home', path: caseId ? `/cases/${caseId}` : '#' },
     { name: 'Facts', path: caseId ? `/cases/${caseId}/facts` : '#' },
     { name: 'Entities', path: caseId ? `/cases/${caseId}/entities` : '#' },
+    { name: 'Knowledge Base', path: caseId ? `/cases/${caseId}/knowledge` : '#' },
     { name: 'Issues', path: '#' },
     { name: 'Sources', path: '#' },
     { name: 'Search', path: '#' },
@@ -26,6 +27,7 @@ export default function CaseHeader() {
     if (pathname === `/cases/${caseId}`) return 0
     if (pathname === `/cases/${caseId}/facts`) return 1
     if (pathname === `/cases/${caseId}/entities`) return 2
+    if (pathname === `/cases/${caseId}/knowledge`) return 3
     return -1
   }
 
