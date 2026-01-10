@@ -18,8 +18,20 @@ export interface Document {
 export interface UploadResponse {
   document_id: string
   is_duplicate: boolean
+  duplicate_type?: 'exact' | 'near' | null
   success: boolean
   error?: string
+  message?: string
+  existing_document_id?: string
+  existing_document_filename?: string
+  existing_document_title?: string
+  near_duplicates_found?: number
+  near_duplicates?: Array<{
+    document_id: string
+    filename: string
+    title?: string
+    similarity: number
+  }>
   processing_stages?: {
     upload: 'pending' | 'processing' | 'completed' | 'failed'
     security_check: 'pending' | 'processing' | 'completed' | 'failed'

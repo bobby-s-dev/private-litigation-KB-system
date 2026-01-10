@@ -25,7 +25,7 @@ interface ProcessingStages {
 export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [uploadMode, setUploadMode] = useState<'file' | 'folder'>('file')
-  const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null)
+  const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error' | 'warning', message: string } | null>(null)
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null)
   const [processingStages, setProcessingStages] = useState<ProcessingStages | null>(null)
   const [securityWarnings, setSecurityWarnings] = useState<string[]>([])
@@ -82,11 +82,31 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
       }
       
       if (result.success !== false) {
+        // Use backend message if available, otherwise create custom message
+        let message = result.message
+        
+        if (!message) {
+          if (result.is_duplicate && result.duplicate_type === 'exact') {
+            // Exact duplicate
+            const existingFile = result.existing_document_filename || result.existing_document_title || 'existing document'
+            message = `⚠️ Duplicate detected: This file is identical to "${existingFile}". The file was not saved as it already exists in the system.`
+          } else if (result.duplicate_type === 'near' && result.near_duplicates && result.near_duplicates.length > 0) {
+            // Near duplicate
+            const bestMatch = result.near_duplicates[0]
+            const similarityPct = Math.round(bestMatch.similarity * 100)
+            message = `⚠️ Similar document found: This file is ${similarityPct}% similar to "${bestMatch.filename}". File was uploaded, but you may want to review for duplicates.`
+            if (result.near_duplicates.length > 1) {
+              message += ` (${result.near_duplicates.length} similar documents found)`
+            }
+          } else {
+            // Normal upload
+            message = `✅ File uploaded successfully! Document ID: ${result.document_id}`
+          }
+        }
+        
         setUploadStatus({
-          type: 'success',
-          message: result.is_duplicate 
-            ? `File uploaded successfully (duplicate detected: ${result.document_id})`
-            : `File uploaded successfully! Document ID: ${result.document_id}`
+          type: result.is_duplicate || result.duplicate_type === 'near' ? 'warning' : 'success',
+          message: message
         })
         
         if (onUploadSuccess) {
@@ -144,6 +164,10 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
 
       successCount = results.filter(r => r.success !== false).length
       failCount = results.filter(r => r.success === false).length
+      
+      // Count duplicates
+      const exactDuplicates = results.filter(r => r.is_duplicate && r.duplicate_type === 'exact').length
+      const nearDuplicates = results.filter(r => r.duplicate_type === 'near').length
 
       results.forEach((result, index) => {
         if (result.success === false) {
@@ -151,10 +175,29 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
         }
       })
 
+      // Build status message with duplicate information
+      let message = `Successfully processed ${successCount} file${successCount !== 1 ? 's' : ''}`
+      const duplicateMessages: string[] = []
+      
+      if (exactDuplicates > 0) {
+        duplicateMessages.push(`${exactDuplicates} exact duplicate${exactDuplicates !== 1 ? 's' : ''} detected (not saved)`)
+      }
+      if (nearDuplicates > 0) {
+        duplicateMessages.push(`${nearDuplicates} similar document${nearDuplicates !== 1 ? 's' : ''} found`)
+      }
+      
+      if (duplicateMessages.length > 0) {
+        message += `. ${duplicateMessages.join(', ')}.`
+      }
+      
+      if (failCount > 0) {
+        message += ` ${failCount} failed.`
+      }
+
       if (successCount > 0) {
         setUploadStatus({
-          type: 'success',
-          message: `Successfully uploaded ${successCount} file${successCount !== 1 ? 's' : ''}${failCount > 0 ? `, ${failCount} failed` : ''}`
+          type: exactDuplicates > 0 || nearDuplicates > 0 ? 'warning' : 'success',
+          message: message
         })
         
         if (onUploadSuccess) {
@@ -359,6 +402,8 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
         <div className={`mt-4 p-3 rounded-lg ${
           uploadStatus.type === 'success' 
             ? 'bg-green-50 text-green-800 border border-green-200' 
+            : uploadStatus.type === 'warning'
+            ? 'bg-yellow-50 text-yellow-800 border border-yellow-200'
             : 'bg-red-50 text-red-800 border border-red-200'
         }`}>
           <p className="text-sm">{uploadStatus.message}</p>

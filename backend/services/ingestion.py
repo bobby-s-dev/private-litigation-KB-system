@@ -105,9 +105,13 @@ class IngestionService:
                 result['success'] = True
                 result['document_id'] = str(existing_doc.id)
                 result['is_duplicate'] = True
+                result['duplicate_type'] = 'exact'
                 result['existing_document_id'] = str(existing_doc.id)
+                result['existing_document_filename'] = existing_doc.file_name
+                result['existing_document_title'] = existing_doc.title
                 result['status'] = 'duplicate'
                 result['version_number'] = existing_doc.version_number
+                result['message'] = f"Exact duplicate detected. This file is identical to '{existing_doc.file_name}' (Document ID: {existing_doc.id}). The file was not saved as it already exists in the system."
                 return result
             
             # Extract text and metadata
@@ -1006,6 +1010,28 @@ class IngestionService:
             result['status'] = 'completed'
             result['version_number'] = 1
             result['near_duplicates_found'] = len(near_duplicates)
+            
+            # Add near-duplicate details for user notification
+            if near_duplicates:
+                result['is_duplicate'] = False  # Not exact duplicate, but similar
+                result['duplicate_type'] = 'near'
+                result['near_duplicates'] = [
+                    {
+                        'document_id': str(doc.id),
+                        'filename': doc.file_name,
+                        'title': doc.title,
+                        'similarity': round(score, 3)
+                    }
+                    for doc, score in near_duplicates[:5]  # Top 5 most similar
+                ]
+                # Create notification message
+                best_match, best_score = near_duplicates[0]
+                similarity_pct = int(best_score * 100)
+                result['message'] = f"File uploaded successfully. Found {len(near_duplicates)} similar document(s). Most similar: '{best_match.file_name}' ({similarity_pct}% similar)."
+            else:
+                result['is_duplicate'] = False
+                result['duplicate_type'] = None
+            
             result['processing_stages']['processing'] = 'completed'
             
         except Exception as e:
