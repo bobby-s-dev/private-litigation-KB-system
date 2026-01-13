@@ -14,11 +14,11 @@ export default function CaseHeader() {
     { name: 'Entities', path: caseId ? `/cases/${caseId}/entities` : '#' },
     { name: 'Knowledge Base', path: caseId ? `/cases/${caseId}/knowledge` : '#' },
     { name: 'Issues', path: '#' },
-    { name: 'Sources', path: '#' },
+    { name: 'Sources', path: caseId ? `/cases/${caseId}/resources` : '#' },
     { name: 'Search', path: '#' },
     { name: 'Tasks', path: '#' },
     { name: 'Reports', path: '#' },
-    { name: 'Activity', path: '#' },
+    { name: 'Activity', path: caseId ? `/cases/${caseId}/activity` : '#' },
     { name: 'Usage', path: '#' },
   ]
 
@@ -28,6 +28,8 @@ export default function CaseHeader() {
     if (pathname === `/cases/${caseId}/facts`) return 1
     if (pathname === `/cases/${caseId}/entities`) return 2
     if (pathname === `/cases/${caseId}/knowledge`) return 3
+    if (pathname === `/cases/${caseId}/resources`) return 5
+    if (pathname === `/cases/${caseId}/activity`) return 9
     return -1
   }
 

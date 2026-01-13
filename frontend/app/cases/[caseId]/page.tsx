@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import FeatureCards from '@/components/FeatureCards'
 import RecentlyUploadedSources from '@/components/RecentlyUploadedSources'
@@ -22,6 +22,7 @@ interface Activity {
 }
 
 export default function CaseHomePage() {
+  const router = useRouter()
   const params = useParams()
   const caseIdParam = params?.caseId as string
   const [caseId, setCaseId] = useState<string | null>(null)
@@ -70,8 +71,8 @@ export default function CaseHomePage() {
     
     try {
       setLoadingActivities(true)
-      const activitiesData = await apiClient.getMatterActivities(caseId, 10, 0)
-      setActivities(activitiesData)
+      const response = await apiClient.getMatterActivities(caseId, 15, 0)
+      setActivities(response.activities)
     } catch (error) {
       console.error('Error loading activities:', error)
     } finally {
@@ -149,7 +150,7 @@ export default function CaseHomePage() {
 
           {/* Recently Uploaded Sources */}
           <div className="mb-6">
-            <RecentlyUploadedSources matterId={caseId ?? undefined} refreshKey={refreshKey} />
+            <RecentlyUploadedSources matterId={caseId ?? undefined} refreshKey={refreshKey} limit={15} showViewAll={true} />
           </div>
 
           <div className="grid grid-cols-2 gap-6">
@@ -157,13 +158,23 @@ export default function CaseHomePage() {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Recent activity</h2>
-                <button 
-                  onClick={loadActivities}
-                  className="text-sm text-purple-600 hover:text-purple-700 font-medium"
-                  disabled={loadingActivities}
-                >
-                  {loadingActivities ? 'Loading...' : 'Refresh'}
-                </button>
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={loadActivities}
+                    className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                    disabled={loadingActivities}
+                  >
+                    {loadingActivities ? 'Loading...' : 'Refresh'}
+                  </button>
+                  {caseId && (
+                    <button 
+                      onClick={() => router.push(`/cases/${caseId}/activity`)}
+                      className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                    >
+                      View all
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="space-y-4">
                 {loadingActivities ? (

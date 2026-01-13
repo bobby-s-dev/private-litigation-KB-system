@@ -17,9 +17,11 @@ interface Source {
 interface RecentlyUploadedSourcesProps {
   matterId?: string
   refreshKey?: number
+  limit?: number
+  showViewAll?: boolean
 }
 
-export default function RecentlyUploadedSources({ matterId, refreshKey }: RecentlyUploadedSourcesProps) {
+export default function RecentlyUploadedSources({ matterId, refreshKey, limit = 15, showViewAll = true }: RecentlyUploadedSourcesProps) {
   const router = useRouter()
   const params = useParams()
   const caseId = params?.caseId as string
@@ -82,7 +84,8 @@ export default function RecentlyUploadedSources({ matterId, refreshKey }: Recent
           return new Date(dateB).getTime() - new Date(dateA).getTime()
         })
         
-        setSources(formattedSources)
+        // Limit to specified number
+        setSources(formattedSources.slice(0, limit))
       } catch (error) {
         console.error('Error fetching documents:', error)
         setSources([])
@@ -118,9 +121,14 @@ export default function RecentlyUploadedSources({ matterId, refreshKey }: Recent
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900">Recently uploaded sources</h2>
-        <button className="text-sm text-purple-600 hover:text-purple-700 font-medium">
-          View all
-        </button>
+        {showViewAll && caseId && (
+          <button 
+            onClick={() => router.push(`/cases/${caseId}/resources`)}
+            className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+          >
+            View all
+          </button>
+        )}
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">

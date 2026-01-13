@@ -116,7 +116,7 @@ async def create_activity(
     )
 
 
-@router.get("/matter/{matter_id}", response_model=List[ActivityResponse])
+@router.get("/matter/{matter_id}")
 async def get_matter_activities(
     matter_id: str,
     limit: int = Query(20, description="Maximum number of activities to return"),
@@ -163,6 +163,11 @@ async def get_matter_activities(
         # Fallback if JSONB query fails
         pass
     
+    # Get total count
+    total_count = db.query(AuditLog).filter(
+        or_(*filters)
+    ).count()
+    
     # Query activities
     activities = db.query(AuditLog).filter(
         or_(*filters)
@@ -187,5 +192,10 @@ async def get_matter_activities(
             metadata=activity.metadata_json
         ))
     
-    return result
+    return {
+        'activities': result,
+        'total': total_count,
+        'limit': limit,
+        'offset': offset
+    }
 
