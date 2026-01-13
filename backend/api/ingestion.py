@@ -12,6 +12,7 @@ from database import get_db
 from models import Matter
 from services.ingestion import IngestionService
 from config import settings
+from api.activities import log_activity
 
 router = APIRouter(prefix="/api/ingestion", tags=["ingestion"])
 
@@ -96,6 +97,23 @@ async def upload_file(
             temp_file_path.unlink()
         if temp_dir.exists():
             temp_dir.rmdir()
+        
+        # Log activity if upload was successful
+        if result.get('success') != False and result.get('document_id'):
+            try:
+                log_activity(
+                    db=db,
+                    action_type='import',
+                    resource_type='document',
+                    resource_id=result.get('document_id'),
+                    description=f'Uploaded file "{file.filename}"',
+                    matter_id=matter_id,
+                    username=None,
+                    metadata={'filename': file.filename, 'file_size_mb': round(file_size_mb, 2)}
+                )
+            except Exception as e:
+                # Don't fail if activity logging fails
+                print(f"Error logging activity: {e}")
         
         return JSONResponse(content=result)
     
@@ -220,6 +238,23 @@ async def upload_batch(
             
             result['filename'] = filename  # Keep original filename with path for reference
             results.append(result)
+            
+            # Log activity if upload was successful
+            if result.get('success') != False and result.get('document_id'):
+                try:
+                    log_activity(
+                        db=db,
+                        action_type='import',
+                        resource_type='document',
+                        resource_id=result.get('document_id'),
+                        description=f'Uploaded file "{base_filename}"',
+                        matter_id=matter_id,
+                        username=None,
+                        metadata={'filename': filename, 'file_size_mb': round(file_size_mb, 2)}
+                    )
+                except Exception as e:
+                    # Don't fail if activity logging fails
+                    print(f"Error logging activity: {e}")
             
             # Clean up temp file
             if temp_file_path.exists():

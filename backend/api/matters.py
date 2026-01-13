@@ -8,6 +8,7 @@ import uuid
 from database import get_db
 from models import Matter, Document, EmbeddingsMetadata, Fact
 from services.indexing import IndexingService
+from api.activities import log_activity
 
 router = APIRouter(prefix="/api/matters", tags=["matters"])
 
@@ -91,6 +92,21 @@ async def create_matter(
     db.add(new_matter)
     db.commit()
     db.refresh(new_matter)
+    
+    # Log activity
+    try:
+        log_activity(
+            db=db,
+            action_type='create',
+            resource_type='matter',
+            resource_id=str(new_matter.id),
+            description=f'Created case "{new_matter.matter_name}" ({new_matter.matter_number})',
+            matter_id=str(new_matter.id),
+            username=None
+        )
+    except Exception as e:
+        # Don't fail if activity logging fails
+        print(f"Error logging activity: {e}")
     
     return MatterResponse(
         id=str(new_matter.id),

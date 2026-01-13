@@ -256,6 +256,30 @@ class ApiClient {
     )
   }
 
+  async getMatterActivities(matterId: string, limit: number = 20, offset: number = 0): Promise<Array<{
+    id: string
+    action_type: string
+    resource_type: string
+    resource_id: string
+    matter_id: string | null
+    description: string
+    username: string | null
+    created_at: string
+    metadata: any
+  }>> {
+    return this.request<Array<{
+      id: string
+      action_type: string
+      resource_type: string
+      resource_id: string
+      matter_id: string | null
+      description: string
+      username: string | null
+      created_at: string
+      metadata: any
+    }>>(`/api/activities/matter/${matterId}?limit=${limit}&offset=${offset}`)
+  }
+
   async getDocument(documentId: string): Promise<any> {
     return this.request<any>(`/api/documents/${documentId}`)
   }

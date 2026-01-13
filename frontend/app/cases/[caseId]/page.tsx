@@ -9,10 +9,17 @@ import FactsPerEntity from '@/components/FactsPerEntity'
 import DocumentUpload from '@/components/DocumentUpload'
 import { apiClient } from '@/lib/api'
 
-const recentActivities = [
-  { action: 'You created a task', time: '12/26/2025 at 2:01 pm / 9 days ago' },
-  { action: 'You assigned a user to a case', time: '12/26/2025 at 1:56 pm / 9 days ago' },
-]
+interface Activity {
+  id: string
+  action_type: string
+  resource_type: string
+  resource_id: string
+  matter_id: string | null
+  description: string
+  username: string | null
+  created_at: string
+  metadata: any
+}
 
 export default function CaseHomePage() {
   const params = useParams()
@@ -20,6 +27,8 @@ export default function CaseHomePage() {
   const [caseId, setCaseId] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [loadingActivities, setLoadingActivities] = useState(false)
 
   useEffect(() => {
     const initializeMatter = async () => {
@@ -53,7 +62,28 @@ export default function CaseHomePage() {
 
   const handleUploadSuccess = () => {
     setRefreshKey(prev => prev + 1)
+    loadActivities()
   }
+
+  const loadActivities = async () => {
+    if (!caseId) return
+    
+    try {
+      setLoadingActivities(true)
+      const activitiesData = await apiClient.getMatterActivities(caseId, 10, 0)
+      setActivities(activitiesData)
+    } catch (error) {
+      console.error('Error loading activities:', error)
+    } finally {
+      setLoadingActivities(false)
+    }
+  }
+
+  useEffect(() => {
+    if (caseId) {
+      loadActivities()
+    }
+  }, [caseId])
 
   if (loading) {
     return (
@@ -127,17 +157,32 @@ export default function CaseHomePage() {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Recent activity</h2>
-                <button className="text-sm text-purple-600 hover:text-purple-700 font-medium">
-                  View all
+                <button 
+                  onClick={loadActivities}
+                  className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                  disabled={loadingActivities}
+                >
+                  {loadingActivities ? 'Loading...' : 'Refresh'}
                 </button>
               </div>
               <div className="space-y-4">
-                {recentActivities.map((activity, index) => (
-                  <div key={index} className="border-b border-gray-100 pb-3 last:border-0">
-                    <p className="text-sm text-gray-900 font-medium">{activity.action}</p>
-                    <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
+                {loadingActivities ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
+                    <p className="text-xs text-gray-500 mt-2">Loading activities...</p>
                   </div>
-                ))}
+                ) : activities.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">No recent activities</p>
+                ) : (
+                  activities.map((activity) => (
+                    <div key={activity.id} className="border-b border-gray-100 pb-3 last:border-0">
+                      <p className="text-sm text-gray-900 font-medium">{activity.description}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formatActivityTime(activity.created_at)}
+                      </p>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -146,5 +191,39 @@ export default function CaseHomePage() {
           </div>
     </div>
   )
+}
+
+function formatActivityTime(isoString: string): string {
+  const date = new Date(isoString)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+  
+  // Format date
+  const dateStr = date.toLocaleDateString('en-US', { 
+    month: '2-digit', 
+    day: '2-digit', 
+    year: 'numeric' 
+  })
+  const timeStr = date.toLocaleTimeString('en-US', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: true 
+  })
+  
+  // Relative time
+  if (diffMins < 1) {
+    return 'Just now'
+  } else if (diffMins < 60) {
+    return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`
+  } else if (diffHours < 24) {
+    return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`
+  } else if (diffDays < 7) {
+    return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`
+  } else {
+    return `${dateStr} at ${timeStr}`
+  }
 }
 
