@@ -595,7 +595,7 @@ export default function FactsPage() {
       </div>
 
       {/* Facts Display - Timeline or Table View */}
-      <div className={viewMode === 'timeline' ? '' : 'bg-white rounded-lg border border-gray-200 overflow-hidden'}>
+      <div className={viewMode === 'timeline' ? '' : 'bg-white rounded-lg border border-gray-200 overflow-x-auto'}>
         {viewMode === 'timeline' ? (
           renderTimelineView()
         ) : loading ? (
