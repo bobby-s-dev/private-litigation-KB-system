@@ -188,14 +188,23 @@ async def delete_matter(
         indexing_service = IndexingService(db)
         for document in documents:
             try:
-                indexing_service.delete_document_index(str(document.id))
+                result = indexing_service.delete_document_index(str(document.id))
+                if not result.get('success'):
+                    # Log error but continue with deletion
+                    print(f"Warning: Failed to delete embeddings for document {document.id}: {result.get('error', 'Unknown error')}")
             except Exception as e:
                 # Log error but continue with deletion
                 print(f"Error deleting embeddings for document {document.id}: {e}")
+                import traceback
+                traceback.print_exc()
     
     # Delete the matter (this will cascade delete documents and facts due to CASCADE)
-    db.delete(matter)
-    db.commit()
+    try:
+        db.delete(matter)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete matter: {str(e)}")
     
     return {
         'id': matter_id,

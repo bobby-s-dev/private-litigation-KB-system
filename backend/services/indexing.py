@@ -225,9 +225,18 @@ class IndexingService:
     
     def _delete_document_embeddings(self, document_id: str):
         """Delete all embeddings for a document."""
+        # Convert document_id to UUID if it's a string
+        try:
+            if isinstance(document_id, str):
+                document_uuid = uuid.UUID(document_id)
+            else:
+                document_uuid = document_id
+        except ValueError:
+            raise ValueError(f"Invalid document_id format: {document_id}")
+        
         # Get embedding metadata
         embeddings = self.db.query(EmbeddingsMetadata).filter(
-            EmbeddingsMetadata.document_id == document_id
+            EmbeddingsMetadata.document_id == document_uuid
         ).all()
         
         if not embeddings:
@@ -243,24 +252,31 @@ class IndexingService:
         
         # Delete from Qdrant
         for coll_name, point_ids in collections.items():
-            self.qdrant_service.delete_points(coll_name, point_ids)
+            try:
+                self.qdrant_service.delete_points(coll_name, point_ids)
+            except Exception as e:
+                # Log Qdrant deletion error but continue
+                print(f"Warning: Failed to delete points from Qdrant collection {coll_name}: {e}")
         
         # Delete from database
         for emb in embeddings:
             self.db.delete(emb)
         
-        self.db.commit()
+        # Don't commit here - let the caller handle transactions
     
     def delete_document_index(self, document_id: str) -> Dict:
         """Delete all embeddings for a document."""
         try:
             self._delete_document_embeddings(document_id)
+            # Commit the deletion of embedding metadata
+            self.db.commit()
             return {
                 'success': True,
                 'document_id': document_id,
                 'message': 'Document index deleted'
             }
         except Exception as e:
+            self.db.rollback()
             return {
                 'success': False,
                 'error': str(e),
