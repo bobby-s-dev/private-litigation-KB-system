@@ -462,7 +462,7 @@ export default function FactsPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6">
+    <div className="p-4 sm:p-6 max-w-full overflow-x-hidden">
       {/* Header */}
       <div className="mb-4 sm:mb-6">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Facts</h1>
@@ -471,26 +471,26 @@ export default function FactsPage() {
 
       {/* Active Entity Filter Indicator */}
       {entityFilter && (
-        <div className="bg-purple-50 border-l-4 border-purple-500 p-3 sm:p-4 mb-4 sm:mb-6 rounded-r-lg">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+        <div className="bg-purple-50 border-l-4 border-purple-500 p-3 sm:p-4 mb-4 sm:mb-6 rounded-r-lg overflow-hidden">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 w-full sm:w-auto">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                 </svg>
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 overflow-hidden">
                 <p className="text-xs sm:text-sm font-medium text-purple-900 truncate">
                   Filtering by entity: <span className="font-bold">"{entityFilter}"</span>
                 </p>
-                <p className="text-xs text-purple-700 mt-0.5">
+                <p className="text-xs text-purple-700 mt-0.5 truncate">
                   Showing {total} facts
                 </p>
               </div>
             </div>
             <button
               onClick={clearEntityFilter}
-              className="flex-shrink-0 w-full sm:w-auto px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+              className="flex-shrink-0 w-full sm:w-auto px-3 sm:px-4 py-2 bg-purple-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap"
             >
               Clear Filter
             </button>
@@ -499,10 +499,10 @@ export default function FactsPage() {
       )}
 
       {/* Filters and View Toggle */}
-      <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 mb-4 sm:mb-6">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+      <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 mb-4 sm:mb-6 overflow-hidden">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 lg:gap-4 min-w-0">
           {/* Search Box */}
-          <div className="flex-1 w-full sm:min-w-[200px]">
+          <div className="flex-1 w-full min-w-0 lg:min-w-[200px]">
             <div className="relative">
               <input
                 type="text"
@@ -543,28 +543,31 @@ export default function FactsPage() {
             </div>
           </div>
           
-          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-            <label className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">Review Status:</label>
-            <select
-              value={reviewStatusFilter}
-              onChange={(e) => {
-                setReviewStatusFilter(e.target.value)
-                setCurrentPage(1)
-              }}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm flex-1 sm:flex-initial"
-            >
-              <option value="all">All</option>
-              <option value="accepted">Accepted</option>
-              <option value="not_reviewed">Not Reviewed</option>
-            </select>
+          {/* Controls Row */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
+              <label className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap flex-shrink-0">Status:</label>
+              <select
+                value={reviewStatusFilter}
+                onChange={(e) => {
+                  setReviewStatusFilter(e.target.value)
+                  setCurrentPage(1)
+                }}
+                className="px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-xs sm:text-sm min-w-[100px] sm:min-w-[120px]"
+              >
+                <option value="all">All</option>
+                <option value="accepted">Accepted</option>
+                <option value="not_reviewed">Not Reviewed</option>
+              </select>
+            </div>
             
             {/* View Mode Toggle */}
-            <div className="flex items-center gap-2 ml-auto">
-              <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">View:</span>
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+              <span className="text-xs sm:text-sm text-gray-600 hidden md:inline flex-shrink-0">View:</span>
               <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden">
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors ${
+                  className={`px-2.5 sm:px-3 md:px-4 py-2 text-xs sm:text-sm font-medium transition-colors ${
                     viewMode === 'list'
                       ? 'bg-purple-600 text-white'
                       : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -574,7 +577,7 @@ export default function FactsPage() {
                 </button>
                 <button
                   onClick={() => setViewMode('timeline')}
-                  className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors ${
+                  className={`px-2.5 sm:px-3 md:px-4 py-2 text-xs sm:text-sm font-medium transition-colors ${
                     viewMode === 'timeline'
                       ? 'bg-purple-600 text-white'
                       : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -584,14 +587,15 @@ export default function FactsPage() {
                 </button>
               </div>
             </div>
-          </div>
-          
-          <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
-            {entityFilter ? (
-              <>Showing: {total} facts</>
-            ) : (
-              <>Total: {total} facts</>
-            )}
+            
+            {/* Total Count */}
+            <div className="text-xs sm:text-sm text-gray-600 flex-shrink-0 ml-auto lg:ml-0">
+              {entityFilter ? (
+                <>Showing: {total} facts</>
+              ) : (
+                <>Total: {total} facts</>
+              )}
+            </div>
           </div>
         </div>
       </div>
