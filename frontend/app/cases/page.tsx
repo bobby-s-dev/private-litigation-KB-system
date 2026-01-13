@@ -10,8 +10,7 @@ export default function CasesPage() {
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [deleteMenuOpen, setDeleteMenuOpen] = useState<string | null>(null)
-  const [showDeleteModal, setShowDeleteModal] = useState<{ caseId: string; caseName: string; deleteWithData: boolean } | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState<{ caseId: string; caseName: string } | null>(null)
 
   useEffect(() => {
     loadCases()
@@ -44,21 +43,16 @@ export default function CasesPage() {
     router.push(`/cases/${caseId}`)
   }
 
-  const handleDeleteClick = (e: React.MouseEvent, caseId: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, caseId: string, caseName: string) => {
     e.stopPropagation()
-    setDeleteMenuOpen(deleteMenuOpen === caseId ? null : caseId)
+    setShowDeleteModal({ caseId, caseName })
   }
 
-  const handleDeleteOption = (caseId: string, caseName: string, deleteWithData: boolean) => {
-    setDeleteMenuOpen(null)
-    setShowDeleteModal({ caseId, caseName, deleteWithData })
-  }
-
-  const handleConfirmDelete = async () => {
+  const handleDeleteOption = async (deleteWithData: boolean) => {
     if (!showDeleteModal) return
 
     try {
-      await apiClient.deleteMatter(showDeleteModal.caseId, showDeleteModal.deleteWithData)
+      await apiClient.deleteMatter(showDeleteModal.caseId, deleteWithData)
       setShowDeleteModal(null)
       loadCases() // Refresh the list
     } catch (error) {
@@ -177,41 +171,15 @@ export default function CasesPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        <div className="relative">
-                          <button
-                            onClick={(e) => handleDeleteClick(e, caseItem.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Remove case"
-                          >
-                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                          {deleteMenuOpen === caseItem.id && (
-                            <>
-                              <div 
-                                className="fixed inset-0 z-10" 
-                                onClick={() => setDeleteMenuOpen(null)}
-                              />
-                              <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-                                <div className="py-1">
-                                  <button
-                                    onClick={() => handleDeleteOption(caseItem.id, caseItem.matter_name, true)}
-                                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                                  >
-                                    Remove with all data
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteOption(caseItem.id, caseItem.matter_name, false)}
-                                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                                  >
-                                    Remove only case
-                                  </button>
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
+                        <button
+                          onClick={(e) => handleDeleteClick(e, caseItem.id, caseItem.matter_name)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Remove case"
+                        >
+                          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -249,12 +217,12 @@ export default function CasesPage() {
         />
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Options Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Confirm Deletion</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Remove Case</h2>
               <button
                 onClick={() => setShowDeleteModal(null)}
                 className="text-gray-400 hover:text-gray-600"
@@ -266,32 +234,43 @@ export default function CasesPage() {
             </div>
 
             <div className="mb-6">
-              <p className="text-gray-700 mb-2">
-                Are you sure you want to delete <span className="font-semibold">{showDeleteModal.caseName}</span>?
+              <p className="text-gray-700 mb-4">
+                How would you like to remove <span className="font-semibold">{showDeleteModal.caseName}</span>?
               </p>
-              {showDeleteModal.deleteWithData ? (
-                <p className="text-sm text-red-600 font-medium">
-                  This will permanently delete the case and all associated data including documents, embeddings, entities, and facts.
-                </p>
-              ) : (
-                <p className="text-sm text-yellow-600 font-medium">
-                  This will delete only the case record. Associated documents and data will remain but may become orphaned.
-                </p>
-              )}
+              
+              <div className="space-y-3">
+                <button
+                  onClick={() => handleDeleteOption(true)}
+                  className="w-full text-left p-4 border-2 border-red-200 rounded-lg hover:border-red-400 hover:bg-red-50 transition-colors group"
+                >
+                  <div className="font-semibold text-red-600 group-hover:text-red-700 mb-1">
+                    Remove with all data
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Permanently delete the case and all associated data including documents, embeddings, entities, and facts.
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => handleDeleteOption(false)}
+                  className="w-full text-left p-4 border-2 border-yellow-200 rounded-lg hover:border-yellow-400 hover:bg-yellow-50 transition-colors group"
+                >
+                  <div className="font-semibold text-yellow-600 group-hover:text-yellow-700 mb-1">
+                    Remove only case
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Delete only the case record. Associated documents and data will remain but may become orphaned.
+                  </div>
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3">
+            <div className="flex items-center justify-end">
               <button
                 onClick={() => setShowDeleteModal(null)}
                 className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Cancel
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Delete
               </button>
             </div>
           </div>
