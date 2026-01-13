@@ -36,11 +36,21 @@ export default function ActivityPage() {
         setLoading(true)
         const offset = (currentPage - 1) * itemsPerPage
         const response = await apiClient.getMatterActivities(caseId, itemsPerPage, offset)
-        setActivities(response.activities)
-        setTotalCount(response.total)
+        // Handle both response formats (array or object with activities property)
+        if (Array.isArray(response)) {
+          setActivities(response)
+          setTotalCount(response.length)
+        } else if (response?.activities) {
+          setActivities(response.activities)
+          setTotalCount(response.total || response.activities.length)
+        } else {
+          setActivities([])
+          setTotalCount(0)
+        }
       } catch (error) {
         console.error('Error loading activities:', error)
         setActivities([])
+        setTotalCount(0)
       } finally {
         setLoading(false)
       }

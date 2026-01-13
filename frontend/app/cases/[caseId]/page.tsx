@@ -72,9 +72,17 @@ export default function CaseHomePage() {
     try {
       setLoadingActivities(true)
       const response = await apiClient.getMatterActivities(caseId, 15, 0)
-      setActivities(response.activities)
+      // Handle both response formats (array or object with activities property)
+      if (Array.isArray(response)) {
+        setActivities(response)
+      } else if (response?.activities) {
+        setActivities(response.activities)
+      } else {
+        setActivities([])
+      }
     } catch (error) {
       console.error('Error loading activities:', error)
+      setActivities([])
     } finally {
       setLoadingActivities(false)
     }
@@ -182,7 +190,7 @@ export default function CaseHomePage() {
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
                     <p className="text-xs text-gray-500 mt-2">Loading activities...</p>
                   </div>
-                ) : activities.length === 0 ? (
+                ) : !activities || activities.length === 0 ? (
                   <p className="text-sm text-gray-500 text-center py-4">No recent activities</p>
                 ) : (
                   activities.map((activity) => (
