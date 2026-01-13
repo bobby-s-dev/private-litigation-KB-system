@@ -13,6 +13,8 @@ interface UploadProgress {
   completed: number
   failed: number
   currentFile?: string
+  currentFileSize?: number
+  uploadedBytes?: number
 }
 
 interface ProcessingStages {
@@ -53,7 +55,14 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
   const uploadFile = async (file: File) => {
     setUploading(true)
     setUploadStatus(null)
-    setUploadProgress(null)
+    setUploadProgress({
+      total: 1,
+      completed: 0,
+      failed: 0,
+      currentFile: file.name,
+      currentFileSize: file.size,
+      uploadedBytes: 0
+    })
     setSecurityWarnings([])
     
     // Initialize processing stages
@@ -67,7 +76,17 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
     try {
       // Stage 1: Upload
       setProcessingStages(prev => prev ? { ...prev, upload: 'processing' } : null)
+      // Update progress to show upload starting
+      setUploadProgress(prev => prev ? { ...prev, uploadedBytes: 0 } : null)
+      
       const result: UploadResponse = await apiClient.uploadDocument(matterId, file)
+      
+      // Mark upload as completed
+      setUploadProgress(prev => prev ? { 
+        ...prev, 
+        completed: 1,
+        uploadedBytes: file.size 
+      } : null)
       
       // Update stages from response
       if (result.processing_stages) {
@@ -141,24 +160,42 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
   const uploadMultipleFiles = async (files: File[]) => {
     setUploading(true)
     setUploadStatus(null)
+    
+    // Calculate total size
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0)
+    
     setUploadProgress({
       total: files.length,
       completed: 0,
-      failed: 0
+      failed: 0,
+      currentFile: files[0]?.name,
+      currentFileSize: files[0]?.size,
+      uploadedBytes: 0
     })
 
     let successCount = 0
     let failCount = 0
     const errors: string[] = []
+    let uploadedBytes = 0
 
     try {
       // Use batch upload endpoint if available, otherwise upload sequentially
       const results = await apiClient.uploadDocumentsBatch(matterId, files, (progress) => {
+        // Calculate uploaded bytes based on completed files
+        const completedFiles = files.slice(0, progress.completed)
+        uploadedBytes = completedFiles.reduce((sum, file) => sum + file.size, 0)
+        
+        // Add current file progress if available
+        const currentFileIndex = progress.completed + progress.failed
+        const currentFile = files[currentFileIndex]
+        
         setUploadProgress({
           total: files.length,
           completed: progress.completed,
           failed: progress.failed,
-          currentFile: progress.currentFile
+          currentFile: progress.currentFile || currentFile?.name,
+          currentFileSize: currentFile?.size,
+          uploadedBytes: uploadedBytes
         })
       })
 
@@ -303,43 +340,114 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
         {uploading ? (
           <div className="space-y-4 w-full max-w-md mx-auto">
             {uploadProgress ? (
-              <>
-                <p className="text-sm text-gray-600 font-medium">
-                  Uploading {uploadProgress.completed + uploadProgress.failed} of {uploadProgress.total} files...
-                </p>
-                {uploadProgress.currentFile && (
-                  <p className="text-xs text-gray-500">{uploadProgress.currentFile}</p>
-                )}
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                  <div
-                    className="bg-purple-600 h-2 rounded-full transition-all duration-300"
-                    style={{
-                      width: `${((uploadProgress.completed + uploadProgress.failed) / uploadProgress.total) * 100}%`
-                    }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500">
-                  {uploadProgress.completed} succeeded, {uploadProgress.failed} failed
-                </p>
-              </>
-            ) : processingStages ? (
               <div className="space-y-3">
-                <ProcessingStage
-                  label="Uploading"
-                  status={processingStages.upload}
-                />
-                <ProcessingStage
-                  label="Review (Security Check)"
-                  status={processingStages.security_check}
-                />
-                <ProcessingStage
-                  label="Get Metadata Automatically"
-                  status={processingStages.metadata_extraction}
-                />
-                <ProcessingStage
-                  label="Processing"
-                  status={processingStages.processing}
-                />
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {uploadProgress.total === 1 
+                      ? 'Uploading file...' 
+                      : `Uploading ${uploadProgress.completed + uploadProgress.failed} of ${uploadProgress.total} files...`}
+                  </p>
+                  <span className="text-sm font-medium text-purple-600">
+                    {Math.round(((uploadProgress.completed + uploadProgress.failed) / uploadProgress.total) * 100)}%
+                  </span>
+                </div>
+                
+                {uploadProgress.currentFile && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-gray-700 truncate" title={uploadProgress.currentFile}>
+                      📄 {uploadProgress.currentFile}
+                    </p>
+                    {uploadProgress.currentFileSize && (
+                      <p className="text-xs text-gray-500">
+                        {formatFileSize(uploadProgress.currentFileSize)}
+                        {uploadProgress.uploadedBytes !== undefined && uploadProgress.uploadedBytes > 0 && (
+                          <span className="ml-2">
+                            ({formatFileSize(uploadProgress.uploadedBytes)} uploaded)
+                          </span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                )}
+                
+                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+                  <div
+                    className="bg-gradient-to-r from-purple-500 to-purple-600 h-3 rounded-full transition-all duration-300 ease-out flex items-center justify-end pr-2"
+                    style={{
+                      width: `${Math.min(((uploadProgress.completed + uploadProgress.failed) / uploadProgress.total) * 100, 100)}%`,
+                      minWidth: '2%'
+                    }}
+                  >
+                    {((uploadProgress.completed + uploadProgress.failed) / uploadProgress.total) * 100 > 10 && (
+                      <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+                    )}
+                  </div>
+                </div>
+                
+                {uploadProgress.total > 1 && (
+                  <div className="flex items-center justify-between text-xs text-gray-600">
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      {uploadProgress.completed} succeeded
+                    </span>
+                    {uploadProgress.failed > 0 && (
+                      <span className="flex items-center gap-1 text-red-600">
+                        <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                        {uploadProgress.failed} failed
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : processingStages ? (
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <ProcessingStage
+                    label="Uploading"
+                    status={processingStages.upload}
+                  />
+                  <ProcessingStage
+                    label="Review (Security Check)"
+                    status={processingStages.security_check}
+                  />
+                  <ProcessingStage
+                    label="Get Metadata Automatically"
+                    status={processingStages.metadata_extraction}
+                  />
+                  <ProcessingStage
+                    label="Processing"
+                    status={processingStages.processing}
+                  />
+                </div>
+                
+                {/* Overall progress bar for processing stages */}
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-gray-600">
+                    <span>Processing stages</span>
+                    <span>
+                      {[
+                        processingStages.upload,
+                        processingStages.security_check,
+                        processingStages.metadata_extraction,
+                        processingStages.processing
+                      ].filter(s => s === 'completed').length} / 4 completed
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${([
+                          processingStages.upload,
+                          processingStages.security_check,
+                          processingStages.metadata_extraction,
+                          processingStages.processing
+                        ].filter(s => s === 'completed').length / 4) * 100}%`
+                      }}
+                    ></div>
+                  </div>
+                </div>
+                
                 {securityWarnings.length > 0 && (
                   <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
                     <p className="font-medium mb-1">Security Warnings:</p>
@@ -352,9 +460,14 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
                 )}
               </div>
             ) : (
-              <div className="space-y-2">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-                <p className="text-sm text-gray-600">Uploading...</p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-center gap-3">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                  <p className="text-sm font-medium text-gray-700">Preparing upload...</p>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-purple-600 h-2 rounded-full animate-pulse" style={{ width: '30%' }}></div>
+                </div>
               </div>
             )}
           </div>
@@ -411,6 +524,14 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
       )}
     </div>
   )
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
 }
 
 function ProcessingStage({ label, status }: { label: string; status: 'pending' | 'processing' | 'completed' | 'failed' }) {
