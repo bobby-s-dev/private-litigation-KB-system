@@ -249,6 +249,13 @@ class ApiClient {
     return this.request<Matter[]>('/api/matters')
   }
 
+  async deleteMatter(matterId: string, deleteWithData: boolean = false): Promise<{ id: string; matter_number: string; matter_name: string; deleted: boolean; delete_with_data: boolean }> {
+    return this.request<{ id: string; matter_number: string; matter_name: string; deleted: boolean; delete_with_data: boolean }>(
+      `/api/matters/${matterId}?delete_with_data=${deleteWithData}`,
+      { method: 'DELETE' }
+    )
+  }
+
   async getDocument(documentId: string): Promise<any> {
     return this.request<any>(`/api/documents/${documentId}`)
   }

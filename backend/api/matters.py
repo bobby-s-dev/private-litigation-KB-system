@@ -6,7 +6,8 @@ from pydantic import BaseModel
 import uuid
 
 from database import get_db
-from models import Matter
+from models import Matter, Document, EmbeddingsMetadata
+from services.indexing import IndexingService
 
 router = APIRouter(prefix="/api/matters", tags=["matters"])
 
@@ -157,4 +158,50 @@ async def get_matter_by_number(
         description=matter.description,
         created_at=matter.created_at.isoformat() if matter.created_at else None,
     )
+
+
+@router.delete("/{matter_id}")
+async def delete_matter(
+    matter_id: str,
+    delete_with_data: bool = Query(False, description="If True, delete all associated data (documents, embeddings, etc.). If False, only delete the matter record."),
+    db: Session = Depends(get_db)
+):
+    """Delete a matter. Optionally delete all associated data."""
+    # Validate UUID format
+    try:
+        matter_uuid = uuid.UUID(matter_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid matter ID format: {matter_id}")
+    
+    matter = db.query(Matter).filter(Matter.id == matter_uuid).first()
+    if not matter:
+        raise HTTPException(status_code=404, detail=f"Matter {matter_id} not found")
+    
+    matter_name = matter.matter_name
+    matter_number = matter.matter_number
+    
+    if delete_with_data:
+        # Get all documents for this matter
+        documents = db.query(Document).filter(Document.matter_id == matter_uuid).all()
+        
+        # Delete embeddings for all documents
+        indexing_service = IndexingService(db)
+        for document in documents:
+            try:
+                indexing_service.delete_document_index(str(document.id))
+            except Exception as e:
+                # Log error but continue with deletion
+                print(f"Error deleting embeddings for document {document.id}: {e}")
+    
+    # Delete the matter (this will cascade delete documents and facts due to CASCADE)
+    db.delete(matter)
+    db.commit()
+    
+    return {
+        'id': matter_id,
+        'matter_number': matter_number,
+        'matter_name': matter_name,
+        'deleted': True,
+        'delete_with_data': delete_with_data
+    }
 
