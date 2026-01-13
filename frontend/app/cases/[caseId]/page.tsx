@@ -71,7 +71,7 @@ export default function CaseHomePage() {
     
     try {
       setLoadingActivities(true)
-      const response = await apiClient.getMatterActivities(caseId, 15, 0)
+      const response = await apiClient.getMatterActivities(caseId, 8, 0)
       // Handle both response formats (array or object with activities property)
       if (Array.isArray(response)) {
         setActivities(response)
@@ -158,7 +158,7 @@ export default function CaseHomePage() {
 
           {/* Recently Uploaded Sources */}
           <div className="mb-6">
-            <RecentlyUploadedSources matterId={caseId ?? undefined} refreshKey={refreshKey} limit={15} showViewAll={true} />
+            <RecentlyUploadedSources matterId={caseId ?? undefined} refreshKey={refreshKey} limit={10} showViewAll={true} />
           </div>
 
           <div className="grid grid-cols-2 gap-6">
