@@ -6,7 +6,7 @@ from pydantic import BaseModel
 import uuid
 
 from database import get_db
-from models import Matter, Document, EmbeddingsMetadata
+from models import Matter, Document, EmbeddingsMetadata, Fact
 from services.indexing import IndexingService
 
 router = APIRouter(prefix="/api/matters", tags=["matters"])
@@ -180,30 +180,38 @@ async def delete_matter(
     matter_name = matter.matter_name
     matter_number = matter.matter_number
     
-    if delete_with_data:
-        # Get all documents for this matter
-        documents = db.query(Document).filter(Document.matter_id == matter_uuid).all()
-        
-        # Delete embeddings for all documents
-        indexing_service = IndexingService(db)
-        for document in documents:
-            try:
-                result = indexing_service.delete_document_index(str(document.id))
-                if not result.get('success'):
-                    # Log error but continue with deletion
-                    print(f"Warning: Failed to delete embeddings for document {document.id}: {result.get('error', 'Unknown error')}")
-            except Exception as e:
-                # Log error but continue with deletion
-                print(f"Error deleting embeddings for document {document.id}: {e}")
-                import traceback
-                traceback.print_exc()
-    
-    # Delete the matter (this will cascade delete documents and facts due to CASCADE)
     try:
+        if delete_with_data:
+            # Get all documents for this matter
+            documents = db.query(Document).filter(Document.matter_id == matter_uuid).all()
+            
+            # Delete embeddings for all documents
+            indexing_service = IndexingService(db)
+            for document in documents:
+                try:
+                    result = indexing_service.delete_document_index(str(document.id))
+                    if not result.get('success'):
+                        # Log error but continue with deletion
+                        print(f"Warning: Failed to delete embeddings for document {document.id}: {result.get('error', 'Unknown error')}")
+                except Exception as e:
+                    # Log error but continue with deletion
+                    print(f"Error deleting embeddings for document {document.id}: {e}")
+                    import traceback
+                    traceback.print_exc()
+        
+        # Explicitly delete facts first to avoid cascade constraint issues
+        # Facts have foreign keys to both documents and matters, so we delete them explicitly
+        facts_deleted = db.query(Fact).filter(Fact.matter_id == matter_uuid).delete()
+        if facts_deleted > 0:
+            print(f"Deleted {facts_deleted} facts for matter {matter_id}")
+        
+        # Delete the matter (this will cascade delete documents due to CASCADE)
         db.delete(matter)
         db.commit()
     except Exception as e:
         db.rollback()
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to delete matter: {str(e)}")
     
     return {
