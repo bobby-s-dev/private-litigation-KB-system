@@ -248,9 +248,9 @@ export default function FactsPage() {
     const noDateFacts = groupedFacts['No Date'] || []
 
     return (
-      <div className="bg-gradient-to-b from-purple-50 to-white rounded-lg p-6">
+      <div className="bg-gradient-to-b from-purple-50 to-white rounded-lg p-6 max-w-full">
         {/* Horizontal Timeline */}
-        <div className="overflow-x-auto pb-8">
+        <div className="overflow-x-auto pb-8 max-w-full">
           <div className="min-w-max">
             {/* Timeline axis */}
             <div className="relative mb-8">
@@ -595,7 +595,7 @@ export default function FactsPage() {
       </div>
 
       {/* Facts Display - Timeline or Table View */}
-      <div className={viewMode === 'timeline' ? '' : 'bg-white rounded-lg border border-gray-200 overflow-x-auto'}>
+      <div className={viewMode === 'timeline' ? 'max-w-full overflow-hidden' : 'bg-white rounded-lg border border-gray-200 overflow-x-auto'}>
         {viewMode === 'timeline' ? (
           renderTimelineView()
         ) : loading ? (
