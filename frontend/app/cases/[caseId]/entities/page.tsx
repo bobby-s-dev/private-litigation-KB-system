@@ -385,7 +385,7 @@ export default function EntitiesPage() {
               <span className="text-xs text-gray-500">{factsPerEntity.length} entities</span>
             </div>
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto max-h-96 overflow-y-auto">
+              <div className="max-h-96 overflow-y-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                     <tr>
@@ -417,19 +417,19 @@ export default function EntitiesPage() {
                         const percentage = ((entity.value / totalFacts) * 100).toFixed(1)
                         
                         return (
-                          <tr key={index} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                          <tr key={index} className="hover:bg-gray-50 transition-colors align-top">
+                            <td className="px-4 py-3 text-sm text-gray-500">
                               {index + 1}
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
+                            <td className="px-4 py-3 whitespace-normal break-words">
                               <div className="flex items-center">
-                                <div className="flex-shrink-0 w-2 h-2 rounded-full mr-2" style={{ backgroundColor: entity.color }} />
-                                <span className="text-sm font-medium text-gray-900" title={entity.name}>
-                                  {entity.name.length > 40 ? entity.name.substring(0, 40) + '...' : entity.name}
+                                <div className="flex-shrink-0 w-2 h-2 rounded-full mr-2 mt-0.5" style={{ backgroundColor: entity.color }} />
+                                <span className="text-sm font-medium text-gray-900 break-words" title={entity.name}>
+                                  {entity.name}
                                 </span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
+                            <td className="px-4 py-3 whitespace-normal break-words">
                               <span
                                 className="px-2 py-1 rounded text-xs font-medium"
                                 style={{
@@ -440,15 +440,15 @@ export default function EntitiesPage() {
                                 {entity.type}
                               </span>
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
+                            <td className="px-4 py-3 whitespace-normal">
                               <div className="flex items-center">
                                 <span className="text-sm font-semibold text-purple-600">{entity.value}</span>
                                 <span className="text-xs text-gray-500 ml-1">facts</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 w-20 bg-gray-200 rounded-full h-1.5">
+                            <td className="px-4 py-3 whitespace-normal">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex-1 min-w-[80px] bg-gray-200 rounded-full h-1.5">
                                   <div
                                     className="h-1.5 rounded-full transition-all"
                                     style={{
@@ -457,12 +457,12 @@ export default function EntitiesPage() {
                                     }}
                                   />
                                 </div>
-                                <span className="text-xs font-medium text-gray-600 w-10 text-right">
+                                <span className="text-xs font-medium text-gray-600 text-right">
                                   {percentage}%
                                 </span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
+                            <td className="px-4 py-3 whitespace-normal">
                               <button
                                 onClick={() => {
                                   router.push(`/cases/${caseIdParam}/facts?entity=${encodeURIComponent(entity.name)}`)
