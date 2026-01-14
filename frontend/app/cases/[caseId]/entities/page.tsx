@@ -140,7 +140,20 @@ export default function EntitiesPage() {
     
     try {
       setSavingEntity(editingEntity.id)
-      const updatedEntity = await apiClient.updateEntity(editingEntity.id, editValues)
+      // Only send fields that the API accepts (name, short_name, email, role)
+      const updatePayload: {
+        name?: string
+        short_name?: string
+        email?: string
+        role?: string
+      } = {}
+      
+      if (editValues.name !== undefined) updatePayload.name = editValues.name
+      if (editValues.short_name !== undefined) updatePayload.short_name = editValues.short_name
+      if (editValues.email !== undefined) updatePayload.email = editValues.email
+      if (editValues.role !== undefined) updatePayload.role = editValues.role
+      
+      const updatedEntity = await apiClient.updateEntity(editingEntity.id, updatePayload)
       
       // Update local state with the response from backend
       setEntities(prevEntities =>
@@ -568,31 +581,31 @@ export default function EntitiesPage() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full table-fixed">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[20%]">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
                       Type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">
                       @name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
                       Short Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">
                       Email
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
                       Role
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
                       Review Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[16%]">
                       Action
                     </th>
                   </tr>
@@ -600,27 +613,37 @@ export default function EntitiesPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {entities.map((entity) => (
                     <tr key={entity.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{entity.name}</div>
+                      <td className="px-4 py-4">
+                        <div className="text-sm font-medium text-gray-900 truncate" title={entity.name}>
+                          {entity.name}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                      <td className="px-4 py-4">
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium inline-block truncate max-w-full" title={entity.type}>
                           {entity.type}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {entity['@name']}
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-gray-600 truncate" title={entity['@name'] || ''}>
+                          {entity['@name'] || '-'}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{entity.short_name || '-'}</div>
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-gray-900 truncate" title={entity.short_name || ''}>
+                          {entity.short_name || '-'}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{entity.email || '-'}</div>
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-gray-900 truncate" title={entity.email || ''}>
+                          {entity.email || '-'}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{entity.role || '-'}</div>
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-gray-900 truncate" title={entity.role || ''}>
+                          {entity.role || '-'}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4">
                         <span
                           className={`px-2 py-1 rounded text-xs font-medium ${
                             entity.review_status === 'accepted'
@@ -782,35 +805,29 @@ export default function EntitiesPage() {
                 />
               </div>
 
-              {/* Type Field */}
+              {/* Type Field - Read Only */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Type <span className="text-red-500">*</span>
+                  Type <span className="text-gray-400 text-xs">(read-only)</span>
                 </label>
-                <select
+                <input
+                  type="text"
                   value={editValues.type || ''}
-                  onChange={(e) => setEditValues({ ...editValues, type: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                >
-                  <option value="">Select type</option>
-                  {availableTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                />
               </div>
 
-              {/* @name Field */}
+              {/* @name Field - Read Only */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  @name
+                  @name <span className="text-gray-400 text-xs">(read-only)</span>
                 </label>
                 <input
                   type="text"
                   value={editValues['@name'] || ''}
-                  onChange={(e) => setEditValues({ ...editValues, '@name': e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
                   placeholder="@name"
                 />
               </div>
@@ -869,7 +886,7 @@ export default function EntitiesPage() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={savingEntity === editingEntity.id || !editValues.name || !editValues.type}
+                disabled={savingEntity === editingEntity.id || !editValues.name}
                 className="px-4 py-2 bg-purple-600 text-white hover:bg-purple-700 rounded-lg font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
                 {savingEntity === editingEntity.id ? (
