@@ -618,49 +618,43 @@ export default function EntitiesPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {entities.map((entity) => (
                     <tr key={entity.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-4">
-                        <Tooltip content={entity.name}>
-                          <div className="text-sm font-medium text-gray-900 truncate">
-                            {entity.name}
-                          </div>
-                        </Tooltip>
+                      <td className="px-4 py-4 break-words align-top">
+                        <div className="text-sm font-medium text-gray-900 break-words whitespace-normal">
+                          {entity.name}
+                        </div>
                       </td>
-                      <td className="px-4 py-4">
-                        <Tooltip content={entity.type}>
-                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium inline-block truncate max-w-full">
-                            {entity.type}
-                          </span>
-                        </Tooltip>
+                      <td className="px-4 py-4 align-top">
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium inline-block truncate max-w-full" title={entity.type}>
+                          {entity.type}
+                        </span>
                       </td>
-                      <td className="px-4 py-4">
-                        <Tooltip content={entity['@name'] || ''}>
-                          <div className="text-sm text-gray-600 truncate">
-                            {entity['@name'] || '-'}
-                          </div>
-                        </Tooltip>
+                      <td className="px-4 py-4 break-words align-top">
+                        <div className="text-sm text-gray-600 break-words whitespace-normal">
+                          {entity['@name'] || '-'}
+                        </div>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4 align-top">
                         <Tooltip content={entity.short_name || ''}>
                           <div className="text-sm text-gray-900 truncate">
                             {entity.short_name || '-'}
                           </div>
                         </Tooltip>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4 align-top">
                         <Tooltip content={entity.email || ''}>
                           <div className="text-sm text-gray-900 truncate">
                             {entity.email || '-'}
                           </div>
                         </Tooltip>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4 align-top">
                         <Tooltip content={entity.role || ''}>
                           <div className="text-sm text-gray-900 truncate">
                             {entity.role || '-'}
                           </div>
                         </Tooltip>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4 align-top">
                         <span
                           className={`px-2 py-1 rounded text-xs font-medium ${
                             entity.review_status === 'accepted'
@@ -673,7 +667,7 @@ export default function EntitiesPage() {
                           {entity.review_status === 'accepted' ? 'Accepted' : entity.review_status === 'rejected' ? 'Rejected' : 'Not Reviewed'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm align-top">
                         <div className="flex flex-col gap-1.5">
                           <div className="flex items-center gap-2">
                             <button
