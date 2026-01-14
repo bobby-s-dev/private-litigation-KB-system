@@ -1,12 +1,39 @@
 'use client'
 
 import { usePathname, useParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { apiClient } from '@/lib/api'
 
 export default function CaseHeader() {
   const pathname = usePathname()
   const params = useParams()
   const caseId = params?.caseId as string
+  const [caseTitle, setCaseTitle] = useState<string | null>(null)
+  const [loadingCase, setLoadingCase] = useState(false)
+
+  // Fetch case title from API
+  useEffect(() => {
+    const fetchCaseTitle = async () => {
+      if (!caseId) {
+        setCaseTitle(null)
+        return
+      }
+
+      try {
+        setLoadingCase(true)
+        const matter = await apiClient.getMatter(caseId)
+        setCaseTitle(matter.matter_name || matter.matter_number)
+      } catch (error) {
+        console.error('Error fetching case title:', error)
+        setCaseTitle(null)
+      } finally {
+        setLoadingCase(false)
+      }
+    }
+
+    fetchCaseTitle()
+  }, [caseId])
 
   const tabs = [
     { name: 'Case Home', path: caseId ? `/cases/${caseId}` : '#' },
@@ -35,8 +62,13 @@ export default function CaseHeader() {
   const activeTab = getActiveTab()
 
   return (
-    <div className="bg-white border-b border-gray-200 px-6 py-4">
-      <div className="flex gap-1 border-b border-gray-200">
+    <div className="bg-white border-b border-gray-200">
+      <div className="px-6 py-4">
+        <h1 className="text-2xl font-semibold text-gray-900">
+          {loadingCase ? 'Loading...' : (caseTitle || (caseId ? `Case ${caseId}` : 'Case'))}
+        </h1>
+      </div>
+      <div className="flex gap-1 border-b border-gray-200 px-6">
         {tabs.map((tab, index) => {
           const isActive = activeTab === index
           const className = `px-4 py-2 text-sm font-medium transition-colors ${
