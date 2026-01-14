@@ -658,43 +658,75 @@ export default function KnowledgeBasePage() {
                 Search Results ({searchResults.length})
               </h2>
               <div className="space-y-3">
-                {searchResults.map((doc) => (
-                  <div key={doc.id} className="border-l-4 border-purple-500 pl-4 py-3 bg-gray-50 rounded-r-lg hover:bg-gray-100 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">
-                          {doc.title || doc.file_name || 'Untitled Document'}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-2">
-                          {doc.document_type && (
-                            <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
-                              {doc.document_type.replace('_', ' ')}
-                            </span>
+                {searchResults.map((doc) => {
+                  // Highlight search term in text
+                  const highlightText = (text: string, term: string) => {
+                    if (!term) return text
+                    const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                    const regex = new RegExp(`(${escapedTerm})`, 'gi')
+                    const parts = text.split(regex)
+                    return parts.map((part, i) => {
+                      const testRegex = new RegExp(`^${escapedTerm}$`, 'i')
+                      return testRegex.test(part) ? (
+                        <mark key={i} className="bg-yellow-200 text-yellow-900 px-0.5 rounded">
+                          {part}
+                        </mark>
+                      ) : part
+                    })
+                  }
+
+                  return (
+                    <div key={doc.id} className="border-l-4 border-purple-500 pl-4 py-3 bg-gray-50 rounded-r-lg hover:bg-gray-100 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">
+                            {doc.title || doc.file_name || 'Untitled Document'}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-2">
+                            {doc.document_type && (
+                              <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                                {doc.document_type.replace('_', ' ')}
+                              </span>
+                            )}
+                            {doc.facts_count > 0 && (
+                              <span className="text-xs text-gray-500">
+                                {doc.facts_count} {doc.facts_count === 1 ? 'fact' : 'facts'}
+                              </span>
+                            )}
+                            {doc.entities_count > 0 && (
+                              <span className="text-xs text-gray-500">
+                                {doc.entities_count} {doc.entities_count === 1 ? 'entity' : 'entities'}
+                              </span>
+                            )}
+                          </div>
+                          {doc.file_name && doc.file_name !== doc.title && (
+                            <p className="text-xs text-gray-500 mt-1">File: {doc.file_name}</p>
                           )}
-                          {doc.facts_count > 0 && (
-                            <span className="text-xs text-gray-500">
-                              {doc.facts_count} {doc.facts_count === 1 ? 'fact' : 'facts'}
-                            </span>
-                          )}
-                          {doc.entities_count > 0 && (
-                            <span className="text-xs text-gray-500">
-                              {doc.entities_count} {doc.entities_count === 1 ? 'entity' : 'entities'}
-                            </span>
+                          
+                          {/* Context snippets with highlighted keywords */}
+                          {doc.context_snippets && doc.context_snippets.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              <p className="text-xs font-medium text-gray-700">Relevant excerpts:</p>
+                              {doc.context_snippets.map((snippet: string, idx: number) => (
+                                <div key={idx} className="text-sm text-gray-700 bg-white p-2 rounded border border-gray-200">
+                                  <span className="text-gray-500">...</span>
+                                  {highlightText(snippet, searchTerm)}
+                                  <span className="text-gray-500">...</span>
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </div>
-                        {doc.file_name && doc.file_name !== doc.title && (
-                          <p className="text-xs text-gray-500 mt-1">File: {doc.file_name}</p>
-                        )}
+                        <button
+                          onClick={() => window.open(`/cases/${caseId}/documents/${doc.id}/review`, '_blank')}
+                          className="ml-4 px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
+                        >
+                          View →
+                        </button>
                       </div>
-                      <button
-                        onClick={() => window.open(`/cases/${caseId}/documents/${doc.id}/review`, '_blank')}
-                        className="ml-4 px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
-                      >
-                        View →
-                      </button>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}

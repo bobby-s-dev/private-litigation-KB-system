@@ -47,13 +47,14 @@ async def get_documents(
     if status:
         query = query.filter(Document.processing_status == status)
     
-    # Search filter
+    # Search filter - search in filename, title, and extracted text
     if search:
         search_term = f"%{search.lower()}%"
         query = query.filter(
             or_(
                 Document.file_name.ilike(search_term),
-                Document.title.ilike(search_term)
+                Document.title.ilike(search_term),
+                Document.extracted_text.ilike(search_term)
             )
         )
     
@@ -75,6 +76,40 @@ async def get_documents(
         # Get entities count for this document
         entities_count = db.query(DocumentEntity).filter(DocumentEntity.document_id == doc.id).count()
         
+        # Extract context snippets if search term is provided
+        context_snippets = []
+        if search and doc.extracted_text:
+            import re
+            search_lower = search.lower()
+            text_lower = doc.extracted_text.lower()
+            
+            # Find all occurrences of the search term
+            pattern = re.escape(search_lower)
+            matches = list(re.finditer(pattern, text_lower))
+            
+            # Extract context around each match (up to 3 snippets)
+            snippet_count = 0
+            for match in matches[:3]:
+                start = max(0, match.start() - 150)
+                end = min(len(doc.extracted_text), match.end() + 150)
+                snippet = doc.extracted_text[start:end]
+                
+                # Clean up snippet (remove partial words at start/end)
+                if start > 0:
+                    first_space = snippet.find(' ')
+                    if first_space > 0:
+                        snippet = snippet[first_space+1:]
+                if end < len(doc.extracted_text):
+                    last_space = snippet.rfind(' ')
+                    if last_space > 0:
+                        snippet = snippet[:last_space]
+                
+                if snippet.strip():
+                    context_snippets.append(snippet.strip())
+                    snippet_count += 1
+                    if snippet_count >= 3:
+                        break
+        
         result.append({
             'id': str(doc.id),
             'filename': doc.file_name,
@@ -90,6 +125,7 @@ async def get_documents(
             'categories': doc.categories or [],
             'facts_count': facts_count,
             'entities_count': entities_count,
+            'context_snippets': context_snippets,
         })
     
     return {
