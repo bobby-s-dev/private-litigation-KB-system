@@ -122,7 +122,10 @@ export default function ActivitiesPage() {
   const groupActivitiesByDate = (activities: Activity[]): Record<string, Activity[]> => {
     const grouped: Record<string, Activity[]> = {}
     
-    activities.forEach(activity => {
+    // First, consolidate upload activities that occur close together
+    const consolidatedActivities = consolidateUploadActivities(activities)
+    
+    consolidatedActivities.forEach(activity => {
       const date = new Date(activity.created_at)
       const dateKey = formatDateKey(date)
       
@@ -140,6 +143,121 @@ export default function ActivitiesPage() {
     })
 
     return grouped
+  }
+
+  const consolidateUploadActivities = (activities: Activity[]): Activity[] => {
+    // Group upload activities by time window (within 10 seconds)
+    const uploadGroups: Activity[][] = []
+    const nonUploadActivities: Activity[] = []
+    const TIME_WINDOW_MS = 10000 // 10 seconds
+
+    // Separate upload and non-upload activities
+    const uploadActivities = activities.filter(a => 
+      a.action_type.toLowerCase() === 'import' || 
+      a.action_type.toLowerCase() === 'upload'
+    )
+    const otherActivities = activities.filter(a => 
+      a.action_type.toLowerCase() !== 'import' && 
+      a.action_type.toLowerCase() !== 'upload'
+    )
+
+    // Sort upload activities by time
+    uploadActivities.sort((a, b) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    )
+
+    // Group consecutive upload activities within time window
+    let currentGroup: Activity[] = []
+    uploadActivities.forEach((activity, index) => {
+      if (currentGroup.length === 0) {
+        currentGroup.push(activity)
+      } else {
+        const lastActivity = currentGroup[currentGroup.length - 1]
+        const timeDiff = new Date(activity.created_at).getTime() - new Date(lastActivity.created_at).getTime()
+        
+        if (timeDiff <= TIME_WINDOW_MS) {
+          currentGroup.push(activity)
+        } else {
+          // Start a new group
+          if (currentGroup.length > 0) {
+            uploadGroups.push([...currentGroup])
+          }
+          currentGroup = [activity]
+        }
+      }
+    })
+    
+    // Add the last group
+    if (currentGroup.length > 0) {
+      uploadGroups.push(currentGroup)
+    }
+
+    // Consolidate groups with multiple activities
+    const consolidated: Activity[] = []
+    
+    uploadGroups.forEach(group => {
+      if (group.length === 1) {
+        // Single upload, keep as is
+        consolidated.push(group[0])
+      } else {
+        // Multiple uploads, create a consolidated activity
+        const firstActivity = group[0]
+        const totalFiles = group.length
+        const totalSizeMB = group.reduce((sum, a) => {
+          const size = a.metadata?.file_size_mb || 0
+          return sum + size
+        }, 0)
+        
+        // Count folders (files with path separators)
+        const folders = new Set(
+          group
+            .map(a => {
+              const filename = a.metadata?.filename || a.description.match(/"([^"]+)"/)?.[1] || ''
+              const pathParts = filename.split(/[/\\]/).filter((p: string) => p)
+              return pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : null
+            })
+            .filter((f: string | null) => f !== null)
+        )
+        const folderCount = folders.size
+
+        // Create consolidated description
+        let description = `Uploaded ${totalFiles} ${totalFiles === 1 ? 'file' : 'files'}`
+        if (folderCount > 0) {
+          description += ` from ${folderCount} ${folderCount === 1 ? 'folder' : 'folders'}`
+        }
+        if (totalSizeMB > 0) {
+          const sizeStr = totalSizeMB >= 1024 
+            ? `${(totalSizeMB / 1024).toFixed(2)} GB`
+            : `${totalSizeMB.toFixed(2)} MB`
+          description += ` (${sizeStr})`
+        }
+
+        // Create consolidated activity
+        const consolidatedActivity: Activity = {
+          ...firstActivity,
+          description,
+          metadata: {
+            ...firstActivity.metadata,
+            consolidated: true,
+            file_count: totalFiles,
+            folder_count: folderCount,
+            total_size_mb: totalSizeMB,
+            original_activities: group.map(a => ({
+              id: a.id,
+              description: a.description,
+              filename: a.metadata?.filename
+            }))
+          }
+        }
+        
+        consolidated.push(consolidatedActivity)
+      }
+    })
+
+    // Add non-upload activities
+    consolidated.push(...otherActivities)
+
+    return consolidated
   }
 
   const formatDateKey = (date: Date): string => {
@@ -479,9 +597,19 @@ export default function ActivitiesPage() {
                                           </div>
 
                                           {/* Description */}
-                                          <p className="text-sm text-gray-900 font-medium mb-2 line-clamp-2">
-                                            {activity.description}
-                                          </p>
+                                          <div className="mb-2">
+                                            <p className="text-sm text-gray-900 font-medium line-clamp-2">
+                                              {activity.description}
+                                            </p>
+                                            {activity.metadata?.consolidated && (
+                                              <p className="text-xs text-gray-500 mt-1">
+                                                {activity.metadata.file_count} {activity.metadata.file_count === 1 ? 'file' : 'files'}
+                                                {activity.metadata.folder_count > 0 && (
+                                                  <> • {activity.metadata.folder_count} {activity.metadata.folder_count === 1 ? 'folder' : 'folders'}</>
+                                                )}
+                                              </p>
+                                            )}
+                                          </div>
 
                                           {/* Metadata */}
                                           <div className="space-y-1 text-xs text-gray-600">
