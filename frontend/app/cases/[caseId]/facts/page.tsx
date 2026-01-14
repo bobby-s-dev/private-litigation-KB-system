@@ -293,11 +293,11 @@ export default function FactsPage() {
 
     return (
       <div className="bg-gradient-to-b from-purple-50 to-white rounded-lg p-3 sm:p-4 md:p-6 w-full overflow-hidden relative" style={{ overflowX: 'scroll', overflowY: 'visible', maxWidth: '90vw' }}>
-        {/* Scroll Navigation Buttons */}
+        {/* Scroll Navigation Buttons - Fixed at middle of screen */}
         {canScrollLeft && (
           <button
             onClick={() => scrollTimeline('left')}
-            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white border-2 border-purple-300 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg transition-all hover:scale-110"
+            className="fixed left-2 sm:left-4 top-1/2 -translate-y-1/2 z-50 bg-white/90 hover:bg-white border-2 border-purple-300 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg transition-all hover:scale-110"
             aria-label="Scroll left"
           >
             <svg className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -308,7 +308,7 @@ export default function FactsPage() {
         {canScrollRight && (
           <button
             onClick={() => scrollTimeline('right')}
-            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white border-2 border-purple-300 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg transition-all hover:scale-110"
+            className="fixed right-2 sm:right-4 top-1/2 -translate-y-1/2 z-50 bg-white/90 hover:bg-white border-2 border-purple-300 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg transition-all hover:scale-110"
             aria-label="Scroll right"
           >
             <svg className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
