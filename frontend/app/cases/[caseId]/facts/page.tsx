@@ -248,24 +248,31 @@ export default function FactsPage() {
     const noDateFacts = groupedFacts['No Date'] || []
 
     return (
-      <div className="bg-gradient-to-b from-purple-50 to-white rounded-lg p-4 sm:p-6 w-full max-w-full overflow-hidden">
+      <div className="bg-gradient-to-b from-purple-50 to-white rounded-lg p-3 sm:p-4 md:p-6 w-full max-w-full overflow-hidden">
         {/* Horizontal Timeline - Constrained Scrollable Container */}
-        <div className="w-full overflow-x-auto overflow-y-visible pb-8" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div 
+          className="w-full overflow-x-auto overflow-y-visible pb-6 sm:pb-8 scrollbar-thin scrollbar-thumb-purple-400 scrollbar-track-gray-100" 
+          style={{ 
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#c084fc #f3f4f6'
+          }}
+        >
           <div className="min-w-max">
             {/* Timeline axis */}
-            <div className="relative mb-6 sm:mb-8">
+            <div className="relative mb-4 sm:mb-6 md:mb-8">
               {/* Horizontal line */}
-              <div className="absolute top-6 left-0 right-0 h-1 bg-gradient-to-r from-purple-300 via-purple-500 to-purple-300" />
+              <div className="absolute top-5 sm:top-6 left-0 right-0 h-0.5 sm:h-1 bg-gradient-to-r from-purple-300 via-purple-500 to-purple-300" />
               
               {/* Date markers */}
-              <div className="flex justify-between items-start relative">
+              <div className="flex justify-between items-start relative gap-2 sm:gap-0">
                 {dates.map((date, index) => (
-                  <div key={date} className="flex flex-col items-center min-w-[150px] sm:min-w-[200px]">
+                  <div key={date} className="flex flex-col items-center min-w-[120px] sm:min-w-[150px] md:min-w-[200px] flex-shrink-0">
                     {/* Marker */}
-                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-purple-600 border-2 sm:border-4 border-white shadow-lg z-10 mb-2" />
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 rounded-full bg-purple-600 border-2 sm:border-3 md:border-4 border-white shadow-lg z-10 mb-1.5 sm:mb-2" />
                     {/* Date label */}
-                    <div className="text-xs sm:text-sm font-semibold text-purple-900 mb-1 text-center">{date}</div>
-                    <div className="text-xs text-gray-500 text-center">
+                    <div className="text-[10px] sm:text-xs md:text-sm font-semibold text-purple-900 mb-0.5 sm:mb-1 text-center px-1 break-words">{date}</div>
+                    <div className="text-[9px] sm:text-xs text-gray-500 text-center">
                       {groupedFacts[date].length} {groupedFacts[date].length === 1 ? 'fact' : 'facts'}
                     </div>
                   </div>
@@ -274,10 +281,10 @@ export default function FactsPage() {
             </div>
 
             {/* Facts grouped by date */}
-            <div className="flex gap-3 sm:gap-6">
+            <div className="flex gap-2 sm:gap-3 md:gap-6">
               {dates.map((date, dateIndex) => (
-                <div key={date} className="min-w-[150px] sm:min-w-[200px] max-w-[250px] sm:max-w-[300px] flex-shrink-0">
-                  <div className="space-y-4">
+                <div key={date} className="min-w-[120px] sm:min-w-[180px] md:min-w-[220px] max-w-[140px] sm:max-w-[240px] md:max-w-[300px] flex-shrink-0">
+                  <div className="space-y-2 sm:space-y-3 md:space-y-4">
                     {groupedFacts[date].map((fact, factIndex) => (
                       <div
                         key={fact.id}
@@ -285,14 +292,14 @@ export default function FactsPage() {
                       >
                         {/* Connecting line from timeline */}
                         {factIndex === 0 && (
-                          <div className="absolute -top-8 left-1/2 w-0.5 h-8 bg-purple-300" />
+                          <div className="absolute -top-6 sm:-top-8 left-1/2 w-0.5 h-6 sm:h-8 bg-purple-300" />
                         )}
                         
                         {/* Fact card */}
-                        <div className="bg-white border-2 border-purple-200 rounded-lg p-3 sm:p-4 hover:shadow-lg hover:border-purple-400 transition-all">
+                        <div className="bg-white border-2 border-purple-200 rounded-lg p-2 sm:p-3 md:p-4 hover:shadow-lg hover:border-purple-400 transition-all">
                           {/* Time */}
                           {fact.date_time && (
-                            <div className="text-xs font-medium text-purple-600 mb-2">
+                            <div className="text-[10px] sm:text-xs font-medium text-purple-600 mb-1.5 sm:mb-2">
                               {new Date(fact.date_time).toLocaleTimeString('en-US', {
                                 hour: '2-digit',
                                 minute: '2-digit'
@@ -301,9 +308,9 @@ export default function FactsPage() {
                           )}
                           
                           {/* Status badge */}
-                          <div className="flex justify-between items-start mb-2">
+                          <div className="flex justify-between items-start mb-1.5 sm:mb-2">
                             <span
-                              className={`px-2 py-0.5 sm:py-1 rounded text-xs font-medium ${
+                              className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium ${
                                 fact.review_status === 'accepted'
                                   ? 'bg-green-100 text-green-700'
                                   : 'bg-gray-100 text-gray-700'
@@ -314,24 +321,24 @@ export default function FactsPage() {
                           </div>
 
                           {/* Fact text */}
-                          <p className="text-xs sm:text-sm text-gray-900 mb-2 sm:mb-3 line-clamp-3 sm:line-clamp-4" title={fact.fact}>
+                          <p className="text-[10px] sm:text-xs md:text-sm text-gray-900 mb-1.5 sm:mb-2 md:mb-3 line-clamp-2 sm:line-clamp-3 md:line-clamp-4 break-words" title={fact.fact}>
                             {highlightEntity(fact.fact)}
                           </p>
 
                           {/* Issues */}
                           {fact.issues.length > 0 && (
-                            <div className="mb-3">
-                              <div className="flex flex-wrap gap-1">
+                            <div className="mb-1.5 sm:mb-2 md:mb-3">
+                              <div className="flex flex-wrap gap-0.5 sm:gap-1">
                                 {fact.issues.slice(0, 2).map((issue, idx) => (
                                   <span
                                     key={idx}
-                                    className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs"
+                                    className="px-1.5 sm:px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] sm:text-xs"
                                   >
                                     {issue}
                                   </span>
                                 ))}
                                 {fact.issues.length > 2 && (
-                                  <span className="text-xs text-gray-500">
+                                  <span className="text-[9px] sm:text-xs text-gray-500">
                                     +{fact.issues.length - 2} more
                                   </span>
                                 )}
@@ -340,24 +347,24 @@ export default function FactsPage() {
                           )}
 
                           {/* Actions */}
-                          <div className="flex flex-col gap-2 pt-3 border-t border-gray-100">
+                          <div className="flex flex-col gap-1.5 sm:gap-2 pt-2 sm:pt-3 border-t border-gray-100">
                             <button
                               onClick={() => router.push(`/cases/${caseIdParam}/documents/${fact.document_id}/review`)}
-                              className="text-xs text-purple-600 hover:text-purple-700 font-medium text-left"
+                              className="text-[10px] sm:text-xs text-purple-600 hover:text-purple-700 font-medium text-left truncate"
                             >
                               📄 View Document
                             </button>
                             {fact.review_status === 'not_reviewed' ? (
                               <button
                                 onClick={() => handleReviewStatusChange(fact.id, 'accepted')}
-                                className="w-full px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 text-xs font-medium"
+                                className="w-full px-2 sm:px-3 py-1 sm:py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 text-[10px] sm:text-xs font-medium"
                               >
                                 Accept
                               </button>
                             ) : (
                               <button
                                 onClick={() => handleReviewStatusChange(fact.id, 'not_reviewed')}
-                                className="w-full px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs font-medium"
+                                className="w-full px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-[10px] sm:text-xs font-medium"
                               >
                                 Undo
                               </button>
@@ -462,7 +469,7 @@ export default function FactsPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-full overflow-x-hidden">
+    <div className="p-3 sm:p-4 md:p-6 max-w-full overflow-x-hidden w-full">
       {/* Header */}
       <div className="mb-4 sm:mb-6">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Facts</h1>
@@ -601,9 +608,11 @@ export default function FactsPage() {
       </div>
 
       {/* Facts Display - Timeline or Table View */}
-      <div className={viewMode === 'timeline' ? 'w-full max-w-full overflow-hidden' : 'bg-white rounded-lg border border-gray-200 overflow-x-auto'}>
+      <div className={viewMode === 'timeline' ? 'w-full max-w-full overflow-hidden relative' : 'bg-white rounded-lg border border-gray-200 overflow-x-auto'}>
         {viewMode === 'timeline' ? (
-          renderTimelineView()
+          <div className="w-full overflow-hidden">
+            {renderTimelineView()}
+          </div>
         ) : loading ? (
           <div className="p-8 sm:p-12 text-center text-gray-500 text-sm sm:text-base">Loading facts...</div>
         ) : facts.length === 0 ? (
