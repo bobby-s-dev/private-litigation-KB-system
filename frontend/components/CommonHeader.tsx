@@ -8,6 +8,7 @@ export default function CommonHeader() {
   const getPageTitle = () => {
     if (!pathname) return ''
     
+    if (pathname === '/dashboard') return 'Dashboard'
     if (pathname === '/cases') return 'Cases'
     if (pathname === '/entities') return 'Entities'
     if (pathname === '/activity') return 'Activity'

@@ -2,15 +2,16 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Settings, Folder, Users, Check, FileText, HelpCircle } from 'lucide-react'
+import { Settings, Folder, Users, Check, FileText, HelpCircle, Home } from 'lucide-react'
 
 const sidebarItems = [
-  { icon: Settings, label: 'Settings', href: '/settings' },
+  { icon: Home, label: 'Dashboard', href: '/dashboard' },
   { icon: Folder, label: 'Cases', href: '/cases' },
   { icon: Users, label: 'Entities', href: '/entities' },
   { icon: Check, label: 'Tasks', href: '/tasks' },
   { icon: FileText, label: 'Activity', href: '/activity' },
   { icon: HelpCircle, label: 'Help', href: '/help' },
+  { icon: Settings, label: 'Settings', href: '/settings' },
 ]
 
 export default function Sidebar() {
