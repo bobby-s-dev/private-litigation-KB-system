@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Calendar, Clock, User, FileText, Activity as ActivityIcon } from 'lucide-react'
+import { ChevronRight, Calendar, Clock, User, FileText, Activity as ActivityIcon } from 'lucide-react'
 import { apiClient, Matter } from '@/lib/api'
 
 interface Activity {
@@ -32,9 +32,6 @@ export default function ActivitiesPage() {
   const [expandedCases, setExpandedCases] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const [caseFilter, setCaseFilter] = useState<string>('all')
-  const timelineScrollRefs = useRef<Map<string, HTMLDivElement>>(new Map())
-  const [canScrollLeft, setCanScrollLeft] = useState<Map<string, boolean>>(new Map())
-  const [canScrollRight, setCanScrollRight] = useState<Map<string, boolean>>(new Map())
 
   useEffect(() => {
     loadCases()
@@ -99,11 +96,6 @@ export default function ActivitiesPage() {
         })
         return updated
       })
-
-      // Initialize scroll state
-      setTimeout(() => {
-        checkScrollButtons(caseId)
-      }, 100)
     } catch (error) {
       console.error(`Error loading activities for case ${caseId}:`, error)
       setCasesWithActivities(prev => {
@@ -320,39 +312,6 @@ export default function ActivitiesPage() {
     })
   }
 
-  const checkScrollButtons = useCallback((caseId: string) => {
-    const scrollContainer = timelineScrollRefs.current.get(caseId)
-    if (!scrollContainer) return
-
-    const { scrollLeft, scrollWidth, clientWidth } = scrollContainer
-    setCanScrollLeft(prev => {
-      const updated = new Map(prev)
-      updated.set(caseId, scrollLeft > 0)
-      return updated
-    })
-    setCanScrollRight(prev => {
-      const updated = new Map(prev)
-      updated.set(caseId, scrollLeft < scrollWidth - clientWidth - 10)
-      return updated
-    })
-  }, [])
-
-  const scrollTimeline = (caseId: string, direction: 'left' | 'right') => {
-    const scrollContainer = timelineScrollRefs.current.get(caseId)
-    if (!scrollContainer) return
-
-    const scrollAmount = 300
-    const newScrollLeft = direction === 'left' 
-      ? scrollContainer.scrollLeft - scrollAmount
-      : scrollContainer.scrollLeft + scrollAmount
-
-    scrollContainer.scrollTo({
-      left: newScrollLeft,
-      behavior: 'smooth'
-    })
-
-    setTimeout(() => checkScrollButtons(caseId), 100)
-  }
 
   const getActionTypeColor = (actionType: string): string => {
     const colors: Record<string, string> = {
@@ -421,7 +380,7 @@ export default function ActivitiesPage() {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Activities</h1>
-        <p className="text-gray-600">View activities across all cases, organized by timeline</p>
+        <p className="text-gray-600">View activities across all cases, organized by date</p>
       </div>
 
       {/* Search and Filters */}
@@ -513,92 +472,58 @@ export default function ActivitiesPage() {
                         </p>
                       </div>
                     ) : (
-                      <div className="relative bg-gradient-to-b from-purple-50 to-white p-4 md:p-6">
-                        {/* Scroll Navigation Buttons */}
-                        {canScrollLeft.get(caseItem.id) && (
-                          <button
-                            onClick={() => scrollTimeline(caseItem.id, 'left')}
-                            className="fixed left-2 sm:left-4 top-1/2 -translate-y-1/2 z-50 bg-white/90 hover:bg-white border-2 border-purple-300 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg transition-all hover:scale-110"
-                            aria-label="Scroll left"
-                          >
-                            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-                          </button>
-                        )}
-                        {canScrollRight.get(caseItem.id) && (
-                          <button
-                            onClick={() => scrollTimeline(caseItem.id, 'right')}
-                            className="fixed right-2 sm:right-4 top-1/2 -translate-y-1/2 z-50 bg-white/90 hover:bg-white border-2 border-purple-300 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg transition-all hover:scale-110"
-                            aria-label="Scroll right"
-                          >
-                            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-                          </button>
-                        )}
-
-                        {/* Timeline Container */}
-                        <div
-                          ref={(el) => {
-                            if (el) {
-                              timelineScrollRefs.current.set(caseItem.id, el)
-                            } else {
-                              timelineScrollRefs.current.delete(caseItem.id)
-                            }
-                          }}
-                          onScroll={() => checkScrollButtons(caseItem.id)}
-                          className="w-full overflow-x-auto overflow-y-visible pb-6 scrollbar-thin scrollbar-thumb-purple-400 scrollbar-track-gray-100"
-                          style={{
-                            WebkitOverflowScrolling: 'touch',
-                            scrollbarWidth: 'thin',
-                            scrollbarColor: '#c084fc #f3f4f6'
-                          }}
-                        >
-                          <div className="min-w-max">
-                            {/* Timeline Axis */}
-                            <div className="relative mb-6">
-                              <div className="absolute top-6 left-0 right-0 h-1 bg-gradient-to-r from-purple-300 via-purple-500 to-purple-300" />
-                              
-                              {/* Date Markers */}
-                              <div className="flex justify-between items-start relative gap-4">
-                                {dates.map((date) => (
-                                  <div key={date} className="flex flex-col items-center min-w-[150px] md:min-w-[200px] flex-shrink-0">
-                                    <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-purple-600 border-2 md:border-4 border-white shadow-lg z-10 mb-2" />
-                                    <div className="text-xs md:text-sm font-semibold text-purple-900 mb-1 text-center px-1">
-                                      {date}
-                                    </div>
-                                    <div className="text-xs text-gray-500 text-center">
-                                      {filteredGrouped[date].length} {filteredGrouped[date].length === 1 ? 'activity' : 'activities'}
-                                    </div>
+                      <div className="p-4 md:p-6 bg-gray-50">
+                        {/* Activities by Date - Row Layout */}
+                        <div className="space-y-6">
+                          {dates.map((date) => (
+                            <div key={date} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                              {/* Date Header */}
+                              <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-3 border-b border-purple-700">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <Calendar className="w-5 h-5 text-white" />
+                                    <h3 className="text-lg font-semibold text-white">{date}</h3>
                                   </div>
-                                ))}
+                                  <div className="text-sm text-purple-100">
+                                    {filteredGrouped[date].length} {filteredGrouped[date].length === 1 ? 'activity' : 'activities'}
+                                  </div>
+                                </div>
                               </div>
-                            </div>
 
-                            {/* Activities by Date */}
-                            <div className="flex gap-4 md:gap-6">
-                              {dates.map((date) => (
-                                <div key={date} className="min-w-[180px] md:min-w-[240px] max-w-[240px] md:max-w-[300px] flex-shrink-0">
-                                  <div className="space-y-3 md:space-y-4">
-                                    {filteredGrouped[date].map((activity, index) => (
-                                      <div key={activity.id} className="relative">
-                                        {/* Connecting line from timeline */}
-                                        {index === 0 && (
-                                          <div className="absolute -top-8 left-1/2 w-0.5 h-8 bg-purple-300" />
-                                        )}
-                                        
-                                        {/* Activity Card */}
-                                        <div className="bg-white border-2 border-purple-200 rounded-lg p-3 md:p-4 hover:shadow-lg hover:border-purple-400 transition-all">
-                                          {/* Action Type Badge */}
-                                          <div className="flex items-center justify-between mb-2">
-                                            <span className={`px-2 py-1 text-xs font-medium rounded border ${getActionTypeColor(activity.action_type)}`}>
-                                              {activity.action_type}
-                                            </span>
-                                            <div className="text-purple-600">
-                                              {getResourceTypeIcon(activity.resource_type)}
+                              {/* Activities Table */}
+                              <div className="overflow-x-auto">
+                                <table className="w-full">
+                                  <thead className="bg-gray-50 border-b border-gray-200">
+                                    <tr>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Time</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Action</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Description</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">User</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Resource</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="bg-white divide-y divide-gray-200">
+                                    {filteredGrouped[date].map((activity) => (
+                                      <tr key={activity.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                          <div className="flex flex-col">
+                                            <div className="flex items-center gap-1 text-sm text-gray-900">
+                                              <Clock className="w-3 h-3 text-gray-500" />
+                                              <span>{formatTime(activity.created_at)}</span>
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                              {formatActivityTime(activity.created_at)}
                                             </div>
                                           </div>
-
-                                          {/* Description */}
-                                          <div className="mb-2">
-                                            <p className="text-sm text-gray-900 font-medium line-clamp-2">
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                          <span className={`px-2 py-1 text-xs font-medium rounded border ${getActionTypeColor(activity.action_type)}`}>
+                                            {activity.action_type}
+                                          </span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                          <div>
+                                            <p className="text-sm text-gray-900 font-medium">
                                               {activity.description}
                                             </p>
                                             {activity.metadata?.consolidated && (
@@ -610,31 +535,30 @@ export default function ActivitiesPage() {
                                               </p>
                                             )}
                                           </div>
-
-                                          {/* Metadata */}
-                                          <div className="space-y-1 text-xs text-gray-600">
-                                            <div className="flex items-center gap-1">
-                                              <Clock className="w-3 h-3" />
-                                              <span>{formatTime(activity.created_at)}</span>
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                          {activity.username ? (
+                                            <div className="flex items-center gap-1 text-sm text-gray-600">
+                                              <User className="w-4 h-4 text-gray-400" />
+                                              <span>{activity.username}</span>
                                             </div>
-                                            {activity.username && (
-                                              <div className="flex items-center gap-1">
-                                                <User className="w-3 h-3" />
-                                                <span>{activity.username}</span>
-                                              </div>
-                                            )}
-                                            <div className="text-gray-500 italic">
-                                              {formatActivityTime(activity.created_at)}
-                                            </div>
+                                          ) : (
+                                            <span className="text-sm text-gray-400 italic">—</span>
+                                          )}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                          <div className="flex items-center gap-2 text-purple-600">
+                                            {getResourceTypeIcon(activity.resource_type)}
+                                            <span className="text-sm text-gray-600 capitalize">{activity.resource_type}</span>
                                           </div>
-                                        </div>
-                                      </div>
+                                        </td>
+                                      </tr>
                                     ))}
-                                  </div>
-                                </div>
-                              ))}
+                                  </tbody>
+                                </table>
+                              </div>
                             </div>
-                          </div>
+                          ))}
                         </div>
                       </div>
                     )}
