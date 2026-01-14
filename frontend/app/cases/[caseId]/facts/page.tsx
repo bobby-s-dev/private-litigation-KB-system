@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Search, X, Filter } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Search, X, Filter, FileText, Check, Circle } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 
 interface Fact {
@@ -377,13 +377,23 @@ export default function FactsPage() {
                           {/* Status badge */}
                           <div className="flex justify-between items-start mb-1.5 sm:mb-2">
                             <span
-                              className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium ${
+                              className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium flex items-center gap-1 ${
                                 fact.review_status === 'accepted'
                                   ? 'bg-green-100 text-green-700'
                                   : 'bg-gray-100 text-gray-700'
                               }`}
                             >
-                              {fact.review_status === 'accepted' ? '✓ Accepted' : '○ Review'}
+                              {fact.review_status === 'accepted' ? (
+                                <>
+                                  <Check className="h-3 w-3" />
+                                  Accepted
+                                </>
+                              ) : (
+                                <>
+                                  <Circle className="h-3 w-3" />
+                                  Review
+                                </>
+                              )}
                             </span>
                           </div>
 
@@ -417,9 +427,10 @@ export default function FactsPage() {
                           <div className="flex flex-col gap-1.5 sm:gap-2 pt-2 sm:pt-3 border-t border-gray-100">
                             <button
                               onClick={() => router.push(`/cases/${caseIdParam}/documents/${fact.document_id}/review`)}
-                              className="text-[10px] sm:text-xs text-purple-600 hover:text-purple-700 font-medium text-left truncate"
+                              className="text-[10px] sm:text-xs text-purple-600 hover:text-purple-700 font-medium text-left truncate flex items-center gap-1"
                             >
-                              📄 View Document
+                              <FileText className="h-3 w-3" />
+                              View Document
                             </button>
                             {fact.review_status === 'not_reviewed' ? (
                               <button
@@ -460,13 +471,23 @@ export default function FactsPage() {
                   {/* Status badge */}
                   <div className="flex justify-between items-start mb-2">
                     <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${
+                      className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 ${
                         fact.review_status === 'accepted'
                           ? 'bg-green-100 text-green-700'
                           : 'bg-gray-100 text-gray-700'
                       }`}
                     >
-                      {fact.review_status === 'accepted' ? '✓ Accepted' : '○ Review'}
+                      {fact.review_status === 'accepted' ? (
+                        <>
+                          <Check className="h-3 w-3" />
+                          Accepted
+                        </>
+                      ) : (
+                        <>
+                          <Circle className="h-3 w-3" />
+                          Review
+                        </>
+                      )}
                     </span>
                   </div>
 
@@ -498,9 +519,10 @@ export default function FactsPage() {
                   <div className="flex flex-col gap-2 pt-3 border-t border-gray-100">
                     <button
                       onClick={() => router.push(`/cases/${caseIdParam}/documents/${fact.document_id}/review`)}
-                      className="text-xs text-purple-600 hover:text-purple-700 font-medium text-left"
+                      className="text-xs text-purple-600 hover:text-purple-700 font-medium text-left flex items-center gap-1"
                     >
-                      📄 View Document
+                      <FileText className="h-3 w-3" />
+                      View Document
                     </button>
                     {fact.review_status === 'not_reviewed' ? (
                       <button

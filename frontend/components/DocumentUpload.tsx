@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Check, X } from 'lucide-react'
+import { Check, X, AlertTriangle, FileText } from 'lucide-react'
 import { apiClient, UploadResponse } from '@/lib/api'
 
 interface DocumentUploadProps {
@@ -109,18 +109,18 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
           if (result.is_duplicate && result.duplicate_type === 'exact') {
             // Exact duplicate
             const existingFile = result.existing_document_filename || result.existing_document_title || 'existing document'
-            message = `⚠️ Duplicate detected: This file is identical to "${existingFile}". The file was not saved as it already exists in the system.`
+            message = `Duplicate detected: This file is identical to "${existingFile}". The file was not saved as it already exists in the system.`
           } else if (result.duplicate_type === 'near' && result.near_duplicates && result.near_duplicates.length > 0) {
             // Near duplicate
             const bestMatch = result.near_duplicates[0]
             const similarityPct = Math.round(bestMatch.similarity * 100)
-            message = `⚠️ Similar document found: This file is ${similarityPct}% similar to "${bestMatch.filename}". File was uploaded, but you may want to review for duplicates.`
+            message = `Similar document found: This file is ${similarityPct}% similar to "${bestMatch.filename}". File was uploaded, but you may want to review for duplicates.`
             if (result.near_duplicates.length > 1) {
               message += ` (${result.near_duplicates.length} similar documents found)`
             }
           } else {
             // Normal upload
-            message = `✅ File uploaded successfully! Document ID: ${result.document_id}`
+            message = `File uploaded successfully! Document ID: ${result.document_id}`
           }
         }
         
@@ -355,8 +355,9 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
                 
                 {uploadProgress.currentFile && (
                   <div className="space-y-1">
-                    <p className="text-xs font-medium text-gray-700 truncate" title={uploadProgress.currentFile}>
-                      📄 {uploadProgress.currentFile}
+                    <p className="text-xs font-medium text-gray-700 truncate flex items-center gap-1" title={uploadProgress.currentFile}>
+                      <FileText className="h-3 w-3" />
+                      {uploadProgress.currentFile}
                     </p>
                     {uploadProgress.currentFileSize && (
                       <p className="text-xs text-gray-500">
@@ -474,7 +475,9 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
           </div>
         ) : (
           <>
-            <div className="text-4xl mb-4">📄</div>
+            <div className="mb-4 flex justify-center">
+              <FileText className="h-16 w-16 text-gray-400" />
+            </div>
             {uploadMode === 'file' ? (
               <label htmlFor="file-upload" className="cursor-pointer">
                 <p className="text-sm text-gray-600 mb-2">
@@ -513,13 +516,15 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
       </div>
 
       {uploadStatus && (
-        <div className={`mt-4 p-3 rounded-lg ${
+        <div className={`mt-4 p-3 rounded-lg flex items-start gap-2 ${
           uploadStatus.type === 'success' 
             ? 'bg-green-50 text-green-800 border border-green-200' 
             : uploadStatus.type === 'warning'
             ? 'bg-yellow-50 text-yellow-800 border border-yellow-200'
             : 'bg-red-50 text-red-800 border border-red-200'
         }`}>
+          {uploadStatus.type === 'warning' && <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />}
+          {uploadStatus.type === 'success' && <Check className="h-5 w-5 flex-shrink-0 mt-0.5" />}
           <p className="text-sm">{uploadStatus.message}</p>
         </div>
       )}

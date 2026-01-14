@@ -2,14 +2,15 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { BarChart3, Folder, Users, Check, FileText, HelpCircle } from 'lucide-react'
 
 const sidebarItems = [
-  { icon: '📊', label: 'Dashboard', href: '/dashboard' },
-  { icon: '📁', label: 'Cases', href: '/cases' },
-  { icon: '👥', label: 'Entities', href: '/entities' },
-  { icon: '✓', label: 'Tasks', href: '/tasks' },
-  { icon: '📝', label: 'Activity', href: '/activity' },
-  { icon: '❓', label: 'Help', href: '/help' },
+  { icon: BarChart3, label: 'Dashboard', href: '/dashboard' },
+  { icon: Folder, label: 'Cases', href: '/cases' },
+  { icon: Users, label: 'Entities', href: '/entities' },
+  { icon: Check, label: 'Tasks', href: '/tasks' },
+  { icon: FileText, label: 'Activity', href: '/activity' },
+  { icon: HelpCircle, label: 'Help', href: '/help' },
 ]
 
 export default function Sidebar() {
@@ -30,7 +31,7 @@ export default function Sidebar() {
             }`}
             title={item.label}
           >
-            <span className="text-xl">{item.icon}</span>
+            <item.icon className="h-5 w-5" />
           </Link>
         )
       })}

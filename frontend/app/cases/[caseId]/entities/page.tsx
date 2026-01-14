@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import { Loader2, BarChart3, Tag, Edit, Trash2, FileText, Users, Check, X } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 
 interface Entity {
@@ -261,7 +261,7 @@ export default function EntitiesPage() {
                   <p className="text-3xl font-bold text-purple-600 mt-1">{factsPerEntity.length}</p>
                 </div>
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">👥</span>
+                  <Users className="h-6 w-6 text-purple-600" />
                 </div>
               </div>
             </div>
@@ -276,7 +276,7 @@ export default function EntitiesPage() {
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">📊</span>
+                  <BarChart3 className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
             </div>
@@ -291,7 +291,7 @@ export default function EntitiesPage() {
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">🏷️</span>
+                  <Tag className="h-6 w-6 text-green-600" />
                 </div>
               </div>
             </div>
@@ -667,18 +667,29 @@ export default function EntitiesPage() {
                             <button
                               onClick={() => handleSave(entity.id)}
                               disabled={savingEntity === entity.id}
-                              className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                               title="Save changes"
                             >
-                              {savingEntity === entity.id ? '⏳ Saving...' : '✓ Save'}
+                              {savingEntity === entity.id ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                  Saving...
+                                </>
+                              ) : (
+                                <>
+                                  <Check className="h-4 w-4 mr-1" />
+                                  Save
+                                </>
+                              )}
                             </button>
                             <button
                               onClick={handleCancel}
                               disabled={savingEntity === entity.id}
-                              className="px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded font-medium transition-colors disabled:opacity-50"
+                              className="px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded font-medium transition-colors disabled:opacity-50 flex items-center"
                               title="Cancel editing"
                             >
-                              ✕ Cancel
+                              <X className="h-4 w-4 mr-1" />
+                              Cancel
                             </button>
                           </div>
                         ) : (
@@ -687,46 +698,54 @@ export default function EntitiesPage() {
                               <button
                                 onClick={() => handleEdit(entity)}
                                 disabled={deletingEntity === entity.id}
-                                className="px-2.5 py-1 text-xs text-purple-600 hover:bg-purple-50 rounded font-medium border border-purple-200 hover:border-purple-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-2.5 py-1 text-xs text-purple-600 hover:bg-purple-50 rounded font-medium border border-purple-200 hover:border-purple-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                                 title="Edit entity"
                               >
-                                ✏️ Edit
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
                               </button>
                               {entity.review_status === 'not_reviewed' ? (
                                 <button
                                   onClick={() => handleReviewStatusChange(entity.id, 'accepted')}
                                   disabled={deletingEntity === entity.id}
-                                  className="px-2.5 py-1 text-xs text-green-600 hover:bg-green-50 rounded font-medium border border-green-200 hover:border-green-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="px-2.5 py-1 text-xs text-green-600 hover:bg-green-50 rounded font-medium border border-green-200 hover:border-green-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                                   title="Accept entity"
                                 >
-                                  ✓ Accept
+                                  <Check className="h-3 w-3 mr-1" />
+                                  Accept
                                 </button>
                               ) : (
                                 <button
                                   onClick={() => handleReviewStatusChange(entity.id, 'not_reviewed')}
                                   disabled={deletingEntity === entity.id}
-                                  className="px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded border border-gray-300 hover:border-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded border border-gray-300 hover:border-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                                   title="Mark as not reviewed"
                                 >
-                                  ↶ Undo
+                                  <X className="h-3 w-3 mr-1" />
+                                  Undo
                                 </button>
                               )}
                               <button
                                 onClick={() => handleDelete(entity.id, entity.name)}
                                 disabled={deletingEntity === entity.id}
-                                className="px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 rounded font-medium border border-red-200 hover:border-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 rounded font-medium border border-red-200 hover:border-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                                 title="Delete entity"
                               >
-                                {deletingEntity === entity.id ? '⏳' : '🗑️'}
+                                {deletingEntity === entity.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-3 w-3" />
+                                )}
                               </button>
                             </div>
                             <button
                               onClick={() => handleViewFacts(entity)}
                               disabled={deletingEntity === entity.id}
-                              className="w-full px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded font-medium border border-blue-200 hover:border-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-full px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded font-medium border border-blue-200 hover:border-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                               title="View related facts"
                             >
-                              📄 View {entity.related_facts_count} facts
+                              <FileText className="h-3 w-3 mr-1" />
+                              View {entity.related_facts_count} facts
                             </button>
                           </div>
                         )}

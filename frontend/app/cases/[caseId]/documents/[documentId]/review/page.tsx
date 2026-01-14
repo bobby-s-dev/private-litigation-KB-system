@@ -325,9 +325,10 @@ function SuggestedFactsSection({
         </div>
       ) : (
         <>
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+            <Check className="h-4 w-4 text-green-800 flex-shrink-0" />
             <p className="text-sm text-green-800">
-              ✓ Found {facts.length} fact{facts.length !== 1 ? 's' : ''} extracted from this document
+              Found {facts.length} fact{facts.length !== 1 ? 's' : ''} extracted from this document
             </p>
           </div>
           <div className="space-y-4">
@@ -576,9 +577,10 @@ function EntitiesSection({ entities: initialEntities, documentId, onEntitiesExtr
         </div>
       ) : (
         <>
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
+            <Check className="h-4 w-4 text-blue-800 flex-shrink-0" />
             <p className="text-sm text-blue-800">
-              ✓ Found {entities.length} entit{entities.length !== 1 ? 'ies' : 'y'} extracted from this document
+              Found {entities.length} entit{entities.length !== 1 ? 'ies' : 'y'} extracted from this document
             </p>
           </div>
         <div className="space-y-6">
