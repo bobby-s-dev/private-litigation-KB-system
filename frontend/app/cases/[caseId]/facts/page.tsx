@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { apiClient } from '@/lib/api'
 
@@ -32,6 +32,9 @@ export default function FactsPage() {
   const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list')
   const [entityFilter, setEntityFilter] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const timelineScrollRef = useRef<HTMLDivElement>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(true)
 
   useEffect(() => {
     const initializeMatter = async () => {
@@ -165,6 +168,47 @@ export default function FactsPage() {
     router.push(`/cases/${caseIdParam}/facts`)
   }
 
+  // Timeline scroll handlers
+  const checkScrollButtons = useCallback(() => {
+    if (!timelineScrollRef.current) return
+    const { scrollLeft, scrollWidth, clientWidth } = timelineScrollRef.current
+    setCanScrollLeft(scrollLeft > 0)
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
+  }, [])
+
+  const scrollTimeline = (direction: 'left' | 'right') => {
+    if (!timelineScrollRef.current) return
+    const scrollAmount = timelineScrollRef.current.clientWidth * 0.8
+    const newScrollLeft = direction === 'left' 
+      ? timelineScrollRef.current.scrollLeft - scrollAmount
+      : timelineScrollRef.current.scrollLeft + scrollAmount
+    timelineScrollRef.current.scrollTo({
+      left: newScrollLeft,
+      behavior: 'smooth'
+    })
+  }
+
+  // Check scroll buttons when timeline is rendered or view mode changes
+  useEffect(() => {
+    if (viewMode === 'timeline') {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        checkScrollButtons()
+      }, 100)
+      
+      // Also check on window resize
+      const handleResize = () => {
+        checkScrollButtons()
+      }
+      window.addEventListener('resize', handleResize)
+      
+      return () => {
+        clearTimeout(timer)
+        window.removeEventListener('resize', handleResize)
+      }
+    }
+  }, [viewMode, facts, checkScrollButtons])
+
   // Group facts by date for timeline
   const groupFactsByDate = () => {
     const grouped: { [key: string]: Fact[] } = {}
@@ -248,9 +292,35 @@ export default function FactsPage() {
     const noDateFacts = groupedFacts['No Date'] || []
 
     return (
-      <div className="bg-gradient-to-b from-purple-50 to-white rounded-lg p-3 sm:p-4 md:p-6 w-full max-w-full overflow-hidden">
+      <div className="bg-gradient-to-b from-purple-50 to-white rounded-lg p-3 sm:p-4 md:p-6 w-full max-w-full overflow-hidden relative">
+        {/* Scroll Navigation Buttons */}
+        {canScrollLeft && (
+          <button
+            onClick={() => scrollTimeline('left')}
+            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white border-2 border-purple-300 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg transition-all hover:scale-110"
+            aria-label="Scroll left"
+          >
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
+        {canScrollRight && (
+          <button
+            onClick={() => scrollTimeline('right')}
+            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white border-2 border-purple-300 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg transition-all hover:scale-110"
+            aria-label="Scroll right"
+          >
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        )}
+        
         {/* Horizontal Timeline - Constrained Scrollable Container */}
         <div 
+          ref={timelineScrollRef}
+          onScroll={checkScrollButtons}
           className="w-full overflow-x-auto overflow-y-visible pb-6 sm:pb-8 scrollbar-thin scrollbar-thumb-purple-400 scrollbar-track-gray-100" 
           style={{ 
             WebkitOverflowScrolling: 'touch',
