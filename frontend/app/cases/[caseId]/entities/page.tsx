@@ -31,7 +31,7 @@ export default function EntitiesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [reviewStatusFilter, setReviewStatusFilter] = useState<string>('all')
-  const [editingEntity, setEditingEntity] = useState<string | null>(null)
+  const [editingEntity, setEditingEntity] = useState<Entity | null>(null)
   const [editValues, setEditValues] = useState<Partial<Entity>>({})
   const [availableTypes, setAvailableTypes] = useState<string[]>([])
   const [factsPerEntity, setFactsPerEntity] = useState<Array<{ name: string; value: number; color: string; type: string }>>([])
@@ -39,6 +39,7 @@ export default function EntitiesPage() {
   const [savingEntity, setSavingEntity] = useState<string | null>(null)
   const [deletingEntity, setDeletingEntity] = useState<string | null>(null)
   const [showStatistics, setShowStatistics] = useState(true)
+  const [showEditDialog, setShowEditDialog] = useState(false)
 
   useEffect(() => {
     const initializeMatter = async () => {
@@ -122,28 +123,34 @@ export default function EntitiesPage() {
   }
 
   const handleEdit = (entity: Entity) => {
-    setEditingEntity(entity.id)
+    setEditingEntity(entity)
     setEditValues({
       name: entity.name,
+      type: entity.type,
+      '@name': entity['@name'],
       short_name: entity.short_name,
       email: entity.email,
       role: entity.role,
     })
+    setShowEditDialog(true)
   }
 
-  const handleSave = async (entityId: string) => {
+  const handleSave = async () => {
+    if (!editingEntity) return
+    
     try {
-      setSavingEntity(entityId)
-      const updatedEntity = await apiClient.updateEntity(entityId, editValues)
+      setSavingEntity(editingEntity.id)
+      const updatedEntity = await apiClient.updateEntity(editingEntity.id, editValues)
       
       // Update local state with the response from backend
       setEntities(prevEntities =>
         prevEntities.map(entity =>
-          entity.id === entityId
+          entity.id === editingEntity.id
             ? { ...entity, ...updatedEntity }
             : entity
         )
       )
+      setShowEditDialog(false)
       setEditingEntity(null)
       setEditValues({})
     } catch (error) {
@@ -178,6 +185,7 @@ export default function EntitiesPage() {
   }
 
   const handleCancel = () => {
+    setShowEditDialog(false)
     setEditingEntity(null)
     setEditValues({})
   }
@@ -593,16 +601,7 @@ export default function EntitiesPage() {
                   {entities.map((entity) => (
                     <tr key={entity.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {editingEntity === entity.id ? (
-                          <input
-                            type="text"
-                            value={editValues.name || ''}
-                            onChange={(e) => setEditValues({ ...editValues, name: e.target.value })}
-                            className="px-2 py-1 border border-gray-300 rounded text-sm"
-                          />
-                        ) : (
-                          <div className="text-sm font-medium text-gray-900">{entity.name}</div>
-                        )}
+                        <div className="text-sm font-medium text-gray-900">{entity.name}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
@@ -613,40 +612,13 @@ export default function EntitiesPage() {
                         {entity['@name']}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {editingEntity === entity.id ? (
-                          <input
-                            type="text"
-                            value={editValues.short_name || ''}
-                            onChange={(e) => setEditValues({ ...editValues, short_name: e.target.value })}
-                            className="px-2 py-1 border border-gray-300 rounded text-sm"
-                          />
-                        ) : (
-                          <div className="text-sm text-gray-900">{entity.short_name || '-'}</div>
-                        )}
+                        <div className="text-sm text-gray-900">{entity.short_name || '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {editingEntity === entity.id ? (
-                          <input
-                            type="email"
-                            value={editValues.email || ''}
-                            onChange={(e) => setEditValues({ ...editValues, email: e.target.value })}
-                            className="px-2 py-1 border border-gray-300 rounded text-sm"
-                          />
-                        ) : (
-                          <div className="text-sm text-gray-900">{entity.email || '-'}</div>
-                        )}
+                        <div className="text-sm text-gray-900">{entity.email || '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {editingEntity === entity.id ? (
-                          <input
-                            type="text"
-                            value={editValues.role || ''}
-                            onChange={(e) => setEditValues({ ...editValues, role: e.target.value })}
-                            className="px-2 py-1 border border-gray-300 rounded text-sm"
-                          />
-                        ) : (
-                          <div className="text-sm text-gray-900">{entity.role || '-'}</div>
-                        )}
+                        <div className="text-sm text-gray-900">{entity.role || '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
@@ -662,93 +634,61 @@ export default function EntitiesPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {editingEntity === entity.id ? (
+                        <div className="flex flex-col gap-1.5">
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => handleSave(entity.id)}
-                              disabled={savingEntity === entity.id}
-                              className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                              title="Save changes"
-                            >
-                              {savingEntity === entity.id ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                                  Saving...
-                                </>
-                              ) : (
-                                <>
-                                  <Check className="h-4 w-4 mr-1" />
-                                  Save
-                                </>
-                              )}
-                            </button>
-                            <button
-                              onClick={handleCancel}
-                              disabled={savingEntity === entity.id}
-                              className="px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded font-medium transition-colors disabled:opacity-50 flex items-center"
-                              title="Cancel editing"
-                            >
-                              <X className="h-4 w-4 mr-1" />
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col gap-1.5">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => handleEdit(entity)}
-                                disabled={deletingEntity === entity.id}
-                                className="px-2.5 py-1 text-xs text-purple-600 hover:bg-purple-50 rounded font-medium border border-purple-200 hover:border-purple-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                                title="Edit entity"
-                              >
-                                <Edit className="h-3 w-3 mr-1" />
-                                Edit
-                              </button>
-                              {entity.review_status === 'not_reviewed' ? (
-                                <button
-                                  onClick={() => handleReviewStatusChange(entity.id, 'accepted')}
-                                  disabled={deletingEntity === entity.id}
-                                  className="px-2.5 py-1 text-xs text-green-600 hover:bg-green-50 rounded font-medium border border-green-200 hover:border-green-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                                  title="Accept entity"
-                                >
-                                  <Check className="h-3 w-3 mr-1" />
-                                  Accept
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleReviewStatusChange(entity.id, 'not_reviewed')}
-                                  disabled={deletingEntity === entity.id}
-                                  className="px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded border border-gray-300 hover:border-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                                  title="Mark as not reviewed"
-                                >
-                                  <X className="h-3 w-3 mr-1" />
-                                  Undo
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleDelete(entity.id, entity.name)}
-                                disabled={deletingEntity === entity.id}
-                                className="px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 rounded font-medium border border-red-200 hover:border-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                                title="Delete entity"
-                              >
-                                {deletingEntity === entity.id ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <Trash2 className="h-3 w-3" />
-                                )}
-                              </button>
-                            </div>
-                            <button
-                              onClick={() => handleViewFacts(entity)}
+                              onClick={() => handleEdit(entity)}
                               disabled={deletingEntity === entity.id}
-                              className="w-full px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded font-medium border border-blue-200 hover:border-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                              title="View related facts"
+                              className="px-2.5 py-1 text-xs text-purple-600 hover:bg-purple-50 rounded font-medium border border-purple-200 hover:border-purple-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                              title="Edit entity"
                             >
-                              <FileText className="h-3 w-3 mr-1" />
-                              View {entity.related_facts_count} facts
+                              <Edit className="h-3 w-3 mr-1" />
+                              Edit
+                            </button>
+                            {entity.review_status === 'not_reviewed' ? (
+                              <button
+                                onClick={() => handleReviewStatusChange(entity.id, 'accepted')}
+                                disabled={deletingEntity === entity.id}
+                                className="px-2.5 py-1 text-xs text-green-600 hover:bg-green-50 rounded font-medium border border-green-200 hover:border-green-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                title="Accept entity"
+                              >
+                                <Check className="h-3 w-3 mr-1" />
+                                Accept
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleReviewStatusChange(entity.id, 'not_reviewed')}
+                                disabled={deletingEntity === entity.id}
+                                className="px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded border border-gray-300 hover:border-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                title="Mark as not reviewed"
+                              >
+                                <X className="h-3 w-3 mr-1" />
+                                Undo
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDelete(entity.id, entity.name)}
+                              disabled={deletingEntity === entity.id}
+                              className="px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 rounded font-medium border border-red-200 hover:border-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                              title="Delete entity"
+                            >
+                              {deletingEntity === entity.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3 w-3" />
+                              )}
                             </button>
                           </div>
-                        )}
+                          <button
+                            onClick={() => handleViewFacts(entity)}
+                            disabled={deletingEntity === entity.id}
+                            className="w-full px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded font-medium border border-blue-200 hover:border-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                            title="View related facts"
+                          >
+                            <FileText className="h-3 w-3 mr-1" />
+                            View {entity.related_facts_count} facts
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -810,6 +750,144 @@ export default function EntitiesPage() {
           </>
         )}
       </div>
+
+      {/* Edit Entity Dialog */}
+      {showEditDialog && editingEntity && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">Edit Entity</h2>
+              <button
+                onClick={handleCancel}
+                disabled={savingEntity === editingEntity.id}
+                className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                title="Close dialog"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {/* Name Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editValues.name || ''}
+                  onChange={(e) => setEditValues({ ...editValues, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Entity name"
+                />
+              </div>
+
+              {/* Type Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={editValues.type || ''}
+                  onChange={(e) => setEditValues({ ...editValues, type: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="">Select type</option>
+                  {availableTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* @name Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  @name
+                </label>
+                <input
+                  type="text"
+                  value={editValues['@name'] || ''}
+                  onChange={(e) => setEditValues({ ...editValues, '@name': e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="@name"
+                />
+              </div>
+
+              {/* Short Name Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Short Name
+                </label>
+                <input
+                  type="text"
+                  value={editValues.short_name || ''}
+                  onChange={(e) => setEditValues({ ...editValues, short_name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Short name"
+                />
+              </div>
+
+              {/* Email Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={editValues.email || ''}
+                  onChange={(e) => setEditValues({ ...editValues, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="email@example.com"
+                />
+              </div>
+
+              {/* Role Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Role
+                </label>
+                <input
+                  type="text"
+                  value={editValues.role || ''}
+                  onChange={(e) => setEditValues({ ...editValues, role: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Role"
+                />
+              </div>
+            </div>
+
+            {/* Dialog Footer */}
+            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
+              <button
+                onClick={handleCancel}
+                disabled={savingEntity === editingEntity.id}
+                className="px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={savingEntity === editingEntity.id || !editValues.name || !editValues.type}
+                className="px-4 py-2 bg-purple-600 text-white hover:bg-purple-700 rounded-lg font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {savingEntity === editingEntity.id ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
