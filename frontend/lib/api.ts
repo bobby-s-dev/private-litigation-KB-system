@@ -800,7 +800,9 @@ class ApiClient {
           chunk_index?: number
         }
       }>
-    }>(`/api/embeddings/search?${params.toString()}`)
+    }>(`/api/embeddings/search?${params.toString()}`, {
+      method: 'POST'
+    })
   }
 }
 
