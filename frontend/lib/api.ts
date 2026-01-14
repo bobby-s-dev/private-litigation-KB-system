@@ -202,9 +202,12 @@ class ApiClient {
     return results
   }
 
-  async getDocumentsByMatter(matterId: string): Promise<Document[]> {
+  async getDocumentsByMatter(matterId: string, search?: string, documentType?: string): Promise<Document[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/documents?matter_id=${matterId}`)
+      const params = new URLSearchParams({ matter_id: matterId })
+      if (search) params.append('search', search)
+      if (documentType) params.append('document_type', documentType)
+      const response = await fetch(`${this.baseUrl}/api/documents?${params.toString()}`)
       if (response.ok) {
         const data = await response.json()
         return data.documents || []

@@ -37,12 +37,11 @@ export default function KnowledgeBasePage() {
   // Active tab
   const [activeTab, setActiveTab] = useState<'patterns' | 'search' | 'query' | 'summary'>('patterns')
   
-  // Search state
+  // Search state (for document search)
   const [searchTerm, setSearchTerm] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [loadingSearch, setLoadingSearch] = useState(false)
   const [searchDocumentType, setSearchDocumentType] = useState<string>('')
-  const [searchScoreThreshold, setSearchScoreThreshold] = useState<number>(0.5)
   const [searchError, setSearchError] = useState<string>('')
   
   // Filter state
@@ -213,30 +212,21 @@ export default function KnowledgeBasePage() {
   }
 
   const handleSearch = async () => {
-    if (!searchTerm.trim() || !caseId) return
+    if (!caseId) return
     
     try {
       setLoadingSearch(true)
       setSearchError('')
-      const result = await apiClient.searchDocuments(
-        searchTerm,
+      const documents = await apiClient.getDocumentsByMatter(
         caseId,
-        searchDocumentType || undefined,
-        20,
-        searchScoreThreshold
+        searchTerm.trim() || undefined,
+        searchDocumentType || undefined
       )
-      setSearchResults(result.results || [])
+      setSearchResults(documents)
     } catch (error: any) {
       console.error('Error searching documents:', error)
       setSearchResults([])
-      
-      // Check for embedding service error
-      const errorMessage = error?.message || error?.detail || 'Unknown error'
-      if (errorMessage.includes('Embedding service not available') || errorMessage.includes('503')) {
-        setSearchError('embedding_not_available')
-      } else {
-        setSearchError(errorMessage)
-      }
+      setSearchError(error?.message || 'Error searching documents')
     } finally {
       setLoadingSearch(false)
     }
@@ -618,13 +608,13 @@ export default function KnowledgeBasePage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Search Term
+                  Search Documents
                 </label>
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Enter search term to find relevant document chunks..."
+                  placeholder="Search by document name or title..."
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -634,52 +624,30 @@ export default function KnowledgeBasePage() {
                 />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Document Type (Optional)
-                  </label>
-                  <select
-                    value={searchDocumentType}
-                    onChange={(e) => setSearchDocumentType(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="">All Types</option>
-                    {availableDocumentTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type.replace('_', ' ')}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Min Similarity Score: {(searchScoreThreshold * 100).toFixed(0)}%
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={searchScoreThreshold}
-                    onChange={(e) => setSearchScoreThreshold(parseFloat(e.target.value))}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-gray-500 mt-1">
-                    <span>0%</span>
-                    <span>50%</span>
-                    <span>100%</span>
-                  </div>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Document Type (Optional)
+                </label>
+                <select
+                  value={searchDocumentType}
+                  onChange={(e) => setSearchDocumentType(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="">All Types</option>
+                  {availableDocumentTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type.replace('_', ' ')}
+                    </option>
+                  ))}
+                </select>
               </div>
               
               <button
                 onClick={handleSearch}
-                disabled={loadingSearch || !searchTerm.trim()}
+                disabled={loadingSearch}
                 className="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loadingSearch ? 'Searching...' : 'Search (Enter)'}
+                {loadingSearch ? 'Searching...' : 'Search Documents (Enter)'}
               </button>
             </div>
           </div>
@@ -689,72 +657,60 @@ export default function KnowledgeBasePage() {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
                 Search Results ({searchResults.length})
               </h2>
-              <div className="space-y-4">
-                {searchResults.map((result, idx) => (
-                  <div key={result.id || idx} className="border-l-4 border-purple-500 pl-4 py-3 bg-gray-50 rounded-r-lg">
-                    <div className="flex items-start justify-between mb-2">
+              <div className="space-y-3">
+                {searchResults.map((doc) => (
+                  <div key={doc.id} className="border-l-4 border-purple-500 pl-4 py-3 bg-gray-50 rounded-r-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900">
-                          {result.payload.document_title || result.payload.file_name || 'Untitled Document'}
+                          {doc.title || doc.file_name || 'Untitled Document'}
                         </h3>
-                        {result.payload.document_type && (
-                          <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded mt-1 inline-block">
-                            {result.payload.document_type.replace('_', ' ')}
-                          </span>
+                        <div className="flex items-center gap-2 mt-2">
+                          {doc.document_type && (
+                            <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                              {doc.document_type.replace('_', ' ')}
+                            </span>
+                          )}
+                          {doc.facts_count > 0 && (
+                            <span className="text-xs text-gray-500">
+                              {doc.facts_count} {doc.facts_count === 1 ? 'fact' : 'facts'}
+                            </span>
+                          )}
+                          {doc.entities_count > 0 && (
+                            <span className="text-xs text-gray-500">
+                              {doc.entities_count} {doc.entities_count === 1 ? 'entity' : 'entities'}
+                            </span>
+                          )}
+                        </div>
+                        {doc.file_name && doc.file_name !== doc.title && (
+                          <p className="text-xs text-gray-500 mt-1">File: {doc.file_name}</p>
                         )}
                       </div>
-                      <div className="text-right ml-4">
-                        <span className="text-sm font-medium text-purple-600">
-                          {(result.score * 100).toFixed(1)}% match
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-700 mt-2 line-clamp-4">
-                      {result.payload.chunk_text}
-                    </p>
-                    {result.payload.document_id && (
                       <button
-                        onClick={() => window.open(`/cases/${caseId}/documents/${result.payload.document_id}/review`, '_blank')}
-                        className="text-xs text-purple-600 hover:text-purple-700 mt-2 underline"
+                        onClick={() => window.open(`/cases/${caseId}/documents/${doc.id}/review`, '_blank')}
+                        className="ml-4 px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
                       >
-                        View Document →
+                        View →
                       </button>
-                    )}
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {searchError === 'embedding_not_available' && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-yellow-900 mb-2">Embedding Service Not Available</h3>
-              <p className="text-yellow-800 mb-3">
-                The embedding service is not configured. To enable semantic search, you need to configure an embedding provider.
-              </p>
-              <div className="bg-white rounded p-4 text-sm text-gray-700">
-                <p className="font-medium mb-2">Configuration Options:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li><strong>OpenAI:</strong> Set <code className="bg-gray-100 px-1 rounded">OPENAI_API_KEY</code> environment variable</li>
-                  <li><strong>Azure OpenAI:</strong> Set <code className="bg-gray-100 px-1 rounded">AZURE_OPENAI_API_KEY</code> and <code className="bg-gray-100 px-1 rounded">AZURE_OPENAI_ENDPOINT</code></li>
-                </ul>
-                <p className="mt-3 text-xs text-gray-600">
-                  After configuring, restart the backend service for the changes to take effect.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {searchError && searchError !== 'embedding_not_available' && (
+          {searchError && (
             <div className="bg-red-50 border border-red-200 rounded-lg shadow-sm p-6 text-center">
               <p className="text-red-800 font-medium">Error: {searchError}</p>
             </div>
           )}
 
-          {!loadingSearch && !searchError && searchTerm && searchResults.length === 0 && (
+          {!loadingSearch && !searchError && (searchTerm || searchDocumentType) && searchResults.length === 0 && (
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center">
-              <p className="text-gray-600">No results found for "{searchTerm}"</p>
-              <p className="text-sm text-gray-500 mt-2">Try adjusting your search term or similarity threshold.</p>
+              <p className="text-gray-600">No documents found</p>
+              <p className="text-sm text-gray-500 mt-2">
+                {searchTerm ? `No documents match "${searchTerm}"` : 'Try adjusting your filters.'}
+              </p>
             </div>
           )}
         </div>

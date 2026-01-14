@@ -20,6 +20,7 @@ async def get_documents(
     matter_id: Optional[str] = Query(None, description="Filter by matter ID"),
     document_type: Optional[str] = Query(None, description="Filter by document type"),
     status: Optional[str] = Query(None, description="Filter by processing status"),
+    search: Optional[str] = Query(None, description="Search in filename and title"),
     limit: int = Query(100, description="Maximum number of documents to return"),
     offset: int = Query(0, description="Number of documents to skip"),
     db: Session = Depends(get_db)
@@ -45,6 +46,16 @@ async def get_documents(
     
     if status:
         query = query.filter(Document.processing_status == status)
+    
+    # Search filter
+    if search:
+        search_term = f"%{search.lower()}%"
+        query = query.filter(
+            or_(
+                Document.file_name.ilike(search_term),
+                Document.title.ilike(search_term)
+            )
+        )
     
     # Only return current versions
     query = query.filter(Document.is_current_version == True)
