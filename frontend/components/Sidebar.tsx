@@ -8,10 +8,10 @@ const sidebarItems = [
   { icon: Home, label: 'Dashboard', href: '/dashboard' },
   { icon: Folder, label: 'Cases', href: '/cases' },
   { icon: Users, label: 'Entities', href: '/entities' },
-  { icon: Check, label: 'Tasks', href: '/tasks' },
+  // { icon: Check, label: 'Tasks', href: '/tasks' },
   { icon: FileText, label: 'Activity', href: '/activity' },
-  { icon: HelpCircle, label: 'Help', href: '/help' },
   { icon: Settings, label: 'Settings', href: '/settings' },
+  { icon: HelpCircle, label: 'Help', href: '/help' },
 ]
 
 export default function Sidebar() {
