@@ -43,6 +43,7 @@ export default function KnowledgeBasePage() {
   const [loadingSearch, setLoadingSearch] = useState(false)
   const [searchDocumentType, setSearchDocumentType] = useState<string>('')
   const [searchScoreThreshold, setSearchScoreThreshold] = useState<number>(0.5)
+  const [searchError, setSearchError] = useState<string>('')
   
   // Filter state
   const [filters, setFilters] = useState({
@@ -216,6 +217,7 @@ export default function KnowledgeBasePage() {
     
     try {
       setLoadingSearch(true)
+      setSearchError('')
       const result = await apiClient.searchDocuments(
         searchTerm,
         caseId,
@@ -224,9 +226,17 @@ export default function KnowledgeBasePage() {
         searchScoreThreshold
       )
       setSearchResults(result.results || [])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error searching documents:', error)
       setSearchResults([])
+      
+      // Check for embedding service error
+      const errorMessage = error?.message || error?.detail || 'Unknown error'
+      if (errorMessage.includes('Embedding service not available') || errorMessage.includes('503')) {
+        setSearchError('embedding_not_available')
+      } else {
+        setSearchError(errorMessage)
+      }
     } finally {
       setLoadingSearch(false)
     }
@@ -716,7 +726,32 @@ export default function KnowledgeBasePage() {
             </div>
           )}
 
-          {!loadingSearch && searchTerm && searchResults.length === 0 && (
+          {searchError === 'embedding_not_available' && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-yellow-900 mb-2">Embedding Service Not Available</h3>
+              <p className="text-yellow-800 mb-3">
+                The embedding service is not configured. To enable semantic search, you need to configure an embedding provider.
+              </p>
+              <div className="bg-white rounded p-4 text-sm text-gray-700">
+                <p className="font-medium mb-2">Configuration Options:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li><strong>OpenAI:</strong> Set <code className="bg-gray-100 px-1 rounded">OPENAI_API_KEY</code> environment variable</li>
+                  <li><strong>Azure OpenAI:</strong> Set <code className="bg-gray-100 px-1 rounded">AZURE_OPENAI_API_KEY</code> and <code className="bg-gray-100 px-1 rounded">AZURE_OPENAI_ENDPOINT</code></li>
+                </ul>
+                <p className="mt-3 text-xs text-gray-600">
+                  After configuring, restart the backend service for the changes to take effect.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {searchError && searchError !== 'embedding_not_available' && (
+            <div className="bg-red-50 border border-red-200 rounded-lg shadow-sm p-6 text-center">
+              <p className="text-red-800 font-medium">Error: {searchError}</p>
+            </div>
+          )}
+
+          {!loadingSearch && !searchError && searchTerm && searchResults.length === 0 && (
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center">
               <p className="text-gray-600">No results found for "{searchTerm}"</p>
               <p className="text-sm text-gray-500 mt-2">Try adjusting your search term or similarity threshold.</p>
