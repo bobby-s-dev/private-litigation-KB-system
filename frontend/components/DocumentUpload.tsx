@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { Check, X, AlertTriangle, FileText } from 'lucide-react'
 import { apiClient, UploadResponse } from '@/lib/api'
+import Tooltip from '@/components/Tooltip'
 
 interface DocumentUploadProps {
   matterId: string
@@ -355,10 +356,12 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
                 
                 {uploadProgress.currentFile && (
                   <div className="space-y-1">
-                    <p className="text-xs font-medium text-gray-700 truncate flex items-center gap-1" title={uploadProgress.currentFile}>
-                      <FileText className="h-3 w-3" />
-                      {uploadProgress.currentFile}
-                    </p>
+                    <Tooltip content={uploadProgress.currentFile}>
+                      <p className="text-xs font-medium text-gray-700 truncate flex items-center gap-1">
+                        <FileText className="h-3 w-3" />
+                        {uploadProgress.currentFile}
+                      </p>
+                    </Tooltip>
                     {uploadProgress.currentFileSize && (
                       <p className="text-xs text-gray-500">
                         {formatFileSize(uploadProgress.currentFileSize)}

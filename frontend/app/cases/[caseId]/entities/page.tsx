@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Loader2, BarChart3, Tag, Edit, Trash2, FileText, Users, Check, X } from 'lucide-react'
 import { apiClient } from '@/lib/api'
+import Tooltip from '@/components/Tooltip'
 
 interface Entity {
   id: string
@@ -27,7 +28,7 @@ export default function EntitiesPage() {
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize] = useState(50)
+  const [pageSize, setPageSize] = useState(50)
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [reviewStatusFilter, setReviewStatusFilter] = useState<string>('all')
@@ -73,7 +74,7 @@ export default function EntitiesPage() {
       loadEntities()
       loadFactsPerEntity()
     }
-  }, [caseId, currentPage, searchQuery, typeFilter, reviewStatusFilter])
+  }, [caseId, currentPage, pageSize, searchQuery, typeFilter, reviewStatusFilter])
 
   const loadEntities = async () => {
     if (!caseId) return
@@ -332,9 +333,11 @@ export default function EntitiesPage() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate" title={entity.name}>
-                          {entity.name}
-                        </p>
+                        <Tooltip content={entity.name}>
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {entity.name}
+                          </p>
+                        </Tooltip>
                         <p className="text-xs text-gray-500 mt-0.5">
                           <span
                             className="inline-block px-2 py-0.5 rounded text-xs font-medium"
@@ -445,9 +448,11 @@ export default function EntitiesPage() {
                             <td className="px-4 py-3 whitespace-normal break-words">
                               <div className="flex items-center">
                                 <div className="flex-shrink-0 w-2 h-2 rounded-full mr-2 mt-0.5" style={{ backgroundColor: entity.color }} />
-                                <span className="text-sm font-medium text-gray-900 break-words" title={entity.name}>
-                                  {entity.name}
-                                </span>
+                                <Tooltip content={entity.name}>
+                                  <span className="text-sm font-medium text-gray-900 break-words">
+                                    {entity.name}
+                                  </span>
+                                </Tooltip>
                               </div>
                             </td>
                             <td className="px-4 py-3 whitespace-normal break-words">
@@ -614,34 +619,46 @@ export default function EntitiesPage() {
                   {entities.map((entity) => (
                     <tr key={entity.id} className="hover:bg-gray-50">
                       <td className="px-4 py-4">
-                        <div className="text-sm font-medium text-gray-900 truncate" title={entity.name}>
-                          {entity.name}
-                        </div>
+                        <Tooltip content={entity.name}>
+                          <div className="text-sm font-medium text-gray-900 truncate">
+                            {entity.name}
+                          </div>
+                        </Tooltip>
                       </td>
                       <td className="px-4 py-4">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium inline-block truncate max-w-full" title={entity.type}>
-                          {entity.type}
-                        </span>
+                        <Tooltip content={entity.type}>
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium inline-block truncate max-w-full">
+                            {entity.type}
+                          </span>
+                        </Tooltip>
                       </td>
                       <td className="px-4 py-4">
-                        <div className="text-sm text-gray-600 truncate" title={entity['@name'] || ''}>
-                          {entity['@name'] || '-'}
-                        </div>
+                        <Tooltip content={entity['@name'] || ''}>
+                          <div className="text-sm text-gray-600 truncate">
+                            {entity['@name'] || '-'}
+                          </div>
+                        </Tooltip>
                       </td>
                       <td className="px-4 py-4">
-                        <div className="text-sm text-gray-900 truncate" title={entity.short_name || ''}>
-                          {entity.short_name || '-'}
-                        </div>
+                        <Tooltip content={entity.short_name || ''}>
+                          <div className="text-sm text-gray-900 truncate">
+                            {entity.short_name || '-'}
+                          </div>
+                        </Tooltip>
                       </td>
                       <td className="px-4 py-4">
-                        <div className="text-sm text-gray-900 truncate" title={entity.email || ''}>
-                          {entity.email || '-'}
-                        </div>
+                        <Tooltip content={entity.email || ''}>
+                          <div className="text-sm text-gray-900 truncate">
+                            {entity.email || '-'}
+                          </div>
+                        </Tooltip>
                       </td>
                       <td className="px-4 py-4">
-                        <div className="text-sm text-gray-900 truncate" title={entity.role || ''}>
-                          {entity.role || '-'}
-                        </div>
+                        <Tooltip content={entity.role || ''}>
+                          <div className="text-sm text-gray-900 truncate">
+                            {entity.role || '-'}
+                          </div>
+                        </Tooltip>
                       </td>
                       <td className="px-4 py-4">
                         <span
@@ -721,9 +738,27 @@ export default function EntitiesPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                <div className="text-sm text-gray-700">
-                  Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, total)} of {total} entities
+              <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-gray-700">
+                    Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, total)} of {total} entities
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-700">Rows per page:</label>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value))
+                        setCurrentPage(1)
+                      }}
+                      className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                    >
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button

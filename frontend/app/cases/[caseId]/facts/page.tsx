@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Search, X, Filter, FileText, Check, Circle } from 'lucide-react'
 import { apiClient } from '@/lib/api'
+import Tooltip from '@/components/Tooltip'
 
 interface Fact {
   id: string
@@ -28,7 +29,7 @@ export default function FactsPage() {
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(20)
   const [reviewStatusFilter, setReviewStatusFilter] = useState<string>('all')
   const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list')
   const [entityFilter, setEntityFilter] = useState<string>('')
@@ -77,7 +78,7 @@ export default function FactsPage() {
     if (caseId) {
       loadFacts()
     }
-  }, [caseId, currentPage, reviewStatusFilter, entityFilter, searchQuery])
+  }, [caseId, currentPage, pageSize, reviewStatusFilter, entityFilter, searchQuery])
 
   const loadFacts = async () => {
     if (!caseId) return
@@ -398,9 +399,11 @@ export default function FactsPage() {
                           </div>
 
                           {/* Fact text */}
-                          <p className="text-[10px] sm:text-xs md:text-sm text-gray-900 mb-1.5 sm:mb-2 md:mb-3 line-clamp-2 sm:line-clamp-3 md:line-clamp-4 break-words" title={fact.fact}>
-                            {highlightEntity(fact.fact)}
-                          </p>
+                          <Tooltip content={fact.fact}>
+                            <p className="text-[10px] sm:text-xs md:text-sm text-gray-900 mb-1.5 sm:mb-2 md:mb-3 line-clamp-2 sm:line-clamp-3 md:line-clamp-4 break-words">
+                              {highlightEntity(fact.fact)}
+                            </p>
+                          </Tooltip>
 
                           {/* Issues */}
                           {fact.issues.length > 0 && (
@@ -807,9 +810,11 @@ export default function FactsPage() {
                         </div>
                       </td>
                       <td className="hidden lg:table-cell px-6 py-4 text-sm text-gray-900">
-                        <div className="max-w-xs truncate" title={fact.evidence}>
-                          {fact.evidence}
-                        </div>
+                        <Tooltip content={fact.evidence}>
+                          <div className="max-w-xs truncate">
+                            {fact.evidence}
+                          </div>
+                        </Tooltip>
                         <button
                           onClick={() => router.push(`/cases/${caseIdParam}/documents/${fact.document_id}/review`)}
                           className="text-xs text-purple-600 hover:text-purple-700 mt-1"
@@ -854,8 +859,26 @@ export default function FactsPage() {
             {/* Pagination - Only show in list view */}
             {viewMode === 'list' && totalPages > 1 && (
               <div className="bg-gray-50 px-3 sm:px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="text-xs sm:text-sm text-gray-700 text-center sm:text-left">
-                  Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, total)} of {total} facts
+                <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+                  <div className="text-xs sm:text-sm text-gray-700 text-center sm:text-left">
+                    Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, total)} of {total} facts
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs sm:text-sm text-gray-700">Rows per page:</label>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value))
+                        setCurrentPage(1)
+                      }}
+                      className="px-2 sm:px-3 py-1.5 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                  </div>
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2">
                   <button

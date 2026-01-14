@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
 import { apiClient } from '@/lib/api'
+import Tooltip as CustomTooltip from '@/components/Tooltip'
 
 interface FactsPerEntityProps {
   matterId?: string | null
@@ -111,9 +112,11 @@ export default function FactsPerEntity({ matterId }: FactsPerEntityProps) {
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: item.color }}
             ></div>
-            <span className="text-gray-700 truncate" title={item.name}>
-              {item.name}
-            </span>
+            <CustomTooltip content={item.name}>
+              <span className="text-gray-700 truncate">
+                {item.name}
+              </span>
+            </CustomTooltip>
           </div>
         ))}
       </div>
