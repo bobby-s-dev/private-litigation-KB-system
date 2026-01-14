@@ -142,6 +142,12 @@ CREATE TABLE entities (
     is_verified BOOLEAN DEFAULT FALSE,
     verification_notes TEXT,
     
+    -- Review status
+    review_status VARCHAR(20) DEFAULT 'not_reviewed' CHECK (review_status IN ('not_reviewed', 'accepted', 'rejected')),
+    reviewed_at TIMESTAMP WITH TIME ZONE,
+    reviewed_by UUID,
+    review_notes TEXT,
+    
     -- Resolution
     resolved_entity_id UUID REFERENCES entities(id) ON DELETE SET NULL,  -- For entity resolution/merging
     
