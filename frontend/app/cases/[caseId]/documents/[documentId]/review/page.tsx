@@ -490,9 +490,10 @@ function EntitiesSection({ entities: initialEntities, documentId, onEntitiesExtr
           entity.id === entityId ? { ...entity, review_status: 'accepted' } : entity
         )
       )
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error accepting entity:', error)
-      alert('Failed to accept entity. Please try again.')
+      const errorMessage = error?.message || error?.detail || 'Failed to accept entity. Please try again.'
+      alert(`Failed to accept entity: ${errorMessage}`)
     }
   }
 
@@ -510,9 +511,10 @@ function EntitiesSection({ entities: initialEntities, documentId, onEntitiesExtr
       setEntities(prevEntities => prevEntities.filter(entity => entity.id !== entityToDelete))
       setShowConfirmDialog(false)
       setEntityToDelete(null)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting entity:', error)
-      alert('Failed to delete entity. Please try again.')
+      const errorMessage = error?.message || error?.detail || 'Failed to delete entity. Please try again.'
+      alert(`Failed to delete entity: ${errorMessage}`)
     } finally {
       setDeletingEntityId(null)
     }

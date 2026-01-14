@@ -4,7 +4,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, func
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 from pathlib import Path
 
@@ -446,7 +446,8 @@ async def get_document_entities(
                     'name': entity.display_name or entity.normalized_name,
                     'type': entity_type.type_name if entity_type else 'unknown',
                     'mentions': doc_entity.mention_count or 1,
-                    'confidence': float(doc_entity.confidence_score) if doc_entity.confidence_score else 0.8
+                    'confidence': float(doc_entity.confidence_score) if doc_entity.confidence_score else 0.8,
+                    'review_status': entity.review_status or 'not_reviewed'
                 })
         except Exception:
             continue
@@ -571,7 +572,8 @@ async def get_document_entities(
                         'name': entity.display_name or entity.normalized_name,
                         'type': entity_type_obj.type_name if entity_type_obj else 'unknown',
                         'mentions': mention_count,
-                        'confidence': float(confidence)
+                        'confidence': float(confidence),
+                        'review_status': entity.review_status or 'not_reviewed'
                     })
                 
                 db.commit()
@@ -720,7 +722,8 @@ async def extract_entities_manually(
                 'name': entity.display_name or entity.normalized_name,
                 'type': entity_type_obj.type_name if entity_type_obj else 'unknown',
                 'mentions': mention_count,
-                'confidence': float(confidence)
+                'confidence': float(confidence),
+                'review_status': entity.review_status or 'not_reviewed'
             })
         
         db.commit()
@@ -1105,7 +1108,7 @@ async def update_fact_review_status(
         raise HTTPException(status_code=404, detail=f"Fact {fact_id} not found")
     
     fact.review_status = review_status
-    fact.reviewed_at = datetime.utcnow()
+    fact.reviewed_at = datetime.now(timezone.utc)
     if review_notes:
         fact.review_notes = review_notes
     
@@ -1136,22 +1139,35 @@ async def update_entity_review_status(
     if review_status not in ['accepted', 'rejected', 'not_reviewed']:
         raise HTTPException(status_code=400, detail=f"Invalid review status: {review_status}")
     
-    entity = db.query(Entity).filter(Entity.id == entity_uuid).first()
-    if not entity:
-        raise HTTPException(status_code=404, detail=f"Entity {entity_id} not found")
-    
-    entity.review_status = review_status
-    entity.reviewed_at = datetime.utcnow()
-    if review_notes:
-        entity.review_notes = review_notes
-    
-    db.commit()
-    
-    return {
-        'id': str(entity.id),
-        'review_status': entity.review_status,
-        'reviewed_at': entity.reviewed_at.isoformat() if entity.reviewed_at else None
-    }
+    try:
+        entity = db.query(Entity).filter(Entity.id == entity_uuid).first()
+        if not entity:
+            raise HTTPException(status_code=404, detail=f"Entity {entity_id} not found")
+        
+        entity.review_status = review_status
+        entity.reviewed_at = datetime.now(timezone.utc)
+        if review_notes:
+            entity.review_notes = review_notes
+        
+        db.commit()
+        db.refresh(entity)
+        
+        return {
+            'id': str(entity.id),
+            'review_status': entity.review_status,
+            'reviewed_at': entity.reviewed_at.isoformat() if entity.reviewed_at else None
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        import traceback
+        error_msg = str(e)
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update entity review status: {error_msg}"
+        )
 
 
 @router.patch("/entities/{entity_id}")
