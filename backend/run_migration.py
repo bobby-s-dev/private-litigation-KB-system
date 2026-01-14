@@ -13,10 +13,14 @@ def run_migration(migration_file: str):
         sys.exit(1)
     
     print(f"Running migration: {migration_file}")
-    print(f"Connecting to database: {settings.database_url.split('@')[-1] if '@' in settings.database_url else settings.database_url}")
+    
+    # Get database URL (constructs from components if not set directly)
+    database_url = settings.get_database_url()
+    db_display = database_url.split('@')[-1] if '@' in database_url else database_url
+    print(f"Connecting to database: {db_display}")
     
     try:
-        engine = create_engine(settings.database_url)
+        engine = create_engine(database_url)
         
         # Read migration file
         with open(migration_path, 'r') as f:
