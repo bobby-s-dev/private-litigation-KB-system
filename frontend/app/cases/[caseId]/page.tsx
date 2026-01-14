@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Brain, Plus, RefreshCw, ArrowRight } from 'lucide-react'
 import FeatureCards from '@/components/FeatureCards'
 import RecentlyUploadedSources from '@/components/RecentlyUploadedSources'
 import FactsPerEntity from '@/components/FactsPerEntity'
@@ -123,7 +124,7 @@ export default function CaseHomePage() {
                         <span className="bg-white/20 px-3 py-1 rounded-full">Summary Generation</span>
                       </div>
                     </div>
-                    <div className="text-5xl">🧠</div>
+                    <Brain className="h-16 w-16 text-white/80" />
                   </div>
                 </div>
               </Link>
@@ -134,8 +135,9 @@ export default function CaseHomePage() {
             {/* Case Description */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Case description</h2>
-              <button className="text-sm text-purple-600 hover:text-purple-700 font-medium">
-                + add description
+              <button className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1">
+                <Plus className="h-4 w-4" />
+                add description
               </button>
             </div>
 
@@ -149,7 +151,8 @@ export default function CaseHomePage() {
           <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Resume review</h2>
-              <button className="text-sm text-purple-600 hover:text-purple-700 font-medium px-3 py-1 border border-purple-200 rounded hover:bg-purple-50">
+              <button className="text-sm text-purple-600 hover:text-purple-700 font-medium px-3 py-1 border border-purple-200 rounded hover:bg-purple-50 flex items-center gap-1">
+                <RefreshCw className="h-4 w-4" />
                 Refresh
               </button>
             </div>
@@ -169,17 +172,19 @@ export default function CaseHomePage() {
                 <div className="flex items-center gap-3">
                   <button 
                     onClick={loadActivities}
-                    className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                    className="text-sm text-gray-600 hover:text-gray-700 font-medium flex items-center gap-1"
                     disabled={loadingActivities}
                   >
+                    <RefreshCw className={`h-4 w-4 ${loadingActivities ? 'animate-spin' : ''}`} />
                     {loadingActivities ? 'Loading...' : 'Refresh'}
                   </button>
                   {caseId && (
                     <button 
                       onClick={() => router.push(`/cases/${caseId}/activity`)}
-                      className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                      className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
                     >
                       View all
+                      <ArrowRight className="h-4 w-4" />
                     </button>
                   )}
                 </div>

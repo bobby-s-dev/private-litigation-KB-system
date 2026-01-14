@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { Check, X } from 'lucide-react'
 import { apiClient, UploadResponse } from '@/lib/api'
 
 interface DocumentUploadProps {
@@ -539,9 +540,7 @@ function ProcessingStage({ label, status }: { label: string; status: 'pending' |
     switch (status) {
       case 'completed':
         return (
-          <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+          <Check className="h-5 w-5 text-green-600" />
         )
       case 'processing':
         return (
@@ -549,9 +548,7 @@ function ProcessingStage({ label, status }: { label: string; status: 'pending' |
         )
       case 'failed':
         return (
-          <svg className="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X className="h-5 w-5 text-red-600" />
         )
       default:
         return (

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { Eye } from 'lucide-react'
 import { apiClient, Document } from '@/lib/api'
 
 interface Source {
@@ -200,8 +201,12 @@ export default function RecentlyUploadedSources({ matterId, refreshKey, limit = 
                     >
                       Review
                     </button>
-                    <button className="text-gray-400 hover:text-gray-600" onClick={() => handleView(source.id)}>
-                      👁‍🗨
+                    <button 
+                      className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100 transition-colors" 
+                      onClick={() => handleView(source.id)}
+                      title="View document"
+                    >
+                      <Eye className="h-4 w-4" />
                     </button>
                   </div>
                 </td>

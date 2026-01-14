@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { ChevronLeft, RefreshCw, Calendar, Check, X, Trash2, Eye } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 
 interface SuggestedFact {
@@ -109,9 +110,7 @@ export default function DocumentReviewPage() {
           onClick={() => router.back()}
           className="text-purple-600 hover:text-purple-700 mb-4 flex items-center gap-2"
         >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="h-5 w-5" />
           Back
         </button>
         <div className="flex items-center justify-between">
@@ -122,9 +121,7 @@ export default function DocumentReviewPage() {
             onClick={loadReviewData}
             className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
+            <RefreshCw className="h-4 w-4" />
             Refresh
           </button>
         </div>
@@ -357,9 +354,7 @@ function SuggestedFactsSection({
                   {/* Event Date */}
                   {fact.event_date && (
                     <div className="flex items-center gap-2 mb-2">
-                      <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+                      <Calendar className="h-4 w-4 text-gray-400" />
                       <span className="text-sm text-gray-600 font-medium">
                         Event Date: {formatDate(fact.event_date)}
                       </span>
@@ -389,16 +384,24 @@ function SuggestedFactsSection({
                     <>
                       <button
                         onClick={() => handleAccept(fact.id)}
-                        className="text-purple-600 hover:text-purple-700 text-sm font-medium whitespace-nowrap"
+                        className="text-purple-600 hover:text-purple-700 text-sm font-medium whitespace-nowrap flex items-center gap-1"
                       >
+                        <Check className="h-4 w-4" />
                         Accept
                       </button>
                       <button
                         onClick={() => handleRejectClick(fact.id)}
                         disabled={deletingFactId === fact.id}
-                        className="text-gray-400 hover:text-red-600 text-sm whitespace-nowrap disabled:opacity-50"
+                        className="text-gray-400 hover:text-red-600 text-sm whitespace-nowrap disabled:opacity-50 flex items-center gap-1"
                       >
-                        {deletingFactId === fact.id ? 'Deleting...' : 'Reject'}
+                        {deletingFactId === fact.id ? (
+                          <>Deleting...</>
+                        ) : (
+                          <>
+                            <X className="h-4 w-4" />
+                            Reject
+                          </>
+                        )}
                       </button>
                     </>
                   )}
@@ -436,8 +439,9 @@ function SuggestedFactsSection({
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium flex items-center gap-2"
               >
+                <Trash2 className="h-4 w-4" />
                 Confirm & Delete
               </button>
             </div>
@@ -612,16 +616,24 @@ function EntitiesSection({ entities: initialEntities, documentId, onEntitiesExtr
                           <>
                             <button
                               onClick={() => handleAccept(entity.id)}
-                              className="text-purple-600 hover:text-purple-700 text-sm font-medium whitespace-nowrap"
+                              className="text-purple-600 hover:text-purple-700 text-sm font-medium whitespace-nowrap flex items-center gap-1"
                             >
+                              <Check className="h-4 w-4" />
                               Accept
                             </button>
                             <button
                               onClick={() => handleRejectClick(entity.id)}
                               disabled={deletingEntityId === entity.id}
-                              className="text-gray-400 hover:text-red-600 text-sm whitespace-nowrap disabled:opacity-50"
+                              className="text-gray-400 hover:text-red-600 text-sm whitespace-nowrap disabled:opacity-50 flex items-center gap-1"
                             >
-                              {deletingEntityId === entity.id ? 'Deleting...' : 'Reject'}
+                              {deletingEntityId === entity.id ? (
+                                <>Deleting...</>
+                              ) : (
+                                <>
+                                  <X className="h-4 w-4" />
+                                  Reject
+                                </>
+                              )}
                             </button>
                           </>
                         )}
@@ -653,8 +665,9 @@ function EntitiesSection({ entities: initialEntities, documentId, onEntitiesExtr
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium flex items-center gap-2"
               >
+                <Trash2 className="h-4 w-4" />
                 Confirm & Delete
               </button>
             </div>
