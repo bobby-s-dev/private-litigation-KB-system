@@ -318,7 +318,7 @@ export default function ActivitiesPage() {
       'create': 'bg-green-100 text-green-800 border-green-300',
       'update': 'bg-blue-100 text-blue-800 border-blue-300',
       'delete': 'bg-red-100 text-red-800 border-red-300',
-      'upload': 'bg-purple-100 text-purple-800 border-purple-300',
+      'upload': 'bg-primary-100 text-primary-800 border-primary-300',
       'process': 'bg-yellow-100 text-yellow-800 border-yellow-300',
       'review': 'bg-indigo-100 text-indigo-800 border-indigo-300',
     }
@@ -367,9 +367,9 @@ export default function ActivitiesPage() {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
           </div>
         </div>
       </div>
@@ -377,14 +377,14 @@ export default function ActivitiesPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Activities</h1>
-        <p className="text-gray-600">View activities across all cases, organized by date</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Activities</h1>
+        <p className="text-gray-600 dark:text-gray-400">View activities across all cases, organized by date</p>
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <input
@@ -392,14 +392,14 @@ export default function ActivitiesPage() {
               placeholder="Search activities by description, action type, or user..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
           <div className="sm:w-64">
             <select
               value={caseFilter}
               onChange={(e) => setCaseFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="all">All Cases</option>
               {cases.map(caseItem => (
@@ -414,8 +414,8 @@ export default function ActivitiesPage() {
 
       {/* Cases List */}
       {filteredCases.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-          <p className="text-gray-600">No cases found.</p>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+          <p className="text-gray-600 dark:text-gray-400">No cases found.</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -433,25 +433,25 @@ export default function ActivitiesPage() {
             })
 
             return (
-              <div key={caseItem.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div key={caseItem.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 {/* Case Header */}
                 <div
-                  className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   onClick={() => toggleCaseExpansion(caseItem.id)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <h2 className="text-lg font-semibold text-gray-900">{caseItem.matter_name}</h2>
-                      <p className="text-sm text-gray-600">Case #{caseItem.matter_number}</p>
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{caseItem.matter_name}</h2>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Case #{caseItem.matter_number}</p>
                     </div>
                     <div className="flex items-center gap-4">
                       {caseActivities && (
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
                           {caseActivities.activities.length} {caseActivities.activities.length === 1 ? 'activity' : 'activities'}
                         </div>
                       )}
                       <ChevronRight
-                        className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                        className={`w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                       />
                     </div>
                   </div>
@@ -462,29 +462,32 @@ export default function ActivitiesPage() {
                   <div className="border-t border-gray-200">
                     {caseActivities?.loading ? (
                       <div className="p-8 text-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>
                         <p className="text-sm text-gray-600 mt-2">Loading activities...</p>
                       </div>
                     ) : dates.length === 0 ? (
-                      <div className="p-8 text-center text-gray-600">
+                      <div className="p-8 text-center text-gray-600 dark:text-gray-400">
                         <p className="text-sm">
                           {searchQuery ? 'No activities match your search.' : 'No activities found for this case.'}
                         </p>
                       </div>
                     ) : (
-                      <div className="p-4 md:p-6 bg-gray-50">
+                      <div className="p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
                         {/* Activities by Date - Row Layout */}
                         <div className="space-y-6">
                           {dates.map((date) => (
-                            <div key={date} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <div key={date} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                               {/* Date Header */}
-                              <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-3 border-b border-purple-700">
+                              <div className="px-4 py-3 border-b" style={{ 
+                                background: `linear-gradient(to right, var(--primary-500), var(--primary-600))`,
+                                borderColor: 'var(--primary-700)'
+                              }}>
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-3">
                                     <Calendar className="w-5 h-5 text-white" />
                                     <h3 className="text-lg font-semibold text-white">{date}</h3>
                                   </div>
-                                  <div className="text-sm text-purple-100">
+                                  <div className="text-sm" style={{ color: 'var(--primary-100)' }}>
                                     {filteredGrouped[date].length} {filteredGrouped[date].length === 1 ? 'activity' : 'activities'}
                                   </div>
                                 </div>
@@ -493,25 +496,25 @@ export default function ActivitiesPage() {
                               {/* Activities Table */}
                               <div className="overflow-x-auto">
                                 <table className="w-full">
-                                  <thead className="bg-gray-50 border-b border-gray-200">
+                                  <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                                     <tr>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Time</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Action</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Description</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">User</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Resource</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Time</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Action</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Description</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">User</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Resource</th>
                                     </tr>
                                   </thead>
-                                  <tbody className="bg-white divide-y divide-gray-200">
+                                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                     {filteredGrouped[date].map((activity) => (
-                                      <tr key={activity.id} className="hover:bg-gray-50 transition-colors">
+                                      <tr key={activity.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                         <td className="px-4 py-3 whitespace-nowrap">
                                           <div className="flex flex-col">
-                                            <div className="flex items-center gap-1 text-sm text-gray-900">
-                                              <Clock className="w-3 h-3 text-gray-500" />
+                                            <div className="flex items-center gap-1 text-sm text-gray-900 dark:text-gray-100">
+                                              <Clock className="w-3 h-3 text-gray-500 dark:text-gray-400" />
                                               <span>{formatTime(activity.created_at)}</span>
                                             </div>
-                                            <div className="text-xs text-gray-500 mt-1">
+                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                               {formatActivityTime(activity.created_at)}
                                             </div>
                                           </div>
@@ -523,11 +526,11 @@ export default function ActivitiesPage() {
                                         </td>
                                         <td className="px-4 py-3">
                                           <div>
-                                            <p className="text-sm text-gray-900 font-medium">
+                                            <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
                                               {activity.description}
                                             </p>
                                             {activity.metadata?.consolidated && (
-                                              <p className="text-xs text-gray-500 mt-1">
+                                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                                 {activity.metadata.file_count} {activity.metadata.file_count === 1 ? 'file' : 'files'}
                                                 {activity.metadata.folder_count > 0 && (
                                                   <> • {activity.metadata.folder_count} {activity.metadata.folder_count === 1 ? 'folder' : 'folders'}</>
@@ -538,18 +541,18 @@ export default function ActivitiesPage() {
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap">
                                           {activity.username ? (
-                                            <div className="flex items-center gap-1 text-sm text-gray-600">
-                                              <User className="w-4 h-4 text-gray-400" />
+                                            <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                                              <User className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                                               <span>{activity.username}</span>
                                             </div>
                                           ) : (
-                                            <span className="text-sm text-gray-400 italic">—</span>
+                                            <span className="text-sm text-gray-400 dark:text-gray-500 italic">—</span>
                                           )}
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap">
-                                          <div className="flex items-center gap-2 text-purple-600">
+                                          <div className="flex items-center gap-2" style={{ color: 'var(--primary-color)' }}>
                                             {getResourceTypeIcon(activity.resource_type)}
-                                            <span className="text-sm text-gray-600 capitalize">{activity.resource_type}</span>
+                                            <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">{activity.resource_type}</span>
                                           </div>
                                         </td>
                                       </tr>

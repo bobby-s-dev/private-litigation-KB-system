@@ -167,7 +167,18 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={handleThemeToggle}
-              className="flex items-center gap-3 p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:border-purple-500 dark:hover:border-purple-500 transition-colors w-full"
+              className="flex items-center gap-3 p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg transition-colors w-full"
+              style={{
+                borderColor: theme === 'dark' ? primaryColor : undefined
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = primaryColor
+              }}
+              onMouseLeave={(e) => {
+                if (theme !== 'dark') {
+                  e.currentTarget.style.borderColor = ''
+                }
+              }}
               style={{
                 borderColor: theme === 'dark' ? primaryColor : undefined
               }}
@@ -246,7 +257,15 @@ export default function SettingsPage() {
                       setSuccess(`Changed to ${preset.name}!`)
                       setTimeout(() => setSuccess(''), 3000)
                     }}
-                    className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:border-purple-500 dark:hover:border-purple-500 transition-colors"
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 transition-colors"
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = primaryColor
+                    }}
+                    onMouseLeave={(e) => {
+                      if (primaryColor !== rgbString) {
+                        e.currentTarget.style.borderColor = ''
+                      }
+                    }}
                     style={{
                       borderColor: primaryColor === rgbString ? primaryColor : undefined,
                       backgroundColor: primaryColor === rgbString ? `${primaryColor}20` : undefined

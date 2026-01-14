@@ -62,20 +62,22 @@ export default function CaseHeader() {
   const activeTab = getActiveTab()
 
   return (
-    <div className="bg-white border-b border-gray-200">
+    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <div className="px-6 py-4">
-        <h1 className="text-2xl font-semibold text-gray-900">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
           {loadingCase ? 'Loading...' : (caseTitle || (caseId ? `Case ${caseId}` : 'Case'))}
         </h1>
       </div>
-      <div className="flex gap-1 border-b border-gray-200 px-6">
+      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 px-6">
         {tabs.map((tab, index) => {
           const isActive = activeTab === index
           const className = `px-4 py-2 text-sm font-medium transition-colors ${
             isActive
-              ? 'border-b-2 border-purple-600 text-purple-600'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'border-b-2 text-primary-600 dark:text-primary-400'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
           } ${tab.path === '#' ? 'cursor-not-allowed opacity-50' : ''}`
+          
+          const borderStyle = isActive ? { borderBottomColor: 'var(--primary-color)' } : {}
 
           if (tab.path === '#') {
             return (
@@ -83,6 +85,7 @@ export default function CaseHeader() {
                 key={tab.name}
                 disabled
                 className={className}
+                style={borderStyle}
               >
                 {tab.name}
               </button>
@@ -94,6 +97,7 @@ export default function CaseHeader() {
               key={tab.name}
               href={tab.path}
               className={className}
+              style={borderStyle}
             >
               {tab.name}
             </Link>

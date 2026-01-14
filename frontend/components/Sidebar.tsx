@@ -18,7 +18,7 @@ export default function Sidebar() {
   const pathname = usePathname()
   
   return (
-    <div className="fixed left-0 top-0 h-screen w-16 bg-white border-r border-gray-200 flex flex-col items-center py-4">
+    <div className="fixed left-0 top-0 h-screen w-16 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col items-center py-4">
       {sidebarItems.map((item) => {
         const isActive = pathname?.startsWith(item.href) || false
         return (
@@ -27,8 +27,8 @@ export default function Sidebar() {
             href={item.href}
             className={`w-12 h-12 flex items-center justify-center rounded-lg mb-2 transition-colors ${
               isActive
-                ? 'bg-purple-100 text-purple-700'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
             title={item.label}
           >
@@ -37,8 +37,9 @@ export default function Sidebar() {
         )
       })}
       <div className="mt-auto mb-4">
-        <div className="w-12 h-12 flex items-center justify-center rounded-full bg-purple-600 text-white font-semibold">
-          ML
+        <div className="w-12 h-12 flex items-center justify-center rounded-full text-white font-semibold" style={{ backgroundColor: 'var(--primary-color)' }}>
+          // user avatar with option sign out
+          
         </div>
       </div>
     </div>

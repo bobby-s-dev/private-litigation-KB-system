@@ -38,11 +38,11 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar />
-      <div className="ml-16 flex-1 flex flex-col">
+      <div className="ml-16 flex-1 flex flex-col bg-gray-50 dark:bg-gray-900">
         {isCasePage ? <CaseHeader /> : <CommonHeader />}
-        <main className="flex-1">
+        <main className="flex-1 bg-gray-50 dark:bg-gray-900">
           {children}
         </main>
       </div>

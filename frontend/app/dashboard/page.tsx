@@ -505,10 +505,10 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Total Documents</p>
-              <p className="text-2xl font-bold text-purple-600 mt-1">{totalDocuments}</p>
+              <p className="text-2xl font-bold text-primary-600 mt-1">{totalDocuments}</p>
             </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <FileText className="h-6 w-6 text-purple-600" />
+            <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+              <FileText className="h-6 w-6 text-primary-600" />
             </div>
           </div>
         </div>
@@ -564,14 +564,14 @@ export default function DashboardPage() {
                   performSearch()
                 }
               }}
-              className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           </div>
           <button
             onClick={performSearch}
             disabled={searching}
-            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {searching ? (
               <>
@@ -605,7 +605,7 @@ export default function DashboardPage() {
                 onClick={() => setActiveTab('all')}
                 className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
                   activeTab === 'all'
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-primary-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -615,7 +615,7 @@ export default function DashboardPage() {
                 onClick={() => setActiveTab('documentType')}
                 className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
                   activeTab === 'documentType'
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-primary-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -625,7 +625,7 @@ export default function DashboardPage() {
                 onClick={() => setActiveTab('date')}
                 className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
                   activeTab === 'date'
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-primary-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -635,7 +635,7 @@ export default function DashboardPage() {
                 onClick={() => setActiveTab('entity')}
                 className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
                   activeTab === 'entity'
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-primary-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -645,7 +645,7 @@ export default function DashboardPage() {
                 onClick={() => setActiveTab('matter')}
                 className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
                   activeTab === 'matter'
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-primary-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -655,7 +655,7 @@ export default function DashboardPage() {
                 onClick={() => setActiveTab('keyword')}
                 className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
                   activeTab === 'keyword'
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-primary-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -686,7 +686,7 @@ export default function DashboardPage() {
                           removeArrayFilter('documentTypes', type)
                         }
                       }}
-                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="text-sm text-gray-700">{type}</span>
                   </label>
@@ -716,7 +716,7 @@ export default function DashboardPage() {
                       const preset = e.target.value as FilterState['datePreset']
                       applyDatePreset(preset)
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                   >
                     <option value="all">All Time</option>
                     <option value="7d">Last 7 Days</option>
@@ -736,7 +736,7 @@ export default function DashboardPage() {
                         type="date"
                         value={filters.dateRange.start}
                         onChange={(e) => updateFilter('dateRange', { ...filters.dateRange, start: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                       />
                     </div>
                     <div>
@@ -745,7 +745,7 @@ export default function DashboardPage() {
                         type="date"
                         value={filters.dateRange.end}
                         onChange={(e) => updateFilter('dateRange', { ...filters.dateRange, end: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                       />
                     </div>
                   </div>
@@ -779,7 +779,7 @@ export default function DashboardPage() {
                               removeArrayFilter('entityTypes', type)
                             }
                           }}
-                          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                         />
                         <span className="text-sm text-gray-700">{type}</span>
                       </label>
@@ -796,7 +796,7 @@ export default function DashboardPage() {
                       const selected = Array.from(e.target.selectedOptions, option => option.value)
                       updateFilter('entityIds', selected)
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                     size={5}
                   >
                     {availableEntities.map(entity => (
@@ -833,7 +833,7 @@ export default function DashboardPage() {
                           removeArrayFilter('matterIds', matter.id)
                         }
                       }}
-                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="text-sm text-gray-700 flex-1">
                       {matter.matter_name || matter.matter_number}
@@ -869,19 +869,19 @@ export default function DashboardPage() {
                           e.currentTarget.value = ''
                         }
                       }}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                     />
                   </div>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {filters.keywords.map(keyword => (
                       <span
                         key={keyword}
-                        className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs"
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs"
                       >
                         {keyword}
                         <button
                           onClick={() => removeArrayFilter('keywords', keyword)}
-                          className="hover:text-purple-900"
+                          className="hover:text-primary-900"
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -902,7 +902,7 @@ export default function DashboardPage() {
                           e.currentTarget.value = ''
                         }
                       }}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                     />
                   </div>
                   <div className="flex flex-wrap gap-2 mt-2">
@@ -943,7 +943,7 @@ export default function DashboardPage() {
                       type="checkbox"
                       checked={filters.showDuplicates}
                       onChange={(e) => updateFilter('showDuplicates', e.target.checked)}
-                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="text-sm text-gray-700">Show Duplicates Only</span>
                   </label>
@@ -953,7 +953,7 @@ export default function DashboardPage() {
                       type="checkbox"
                       checked={filters.showVersions}
                       onChange={(e) => updateFilter('showVersions', e.target.checked)}
-                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="text-sm text-gray-700">Show All Versions</span>
                   </label>
@@ -964,7 +964,7 @@ export default function DashboardPage() {
                       <select
                         value={filters.duplicateType || 'all'}
                         onChange={(e) => updateFilter('duplicateType', e.target.value === 'all' ? null : e.target.value as any)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                       >
                         <option value="all">All Types</option>
                         <option value="exact">Exact Duplicates</option>
@@ -989,7 +989,7 @@ export default function DashboardPage() {
                     <select
                       value={filters.sentiment}
                       onChange={(e) => updateFilter('sentiment', e.target.value as FilterState['sentiment'])}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                     >
                       <option value="all">All Sentiments</option>
                       <option value="positive">Positive</option>
@@ -1010,7 +1010,7 @@ export default function DashboardPage() {
                             e.currentTarget.value = ''
                           }
                         }}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                       />
                     </div>
                     <div className="flex flex-wrap gap-2 mt-2">
@@ -1047,7 +1047,7 @@ export default function DashboardPage() {
                       type="checkbox"
                       checked={filters.showRicoPatterns}
                       onChange={(e) => updateFilter('showRicoPatterns', e.target.checked)}
-                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="text-sm text-gray-700">Show RICO Patterns Only</span>
                   </label>
@@ -1084,7 +1084,7 @@ export default function DashboardPage() {
                                     removeArrayFilter('patternTypes', type)
                                   }
                                 }}
-                                className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                               />
                               <span className="text-sm text-gray-700">{type.replace(/_/g, ' ')}</span>
                             </label>
@@ -1110,7 +1110,7 @@ export default function DashboardPage() {
                     <select
                       value={filters.privacyLevel}
                       onChange={(e) => updateFilter('privacyLevel', e.target.value as FilterState['privacyLevel'])}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                     >
                       <option value="all">All Levels</option>
                       <option value="public">Public</option>
@@ -1124,7 +1124,7 @@ export default function DashboardPage() {
                       type="checkbox"
                       checked={filters.showSensitiveOnly}
                       onChange={(e) => updateFilter('showSensitiveOnly', e.target.checked)}
-                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="text-sm text-gray-700">Show Sensitive Data Only</span>
                   </label>
@@ -1148,14 +1148,14 @@ export default function DashboardPage() {
                         placeholder="Start Date"
                         value={filters.timeRange.start}
                         onChange={(e) => updateFilter('timeRange', { ...filters.timeRange, start: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                       />
                       <input
                         type="date"
                         placeholder="End Date"
                         value={filters.timeRange.end}
                         onChange={(e) => updateFilter('timeRange', { ...filters.timeRange, end: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                       />
                     </div>
                   </div>
@@ -1165,7 +1165,7 @@ export default function DashboardPage() {
                       type="checkbox"
                       checked={filters.extractDates}
                       onChange={(e) => updateFilter('extractDates', e.target.checked)}
-                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="text-sm text-gray-700">Extract Date-Related Entities</span>
                   </label>
@@ -1193,7 +1193,7 @@ export default function DashboardPage() {
                             e.currentTarget.value = ''
                           }
                         }}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                       />
                     </div>
                     <div className="flex flex-wrap gap-2 mt-2">
@@ -1219,7 +1219,7 @@ export default function DashboardPage() {
                       type="checkbox"
                       checked={filters.showFraud}
                       onChange={(e) => updateFilter('showFraud', e.target.checked)}
-                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="text-sm text-gray-700">Show Fraud Indicators</span>
                   </label>
@@ -1229,7 +1229,7 @@ export default function DashboardPage() {
                       type="checkbox"
                       checked={filters.showCoordinatedActions}
                       onChange={(e) => updateFilter('showCoordinatedActions', e.target.checked)}
-                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="text-sm text-gray-700">Show Coordinated Actions</span>
                   </label>
@@ -1253,7 +1253,7 @@ export default function DashboardPage() {
                     setPageSize(parseInt(e.target.value))
                     setCurrentPage(1)
                   }}
-                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="25">25 per page</option>
                   <option value="50">50 per page</option>
@@ -1317,7 +1317,7 @@ export default function DashboardPage() {
                           disabled={page === '...'}
                           className={`px-3 py-2 text-sm border border-gray-300 rounded-lg transition-colors ${
                             page === currentPage
-                              ? 'bg-purple-600 text-white border-purple-600'
+                              ? 'bg-primary-600 text-white border-primary-600'
                               : page === '...'
                               ? 'border-transparent cursor-default'
                               : 'hover:bg-gray-50'
@@ -1369,7 +1369,7 @@ function FilterSection({
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <div className="text-purple-600">{icon}</div>
+          <div className="text-primary-600">{icon}</div>
           <h3 className="font-medium text-gray-900">{title}</h3>
         </div>
         {isExpanded ? (
@@ -1383,7 +1383,7 @@ function FilterSection({
           {children}
           <button
             onClick={onSearch}
-            className="mt-4 w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition-colors flex items-center justify-center gap-2"
+            className="mt-4 w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium transition-colors flex items-center justify-center gap-2"
           >
             <Search className="h-4 w-4" />
             Search
@@ -1406,7 +1406,7 @@ function DocumentCard({ document, onClick }: { document: Document; onClick: () =
           <h4 className="font-medium text-gray-900 mb-1">{document.filename || document.file_name}</h4>
           <div className="flex items-center gap-2 flex-wrap">
             {document.document_type && (
-              <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+              <span className="px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs font-medium">
                 {document.document_type}
               </span>
             )}

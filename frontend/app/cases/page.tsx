@@ -153,13 +153,13 @@ export default function CasesPage() {
                           {caseItem.status || 'Open'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      {/* <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
                             ML
                           </div>
                         </div>
-                      </td>
+                      </td> */}
                       <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={(e) => handleDeleteClick(e, caseItem.id, caseItem.matter_name)}
