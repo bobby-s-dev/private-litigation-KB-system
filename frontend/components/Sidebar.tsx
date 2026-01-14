@@ -2,10 +2,10 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { BarChart3, Folder, Users, Check, FileText, HelpCircle } from 'lucide-react'
+import { Settings, Folder, Users, Check, FileText, HelpCircle } from 'lucide-react'
 
 const sidebarItems = [
-  { icon: BarChart3, label: 'Dashboard', href: '/dashboard' },
+  { icon: Settings, label: 'Settings', href: '/settings' },
   { icon: Folder, label: 'Cases', href: '/cases' },
   { icon: Users, label: 'Entities', href: '/entities' },
   { icon: Check, label: 'Tasks', href: '/tasks' },
