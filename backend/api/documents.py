@@ -1,10 +1,12 @@
 """FastAPI endpoints for document retrieval."""
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, func
 from typing import Optional, List
 from datetime import datetime
 import uuid
+from pathlib import Path
 
 from database import get_db
 from models import Document, Matter, DocumentEntity, Entity, EntityType, Fact
@@ -123,6 +125,59 @@ async def get_document(
         'is_current_version': document.is_current_version,
         'version_number': document.version_number,
     }
+
+
+@router.get("/{document_id}/file")
+async def get_document_file(
+    document_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Download or view a document file.
+    Returns the file with appropriate content type for viewing in browser.
+    """
+    try:
+        doc_uuid = uuid.UUID(document_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid document ID format: {document_id}")
+    
+    document = db.query(Document).filter(Document.id == doc_uuid).first()
+    
+    if not document:
+        raise HTTPException(status_code=404, detail=f"Document {document_id} not found")
+    
+    # Get file path
+    file_path = Path(document.file_path)
+    
+    # Check if file exists
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail=f"File not found on server: {document.file_name}")
+    
+    # Determine media type
+    media_type = document.mime_type or 'application/octet-stream'
+    
+    # For PDFs, use application/pdf to enable browser viewing
+    if document.file_name.lower().endswith('.pdf'):
+        media_type = 'application/pdf'
+    elif document.file_name.lower().endswith(('.jpg', '.jpeg')):
+        media_type = 'image/jpeg'
+    elif document.file_name.lower().endswith('.png'):
+        media_type = 'image/png'
+    elif document.file_name.lower().endswith('.gif'):
+        media_type = 'image/gif'
+    elif document.file_name.lower().endswith('.txt'):
+        media_type = 'text/plain'
+    elif document.file_name.lower().endswith('.html'):
+        media_type = 'text/html'
+    
+    return FileResponse(
+        path=str(file_path),
+        media_type=media_type,
+        filename=document.file_name,
+        headers={
+            'Content-Disposition': f'inline; filename="{document.file_name}"'
+        }
+    )
 
 
 @router.get("/{document_id}/review/facts")

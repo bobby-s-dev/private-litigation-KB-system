@@ -13,6 +13,7 @@ export interface Document {
   relatedFacts?: number
   facts_count?: number
   entities_count?: number
+  mime_type?: string
 }
 
 export interface UploadResponse {

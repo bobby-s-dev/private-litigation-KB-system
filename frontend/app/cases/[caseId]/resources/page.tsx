@@ -34,11 +34,11 @@ export default function ResourcesPage() {
       try {
         setLoading(true)
         const documents = await apiClient.getDocumentsByMatter(caseId)
-        
+
         const formattedSources: Source[] = documents.map((doc: Document) => {
           const uploadDate = doc.ingested_at || doc.created_at
           let formattedDate = 'Unknown'
-          
+
           if (uploadDate) {
             try {
               const date = new Date(uploadDate)
@@ -54,7 +54,7 @@ export default function ResourcesPage() {
               formattedDate = uploadDate
             }
           }
-          
+
           return {
             id: doc.id,
             name: doc.file_name || doc.filename,
@@ -65,7 +65,7 @@ export default function ResourcesPage() {
             entitiesCount: doc.entities_count || 0,
           }
         })
-        
+
         // Sort by upload date (most recent first)
         formattedSources.sort((a, b) => {
           const dateA = documents.find(d => d.id === a.id)?.ingested_at || documents.find(d => d.id === a.id)?.created_at
@@ -73,7 +73,7 @@ export default function ResourcesPage() {
           if (!dateA || !dateB) return 0
           return new Date(dateB).getTime() - new Date(dateA).getTime()
         })
-        
+
         setTotalCount(formattedSources.length)
         const startIndex = (currentPage - 1) * itemsPerPage
         const endIndex = startIndex + itemsPerPage
@@ -93,6 +93,18 @@ export default function ResourcesPage() {
     if (caseId) {
       router.push(`/cases/${caseId}/documents/${documentId}/review`)
     }
+  }
+
+  const handleView = (documentId: string) => {
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const fileUrl = `${API_BASE_URL}/api/documents/${documentId}/file`
+    
+    // Open the file in a new tab/window
+    // The browser will handle the file type appropriately:
+    // - PDFs will open in the browser's PDF viewer
+    // - Images will display inline
+    // - Other files will download or open based on browser settings
+    window.open(fileUrl, '_blank')
   }
 
   const totalPages = Math.ceil(totalCount / itemsPerPage)
@@ -143,11 +155,10 @@ export default function ResourcesPage() {
                       <td className="py-3 px-4">
                         {source.factsCount !== undefined ? (
                           <div className="flex items-center gap-2">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              source.factsCount > 0 
-                                ? 'bg-green-100 text-green-700' 
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${source.factsCount > 0
+                                ? 'bg-green-100 text-green-700'
                                 : 'bg-gray-100 text-gray-500'
-                            }`}>
+                              }`}>
                               {source.factsCount} fact{source.factsCount !== 1 ? 's' : ''}
                             </span>
                           </div>
@@ -158,11 +169,10 @@ export default function ResourcesPage() {
                       <td className="py-3 px-4">
                         {source.entitiesCount !== undefined ? (
                           <div className="flex items-center gap-2">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              source.entitiesCount > 0 
-                                ? 'bg-blue-100 text-blue-700' 
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${source.entitiesCount > 0
+                                ? 'bg-blue-100 text-blue-700'
                                 : 'bg-gray-100 text-gray-500'
-                            }`}>
+                              }`}>
                               {source.entitiesCount} entit{source.entitiesCount !== 1 ? 'ies' : 'y'}
                             </span>
                           </div>
@@ -179,8 +189,8 @@ export default function ResourcesPage() {
                           >
                             Review
                           </button>
-                          <button className="text-gray-400 hover:text-gray-600">
-                            ✏️
+                          <button className="text-gray-400 hover:text-gray-600" onClick={() => handleView(source.id)}>
+                            👁‍🗨 View
                           </button>
                         </div>
                       </td>
@@ -220,11 +230,10 @@ export default function ResourcesPage() {
                         <button
                           key={pageNum}
                           onClick={() => setCurrentPage(pageNum)}
-                          className={`px-3 py-2 border rounded-lg text-sm font-medium ${
-                            currentPage === pageNum
+                          className={`px-3 py-2 border rounded-lg text-sm font-medium ${currentPage === pageNum
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                          }`}
+                            }`}
                         >
                           {pageNum}
                         </button>

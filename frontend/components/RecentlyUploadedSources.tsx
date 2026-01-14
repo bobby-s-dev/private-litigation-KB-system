@@ -12,6 +12,8 @@ interface Source {
   factsCount?: number
   entitiesCount?: number
   id: string
+  mimeType?: string
+  fileName?: string
 }
 
 interface RecentlyUploadedSourcesProps {
@@ -34,6 +36,18 @@ export default function RecentlyUploadedSources({ matterId, refreshKey, limit = 
     }
   }
 
+  const handleView = (documentId: string) => {
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const fileUrl = `${API_BASE_URL}/api/documents/${documentId}/file`
+    
+    // Open the file in a new tab/window
+    // The browser will handle the file type appropriately:
+    // - PDFs will open in the browser's PDF viewer
+    // - Images will display inline
+    // - Other files will download or open based on browser settings
+    window.open(fileUrl, '_blank')
+  }
+
   useEffect(() => {
     if (!matterId) {
       setLoading(false)
@@ -44,11 +58,11 @@ export default function RecentlyUploadedSources({ matterId, refreshKey, limit = 
       try {
         setLoading(true)
         const documents = await apiClient.getDocumentsByMatter(matterId)
-        
+
         const formattedSources: Source[] = documents.map((doc: Document) => {
           const uploadDate = doc.ingested_at || doc.created_at
           let formattedDate = 'Unknown'
-          
+
           if (uploadDate) {
             try {
               const date = new Date(uploadDate)
@@ -64,7 +78,7 @@ export default function RecentlyUploadedSources({ matterId, refreshKey, limit = 
               formattedDate = uploadDate
             }
           }
-          
+
           return {
             id: doc.id,
             name: doc.file_name || doc.filename,
@@ -73,9 +87,11 @@ export default function RecentlyUploadedSources({ matterId, refreshKey, limit = 
             relatedFacts: doc.facts_count || doc.citations || 0,
             factsCount: doc.facts_count || 0,
             entitiesCount: doc.entities_count || 0,
+            mimeType: (doc as any).mime_type,
+            fileName: doc.file_name || doc.filename,
           }
         })
-        
+
         // Sort by upload date (most recent first)
         formattedSources.sort((a, b) => {
           const dateA = documents.find(d => d.id === a.id)?.ingested_at || documents.find(d => d.id === a.id)?.created_at
@@ -83,7 +99,7 @@ export default function RecentlyUploadedSources({ matterId, refreshKey, limit = 
           if (!dateA || !dateB) return 0
           return new Date(dateB).getTime() - new Date(dateA).getTime()
         })
-        
+
         // Limit to specified number
         setSources(formattedSources.slice(0, limit))
       } catch (error) {
@@ -122,7 +138,7 @@ export default function RecentlyUploadedSources({ matterId, refreshKey, limit = 
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900">Recently uploaded sources</h2>
         {showViewAll && caseId && (
-          <button 
+          <button
             onClick={() => router.push(`/cases/${caseId}/resources`)}
             className="text-sm text-purple-600 hover:text-purple-700 font-medium"
           >
@@ -150,11 +166,10 @@ export default function RecentlyUploadedSources({ matterId, refreshKey, limit = 
                 <td className="py-3 px-4">
                   {source.factsCount !== undefined ? (
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        source.factsCount > 0 
-                          ? 'bg-green-100 text-green-700' 
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${source.factsCount > 0
+                          ? 'bg-green-100 text-green-700'
                           : 'bg-gray-100 text-gray-500'
-                      }`}>
+                        }`}>
                         {source.factsCount} fact{source.factsCount !== 1 ? 's' : ''}
                       </span>
                     </div>
@@ -165,11 +180,10 @@ export default function RecentlyUploadedSources({ matterId, refreshKey, limit = 
                 <td className="py-3 px-4">
                   {source.entitiesCount !== undefined ? (
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        source.entitiesCount > 0 
-                          ? 'bg-blue-100 text-blue-700' 
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${source.entitiesCount > 0
+                          ? 'bg-blue-100 text-blue-700'
                           : 'bg-gray-100 text-gray-500'
-                      }`}>
+                        }`}>
                         {source.entitiesCount} entit{source.entitiesCount !== 1 ? 'ies' : 'y'}
                       </span>
                     </div>
@@ -186,8 +200,8 @@ export default function RecentlyUploadedSources({ matterId, refreshKey, limit = 
                     >
                       Review
                     </button>
-                    <button className="text-gray-400 hover:text-gray-600">
-                      ✏️
+                    <button className="text-gray-400 hover:text-gray-600" onClick={() => handleView(source.id)}>
+                      👁‍🗨 View
                     </button>
                   </div>
                 </td>
