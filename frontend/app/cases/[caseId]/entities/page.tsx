@@ -669,11 +669,11 @@ export default function EntitiesPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm align-top">
                         <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-col gap-1.5 lg:flex-row lg:items-center lg:gap-2">
                             <button
                               onClick={() => handleEdit(entity)}
                               disabled={deletingEntity === entity.id}
-                              className="px-2.5 py-1 text-xs text-purple-600 hover:bg-purple-50 rounded font-medium border border-purple-200 hover:border-purple-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                              className="w-full lg:w-auto px-2.5 py-1 text-xs text-purple-600 hover:bg-purple-50 rounded font-medium border border-purple-200 hover:border-purple-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                               title="Edit entity"
                             >
                               <Edit className="h-3 w-3 mr-1" />
@@ -683,7 +683,7 @@ export default function EntitiesPage() {
                               <button
                                 onClick={() => handleReviewStatusChange(entity.id, 'accepted')}
                                 disabled={deletingEntity === entity.id}
-                                className="px-2.5 py-1 text-xs text-green-600 hover:bg-green-50 rounded font-medium border border-green-200 hover:border-green-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                className="w-full lg:w-auto px-2.5 py-1 text-xs text-green-600 hover:bg-green-50 rounded font-medium border border-green-200 hover:border-green-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                                 title="Accept entity"
                               >
                                 <Check className="h-3 w-3 mr-1" />
@@ -693,7 +693,7 @@ export default function EntitiesPage() {
                               <button
                                 onClick={() => handleReviewStatusChange(entity.id, 'not_reviewed')}
                                 disabled={deletingEntity === entity.id}
-                                className="px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded border border-gray-300 hover:border-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                className="w-full lg:w-auto px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded border border-gray-300 hover:border-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                                 title="Mark as not reviewed"
                               >
                                 <X className="h-3 w-3 mr-1" />
@@ -703,7 +703,7 @@ export default function EntitiesPage() {
                             <button
                               onClick={() => handleDelete(entity.id, entity.name)}
                               disabled={deletingEntity === entity.id}
-                              className="px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 rounded font-medium border border-red-200 hover:border-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                              className="w-full lg:w-auto px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 rounded font-medium border border-red-200 hover:border-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                               title="Delete entity"
                             >
                               {deletingEntity === entity.id ? (
@@ -716,7 +716,7 @@ export default function EntitiesPage() {
                           <button
                             onClick={() => handleViewFacts(entity)}
                             disabled={deletingEntity === entity.id}
-                            className="w-full px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded font-medium border border-blue-200 hover:border-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                            className="w-full px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded font-medium border border-blue-200 hover:border-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                             title="View related facts"
                           >
                             <FileText className="h-3 w-3 mr-1" />
