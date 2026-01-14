@@ -754,6 +754,54 @@ class ApiClient {
       method: 'POST',
     })
   }
+
+  async searchDocuments(
+    queryText: string,
+    matterId?: string,
+    documentType?: string,
+    limit: number = 10,
+    scoreThreshold?: number
+  ): Promise<{
+    query: string
+    results_count: number
+    results: Array<{
+      id: string
+      score: number
+      payload: {
+        document_id: string
+        chunk_text: string
+        document_title?: string
+        file_name?: string
+        document_type?: string
+        matter_id?: string
+        chunk_index?: number
+      }
+    }>
+  }> {
+    const params = new URLSearchParams({ query_text: queryText })
+    if (matterId) params.append('matter_id', matterId)
+    if (documentType) params.append('document_type', documentType)
+    params.append('limit', limit.toString())
+    if (scoreThreshold !== undefined) params.append('score_threshold', scoreThreshold.toString())
+    
+    return this.request<{
+      query: string
+      results_count: number
+      results: Array<{
+        id: string
+        score: number
+        payload: {
+          document_id: string
+          chunk_text: string
+          document_title?: string
+          file_name?: string
+          document_type?: string
+          matter_id?: string
+          chunk_index?: number
+        }
+      }>
+    }>(`/api/embeddings/search?${params.toString()}`)
+  }
 }
 
 export const apiClient = new ApiClient()

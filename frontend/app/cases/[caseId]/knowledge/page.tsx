@@ -35,7 +35,14 @@ export default function KnowledgeBasePage() {
   const [loadingSummary, setLoadingSummary] = useState(false)
   
   // Active tab
-  const [activeTab, setActiveTab] = useState<'patterns' | 'query' | 'summary'>('patterns')
+  const [activeTab, setActiveTab] = useState<'patterns' | 'search' | 'query' | 'summary'>('patterns')
+  
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('')
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [loadingSearch, setLoadingSearch] = useState(false)
+  const [searchDocumentType, setSearchDocumentType] = useState<string>('')
+  const [searchScoreThreshold, setSearchScoreThreshold] = useState<number>(0.5)
   
   // Filter state
   const [filters, setFilters] = useState({
@@ -204,6 +211,27 @@ export default function KnowledgeBasePage() {
     }
   }
 
+  const handleSearch = async () => {
+    if (!searchTerm.trim() || !caseId) return
+    
+    try {
+      setLoadingSearch(true)
+      const result = await apiClient.searchDocuments(
+        searchTerm,
+        caseId,
+        searchDocumentType || undefined,
+        20,
+        searchScoreThreshold
+      )
+      setSearchResults(result.results || [])
+    } catch (error) {
+      console.error('Error searching documents:', error)
+      setSearchResults([])
+    } finally {
+      setLoadingSearch(false)
+    }
+  }
+
   if (loading && !caseId) {
     return (
       <div className="p-6 flex items-center justify-center min-h-screen">
@@ -232,6 +260,16 @@ export default function KnowledgeBasePage() {
             }`}
           >
             Pattern Detection
+          </button>
+          <button
+            onClick={() => setActiveTab('search')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'search'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Search Documents
           </button>
           <button
             onClick={() => setActiveTab('query')}
@@ -558,6 +596,131 @@ export default function KnowledgeBasePage() {
                 </div>
               )}
             </>
+          )}
+        </div>
+      )}
+
+      {/* Search Tab */}
+      {activeTab === 'search' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Search Documents</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Search Term
+                </label>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Enter search term to find relevant document chunks..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearch()
+                    }
+                  }}
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Document Type (Optional)
+                  </label>
+                  <select
+                    value={searchDocumentType}
+                    onChange={(e) => setSearchDocumentType(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">All Types</option>
+                    {availableDocumentTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type.replace('_', ' ')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Min Similarity Score: {(searchScoreThreshold * 100).toFixed(0)}%
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={searchScoreThreshold}
+                    onChange={(e) => setSearchScoreThreshold(parseFloat(e.target.value))}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>0%</span>
+                    <span>50%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+              </div>
+              
+              <button
+                onClick={handleSearch}
+                disabled={loadingSearch || !searchTerm.trim()}
+                className="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingSearch ? 'Searching...' : 'Search (Enter)'}
+              </button>
+            </div>
+          </div>
+
+          {searchResults.length > 0 && (
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Search Results ({searchResults.length})
+              </h2>
+              <div className="space-y-4">
+                {searchResults.map((result, idx) => (
+                  <div key={result.id || idx} className="border-l-4 border-purple-500 pl-4 py-3 bg-gray-50 rounded-r-lg">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900">
+                          {result.payload.document_title || result.payload.file_name || 'Untitled Document'}
+                        </h3>
+                        {result.payload.document_type && (
+                          <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded mt-1 inline-block">
+                            {result.payload.document_type.replace('_', ' ')}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-right ml-4">
+                        <span className="text-sm font-medium text-purple-600">
+                          {(result.score * 100).toFixed(1)}% match
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-700 mt-2 line-clamp-4">
+                      {result.payload.chunk_text}
+                    </p>
+                    {result.payload.document_id && (
+                      <button
+                        onClick={() => window.open(`/cases/${caseId}/documents/${result.payload.document_id}/review`, '_blank')}
+                        className="text-xs text-purple-600 hover:text-purple-700 mt-2 underline"
+                      >
+                        View Document →
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!loadingSearch && searchTerm && searchResults.length === 0 && (
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 text-center">
+              <p className="text-gray-600">No results found for "{searchTerm}"</p>
+              <p className="text-sm text-gray-500 mt-2">Try adjusting your search term or similarity threshold.</p>
+            </div>
           )}
         </div>
       )}

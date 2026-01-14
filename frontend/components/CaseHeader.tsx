@@ -12,14 +12,13 @@ export default function CaseHeader() {
     { name: 'Case Home', path: caseId ? `/cases/${caseId}` : '#' },
     { name: 'Facts', path: caseId ? `/cases/${caseId}/facts` : '#' },
     { name: 'Entities', path: caseId ? `/cases/${caseId}/entities` : '#' },
-    { name: 'Knowledge Base', path: caseId ? `/cases/${caseId}/knowledge` : '#' },
     { name: 'Issues', path: '#' },
     { name: 'Sources', path: caseId ? `/cases/${caseId}/resources` : '#' },
-    { name: 'Search', path: '#' },
     { name: 'Tasks', path: '#' },
     { name: 'Reports', path: '#' },
     { name: 'Activity', path: caseId ? `/cases/${caseId}/activity` : '#' },
     { name: 'Usage', path: '#' },
+    { name: 'Knowledge Base', path: caseId ? `/cases/${caseId}/knowledge` : '#' },
   ]
 
   const getActiveTab = () => {
