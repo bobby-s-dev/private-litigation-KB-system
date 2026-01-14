@@ -292,7 +292,7 @@ export default function FactsPage() {
     const noDateFacts = groupedFacts['No Date'] || []
 
     return (
-      <div className="bg-gradient-to-b from-purple-50 to-white rounded-lg p-3 sm:p-4 md:p-6 w-full max-w-full overflow-hidden relative">
+      <div className="bg-gradient-to-b from-purple-50 to-white rounded-lg p-3 sm:p-4 md:p-6 w-full overflow-hidden relative" style={{ overflowX: 'scroll', overflowY: 'visible', maxWidth: '90vw' }}>
         {/* Scroll Navigation Buttons */}
         {canScrollLeft && (
           <button
