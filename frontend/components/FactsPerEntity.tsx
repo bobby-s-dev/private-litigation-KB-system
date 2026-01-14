@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
 import { apiClient } from '@/lib/api'
-import Tooltip as CustomTooltip from '@/components/Tooltip'
+import CustomTooltip from '@/components/Tooltip'
 
 interface FactsPerEntityProps {
   matterId?: string | null
