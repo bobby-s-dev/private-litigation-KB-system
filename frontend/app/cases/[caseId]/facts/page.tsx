@@ -811,7 +811,7 @@ export default function FactsPage() {
                           onClick={() => router.push(`/cases/${caseIdParam}/documents/${fact.document_id}/review`)}
                           className="text-xs text-purple-600 hover:text-purple-700 mt-1"
                         >
-                          View document
+                          Review document
                         </button>
                       </td>
                       <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
