@@ -240,7 +240,7 @@ export default function DashboardPage() {
           
           case 'keyword':
             if (filters.keywords.length > 0) {
-              const docText = `${doc.filename} ${doc.document_type} ${doc.title || ''}`.toLowerCase()
+              const docText = `${doc.filename} ${doc.document_type} ${doc.file_name || ''}`.toLowerCase()
               const matchesKeyword = filters.keywords.some(keyword =>
                 docText.includes(keyword.toLowerCase())
               )
@@ -270,7 +270,7 @@ export default function DashboardPage() {
               }
             }
             if (filters.keywords.length > 0) {
-              const docText = `${doc.filename} ${doc.document_type} ${doc.title || ''}`.toLowerCase()
+              const docText = `${doc.filename} ${doc.document_type} ${doc.file_name || ''}`.toLowerCase()
               const matchesKeyword = filters.keywords.some(keyword =>
                 docText.includes(keyword.toLowerCase())
               )
