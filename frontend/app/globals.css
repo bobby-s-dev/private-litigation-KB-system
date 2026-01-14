@@ -2,7 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --primary-color: rgb(124 58 237);
+  --primary-color-light: rgb(154 88 255);
+  --primary-color-dark: rgb(94 28 217);
+}
+
 body {
   @apply bg-gray-50 text-gray-900;
+}
+
+.dark body {
+  @apply bg-gray-900 text-gray-100;
+}
+
+.dark {
+  color-scheme: dark;
 }
 
