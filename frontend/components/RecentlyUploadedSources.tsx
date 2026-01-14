@@ -201,7 +201,7 @@ export default function RecentlyUploadedSources({ matterId, refreshKey, limit = 
                       Review
                     </button>
                     <button className="text-gray-400 hover:text-gray-600" onClick={() => handleView(source.id)}>
-                      👁‍🗨 View
+                      👁‍🗨
                     </button>
                   </div>
                 </td>

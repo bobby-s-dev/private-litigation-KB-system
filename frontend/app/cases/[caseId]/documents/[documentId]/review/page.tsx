@@ -21,6 +21,7 @@ interface Entity {
   type: string
   mentions: number
   confidence: number
+  review_status?: string
 }
 
 interface DocumentSummary {
@@ -451,6 +452,9 @@ function EntitiesSection({ entities: initialEntities, documentId, onEntitiesExtr
   const [entities, setEntities] = useState<Entity[]>(initialEntities)
   const [isExtracting, setIsExtracting] = useState(false)
   const [extractionError, setExtractionError] = useState<string | null>(null)
+  const [deletingEntityId, setDeletingEntityId] = useState<string | null>(null)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [entityToDelete, setEntityToDelete] = useState<string | null>(null)
 
   // Update entities when initialEntities changes
   useEffect(() => {
@@ -476,6 +480,47 @@ function EntitiesSection({ entities: initialEntities, documentId, onEntitiesExtr
     } finally {
       setIsExtracting(false)
     }
+  }
+
+  const handleAccept = async (entityId: string) => {
+    try {
+      await apiClient.updateEntityReviewStatus(entityId, 'accepted')
+      setEntities(prevEntities =>
+        prevEntities.map(entity =>
+          entity.id === entityId ? { ...entity, review_status: 'accepted' } : entity
+        )
+      )
+    } catch (error) {
+      console.error('Error accepting entity:', error)
+      alert('Failed to accept entity. Please try again.')
+    }
+  }
+
+  const handleRejectClick = (entityId: string) => {
+    setEntityToDelete(entityId)
+    setShowConfirmDialog(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!entityToDelete) return
+
+    try {
+      setDeletingEntityId(entityToDelete)
+      await apiClient.deleteEntity(entityToDelete)
+      setEntities(prevEntities => prevEntities.filter(entity => entity.id !== entityToDelete))
+      setShowConfirmDialog(false)
+      setEntityToDelete(null)
+    } catch (error) {
+      console.error('Error deleting entity:', error)
+      alert('Failed to delete entity. Please try again.')
+    } finally {
+      setDeletingEntityId(null)
+    }
+  }
+
+  const handleCancelDelete = () => {
+    setShowConfirmDialog(false)
+    setEntityToDelete(null)
   }
 
   const groupedEntities = entities.reduce((acc, entity) => {
@@ -540,18 +585,45 @@ function EntitiesSection({ entities: initialEntities, documentId, onEntitiesExtr
                 {typeEntities.map((entity) => (
                   <div
                     key={entity.id}
-                    className="border border-gray-200 rounded-lg p-3 hover:border-purple-300 transition-colors"
+                    className={`border rounded-lg p-3 transition-colors ${
+                      entity.review_status === 'accepted'
+                        ? 'border-green-300 bg-green-50'
+                        : 'border-gray-200 hover:border-purple-300'
+                    }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-900">{entity.name}</p>
-                        <p className="text-xs text-gray-500 mt-1">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-medium text-gray-900">{entity.name}</p>
+                          {entity.review_status === 'accepted' && (
+                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
+                              Accepted
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">
                           {entity.mentions} mention{entity.mentions !== 1 ? 's' : ''} • {Math.round(entity.confidence * 100)}% confidence
                         </p>
                       </div>
-                      <button className="text-purple-600 hover:text-purple-700 text-sm font-medium">
-                        View
-                      </button>
+                      <div className="flex items-center gap-2 ml-4">
+                        {entity.review_status !== 'accepted' && (
+                          <>
+                            <button
+                              onClick={() => handleAccept(entity.id)}
+                              className="text-purple-600 hover:text-purple-700 text-sm font-medium whitespace-nowrap"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={() => handleRejectClick(entity.id)}
+                              disabled={deletingEntityId === entity.id}
+                              className="text-gray-400 hover:text-red-600 text-sm whitespace-nowrap disabled:opacity-50"
+                            >
+                              {deletingEntityId === entity.id ? 'Deleting...' : 'Reject'}
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -560,6 +632,32 @@ function EntitiesSection({ entities: initialEntities, documentId, onEntitiesExtr
           ))}
           </div>
         </>
+      )}
+
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Confirm Deletion</h3>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to reject and permanently delete this entity? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCancelDelete}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+              >
+                Confirm & Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
