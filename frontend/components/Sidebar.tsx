@@ -63,7 +63,7 @@ export default function Sidebar() {
       {/* Toggle Button */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         {!isCollapsed && (
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">⚖️ Legal AI</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">🐧 PenguinLeo Assistant</h2>
         )}
         <button
           onClick={toggleSidebar}
