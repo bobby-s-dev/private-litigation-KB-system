@@ -487,7 +487,7 @@ export default function ActivitiesPage() {
                                     <Calendar className="w-5 h-5 text-white" />
                                     <h3 className="text-lg font-semibold text-white">{date}</h3>
                                   </div>
-                                  <div className="text-sm" style={{ color: 'var(--primary-100)' }}>
+                                  <div className="text-sm">
                                     {filteredGrouped[date].length} {filteredGrouped[date].length === 1 ? 'activity' : 'activities'}
                                   </div>
                                 </div>
