@@ -253,6 +253,16 @@ class ApiClient {
     return this.request<Matter[]>('/api/matters')
   }
 
+  async updateMatter(matterId: string, description: string): Promise<Matter> {
+    return this.request<Matter>(
+      `/api/matters/${matterId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ description })
+      }
+    )
+  }
+
   async deleteMatter(matterId: string, deleteWithData: boolean = false): Promise<{ id: string; matter_number: string; matter_name: string; deleted: boolean; delete_with_data: boolean }> {
     return this.request<{ id: string; matter_number: string; matter_name: string; deleted: boolean; delete_with_data: boolean }>(
       `/api/matters/${matterId}?delete_with_data=${deleteWithData}`,

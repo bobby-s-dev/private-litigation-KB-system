@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Brain, Plus, RefreshCw, ArrowRight } from 'lucide-react'
+import { Brain, Plus, RefreshCw, ArrowRight, X } from 'lucide-react'
 import FeatureCards from '@/components/FeatureCards'
 import RecentlyUploadedSources from '@/components/RecentlyUploadedSources'
 import FactsPerEntity from '@/components/FactsPerEntity'
@@ -31,7 +31,12 @@ export default function CaseHomePage() {
   const [loading, setLoading] = useState(true)
   const [activities, setActivities] = useState<Activity[]>([])
   const [loadingActivities, setLoadingActivities] = useState(false)
-
+  const [showAddDescriptionModal, setShowAddDescriptionModal] = useState(false)
+  const [description, setDescription] = useState('')
+  const [currentDescription, setCurrentDescription] = useState<string | null>(null)
+  const [descriptionError, setDescriptionError] = useState('')
+  const [savingDescription, setSavingDescription] = useState(false)
+  const [matter, setMatter] = useState<any>(null)
   useEffect(() => {
     const initializeMatter = async () => {
       if (!caseIdParam) {
@@ -41,17 +46,19 @@ export default function CaseHomePage() {
 
       try {
         // Try to get the matter by ID or matter_number
-        let matter
+        let matterData
         try {
-          matter = await apiClient.getMatter(caseIdParam)
+          matterData = await apiClient.getMatter(caseIdParam)
         } catch (error) {
           // If not found, create a new matter with the caseId as matter_number
-          matter = await apiClient.createMatter(
+          matterData = await apiClient.createMatter(
             caseIdParam,
             `Case ${caseIdParam}`
           )
         }
-        setCaseId(matter.id)
+        setCaseId(matterData.id)
+        setMatter(matterData)
+        setCurrentDescription(matterData.description || null)
       } catch (error) {
         console.error('Error initializing matter:', error)
       } finally {
@@ -65,6 +72,46 @@ export default function CaseHomePage() {
   const handleUploadSuccess = () => {
     setRefreshKey(prev => prev + 1)
     loadActivities()
+  }
+
+  const handleAddDescription = () => {
+    // Load current description into the form
+    setDescription(currentDescription || '')
+    setDescriptionError('')
+    setShowAddDescriptionModal(true)
+  }
+
+  const handleSaveDescription = async () => {
+    if (!caseId) return
+
+    setDescriptionError('')
+    
+    if (!description.trim()) {
+      setDescriptionError('Description cannot be empty')
+      return
+    }
+
+    try {
+      setSavingDescription(true)
+      const updatedMatter = await apiClient.updateMatter(caseId, description.trim())
+      setCurrentDescription(updatedMatter.description || null)
+      setMatter(updatedMatter)
+      setShowAddDescriptionModal(false)
+      setDescription('')
+      // Refresh activities to show the update
+      loadActivities()
+    } catch (error) {
+      console.error('Error saving description:', error)
+      setDescriptionError(error instanceof Error ? error.message : 'Failed to save description')
+    } finally {
+      setSavingDescription(false)
+    }
+  }
+
+  const handleCloseModal = () => {
+    setShowAddDescriptionModal(false)
+    setDescription('')
+    setDescriptionError('')
   }
 
   const loadActivities = async () => {
@@ -135,9 +182,19 @@ export default function CaseHomePage() {
             {/* Case Description */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Case description</h2>
-              <button className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
+              {currentDescription ? (
+                <div className="mb-3">
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{currentDescription}</p>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 mb-3">No description added yet.</p>
+              )}
+              <button 
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1" 
+                onClick={handleAddDescription}
+              >
                 <Plus className="h-4 w-4" />
-                add description
+                {currentDescription ? 'Edit description' : 'add description'}
               </button>
             </div>
 
@@ -148,7 +205,7 @@ export default function CaseHomePage() {
           </div>
 
           {/* Resume Review */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          {/* <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Resume review</h2>
               <button className="text-sm text-primary-600 hover:text-primary-700 font-medium px-3 py-1 border border-primary-200 rounded hover:bg-primary-50 flex items-center gap-1">
@@ -157,7 +214,7 @@ export default function CaseHomePage() {
               </button>
             </div>
             <p className="text-gray-600 text-sm">No recent sources yet...</p>
-          </div>
+          </div> */}
 
           {/* Recently Uploaded Sources */}
           <div className="mb-6">
@@ -213,6 +270,65 @@ export default function CaseHomePage() {
             {/* Facts per Entity */}
             <FactsPerEntity matterId={caseId} />
           </div>
+
+          {/* Add Description Modal */}
+          {showAddDescriptionModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    {currentDescription ? 'Edit Case Description' : 'Add Case Description'}
+                  </h2>
+                  <button
+                    onClick={handleCloseModal}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => {
+                        setDescription(e.target.value)
+                        setDescriptionError('')
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 min-h-[200px] resize-y"
+                      placeholder="Enter a description for this case..."
+                      rows={8}
+                    />
+                    {descriptionError && (
+                      <p className="text-sm text-red-600 mt-1">{descriptionError}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={handleCloseModal}
+                    className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    disabled={savingDescription}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveDescription}
+                    disabled={savingDescription || !description.trim()}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {savingDescription ? 'Saving...' : 'Save Description'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
     </div>
   )
 }

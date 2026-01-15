@@ -23,6 +23,10 @@ class MatterCreate(BaseModel):
     description: Optional[str] = None
 
 
+class MatterUpdate(BaseModel):
+    description: Optional[str] = None
+
+
 class MatterResponse(BaseModel):
     id: str
     matter_number: str
@@ -161,6 +165,59 @@ async def get_matter_by_number(
     matter = db.query(Matter).filter(Matter.matter_number == matter_number).first()
     if not matter:
         raise HTTPException(status_code=404, detail=f"Matter with number '{matter_number}' not found")
+    
+    return MatterResponse(
+        id=str(matter.id),
+        matter_number=matter.matter_number,
+        matter_name=matter.matter_name,
+        matter_type=matter.matter_type,
+        jurisdiction=matter.jurisdiction,
+        court_name=matter.court_name,
+        case_number=matter.case_number,
+        status=matter.status,
+        description=matter.description,
+        created_at=matter.created_at.isoformat() if matter.created_at else None,
+    )
+
+
+@router.patch("/{matter_id}", response_model=MatterResponse)
+async def update_matter(
+    matter_id: str,
+    matter_update: MatterUpdate,
+    db: Session = Depends(get_db)
+):
+    """Update a matter's description."""
+    # Validate UUID format
+    try:
+        matter_uuid = uuid.UUID(matter_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid matter ID format: {matter_id}")
+    
+    matter = db.query(Matter).filter(Matter.id == matter_uuid).first()
+    if not matter:
+        raise HTTPException(status_code=404, detail=f"Matter {matter_id} not found")
+    
+    # Update description if provided
+    if matter_update.description is not None:
+        matter.description = matter_update.description
+    
+    db.commit()
+    db.refresh(matter)
+    
+    # Log activity
+    try:
+        log_activity(
+            db=db,
+            action_type='update',
+            resource_type='matter',
+            resource_id=str(matter.id),
+            description=f'Updated description for case "{matter.matter_name}" ({matter.matter_number})',
+            matter_id=str(matter.id),
+            username=None
+        )
+    except Exception as e:
+        # Don't fail if activity logging fails
+        print(f"Error logging activity: {e}")
     
     return MatterResponse(
         id=str(matter.id),
