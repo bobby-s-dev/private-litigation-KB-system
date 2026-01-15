@@ -292,7 +292,7 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
           onClick={() => setUploadMode('file')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             uploadMode === 'file'
-              ? 'bg-purple-600 text-white'
+              ? 'bg-primary-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
           disabled={uploading}
@@ -304,7 +304,7 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
           onClick={() => setUploadMode('folder')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             uploadMode === 'folder'
-              ? 'bg-purple-600 text-white'
+              ? 'bg-primary-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
           disabled={uploading}
@@ -316,7 +316,7 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
-        className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-400 transition-colors cursor-pointer"
+        className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary-400 transition-colors cursor-pointer"
       >
         <input
           ref={fileInputRef}
@@ -349,7 +349,7 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
                       ? 'Uploading file...' 
                       : `Uploading ${uploadProgress.completed + uploadProgress.failed} of ${uploadProgress.total} files...`}
                   </p>
-                  <span className="text-sm font-medium text-purple-600">
+                  <span className="text-sm font-medium text-primary-600">
                     {Math.round(((uploadProgress.completed + uploadProgress.failed) / uploadProgress.total) * 100)}%
                   </span>
                 </div>
@@ -377,7 +377,7 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
                 
                 <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
                   <div
-                    className="bg-gradient-to-r from-purple-500 to-purple-600 h-3 rounded-full transition-all duration-300 ease-out flex items-center justify-end pr-2"
+                    className="bg-gradient-to-r from-primary-500 to-primary-600 h-3 rounded-full transition-all duration-300 ease-out flex items-center justify-end pr-2"
                     style={{
                       width: `${Math.min(((uploadProgress.completed + uploadProgress.failed) / uploadProgress.total) * 100, 100)}%`,
                       minWidth: '2%'
@@ -440,7 +440,7 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
-                      className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+                      className="bg-gradient-to-r from-primary-500 to-primary-600 h-2 rounded-full transition-all duration-500"
                       style={{
                         width: `${([
                           processingStages.upload,
@@ -467,11 +467,11 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center justify-center gap-3">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                   <p className="text-sm font-medium text-gray-700">Preparing upload...</p>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-purple-600 h-2 rounded-full animate-pulse" style={{ width: '30%' }}></div>
+                  <div className="bg-primary-600 h-2 rounded-full animate-pulse" style={{ width: '30%' }}></div>
                 </div>
               </div>
             )}
@@ -491,7 +491,7 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
                 </p>
                 <button
                   type="button"
-                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                  className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   Select File(s)
@@ -507,7 +507,7 @@ export default function DocumentUpload({ matterId, onUploadSuccess }: DocumentUp
                 </p>
                 <button
                   type="button"
-                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                  className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
                   onClick={() => folderInputRef.current?.click()}
                 >
                   Select Folder
@@ -552,7 +552,7 @@ function ProcessingStage({ label, status }: { label: string; status: 'pending' |
         )
       case 'processing':
         return (
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
         )
       case 'failed':
         return (
@@ -570,7 +570,7 @@ function ProcessingStage({ label, status }: { label: string; status: 'pending' |
       case 'completed':
         return 'text-green-600'
       case 'processing':
-        return 'text-purple-600'
+        return 'text-primary-600'
       case 'failed':
         return 'text-red-600'
       default:

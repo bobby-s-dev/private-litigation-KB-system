@@ -108,7 +108,7 @@ export default function DocumentReviewPage() {
       <div className="mb-6">
         <button
           onClick={() => router.back()}
-          className="text-purple-600 hover:text-purple-700 mb-4 flex items-center gap-2"
+          className="text-primary-600 hover:text-primary-700 mb-4 flex items-center gap-2"
         >
           <ChevronLeft className="h-5 w-5" />
           Back
@@ -134,13 +134,13 @@ export default function DocumentReviewPage() {
             onClick={() => setActiveTab('facts')}
             className={`pb-3 px-1 border-b-2 font-medium transition-colors ${
               activeTab === 'facts'
-                ? 'border-purple-600 text-purple-600'
+                ? 'border-primary-600 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
             Suggested Facts
             {suggestedFacts.length > 0 && (
-              <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+              <span className="ml-2 px-2 py-0.5 bg-primary-100 text-primary-700 rounded text-xs font-medium">
                 {suggestedFacts.length}
               </span>
             )}
@@ -149,7 +149,7 @@ export default function DocumentReviewPage() {
             onClick={() => setActiveTab('entities')}
             className={`pb-3 px-1 border-b-2 font-medium transition-colors ${
               activeTab === 'entities'
-                ? 'border-purple-600 text-purple-600'
+                ? 'border-primary-600 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -164,7 +164,7 @@ export default function DocumentReviewPage() {
             onClick={() => setActiveTab('summary')}
             className={`pb-3 px-1 border-b-2 font-medium transition-colors ${
               activeTab === 'summary'
-                ? 'border-purple-600 text-purple-600'
+                ? 'border-primary-600 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -297,7 +297,7 @@ function SuggestedFactsSection({
             <button
               onClick={handleExtractFacts}
               disabled={isExtracting}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
             >
               {isExtracting ? 'Extracting...' : 'Extract Facts'}
             </button>
@@ -338,7 +338,7 @@ function SuggestedFactsSection({
               className={`border rounded-lg p-4 transition-colors ${
                 fact.review_status === 'accepted'
                   ? 'border-green-300 bg-green-50'
-                  : 'border-gray-200 hover:border-purple-300'
+                  : 'border-gray-200 hover:border-primary-300'
               }`}
             >
               <div className="flex items-start justify-between mb-3">
@@ -368,7 +368,7 @@ function SuggestedFactsSection({
                       {fact.tags.map((tag, index) => (
                         <span
                           key={index}
-                          className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium"
+                          className="px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs font-medium"
                         >
                           {tag.replace(/_/g, ' ')}
                         </span>
@@ -385,7 +385,7 @@ function SuggestedFactsSection({
                     <>
                       <button
                         onClick={() => handleAccept(fact.id)}
-                        className="text-purple-600 hover:text-purple-700 text-sm font-medium whitespace-nowrap flex items-center gap-1"
+                        className="text-primary-600 hover:text-primary-700 text-sm font-medium whitespace-nowrap flex items-center gap-1"
                       >
                         <Check className="h-4 w-4" />
                         Accept
@@ -549,7 +549,7 @@ function EntitiesSection({ entities: initialEntities, documentId, onEntitiesExtr
             <button
               onClick={handleExtractEntities}
               disabled={isExtracting}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
             >
               {isExtracting ? 'Extracting...' : 'Extract Entities'}
             </button>
@@ -596,7 +596,7 @@ function EntitiesSection({ entities: initialEntities, documentId, onEntitiesExtr
                     className={`border rounded-lg p-3 transition-colors ${
                       entity.review_status === 'accepted'
                         ? 'border-green-300 bg-green-50'
-                        : 'border-gray-200 hover:border-purple-300'
+                        : 'border-gray-200 hover:border-primary-300'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -618,7 +618,7 @@ function EntitiesSection({ entities: initialEntities, documentId, onEntitiesExtr
                           <>
                             <button
                               onClick={() => handleAccept(entity.id)}
-                              className="text-purple-600 hover:text-purple-700 text-sm font-medium whitespace-nowrap flex items-center gap-1"
+                              className="text-primary-600 hover:text-primary-700 text-sm font-medium whitespace-nowrap flex items-center gap-1"
                             >
                               <Check className="h-4 w-4" />
                               Accept
@@ -725,7 +725,7 @@ function DocumentSummarySection({ summary }: { summary: DocumentSummary | null }
                 {summary.topics.map((topic, index) => (
                   <span
                     key={index}
-                    className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium"
+                    className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium"
                   >
                     {topic}
                   </span>

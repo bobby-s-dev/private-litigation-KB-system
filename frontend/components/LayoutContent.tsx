@@ -3,12 +3,14 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSidebar } from '@/contexts/SidebarContext'
 import Sidebar from '@/components/Sidebar'
 import CaseHeader from '@/components/CaseHeader'
 import CommonHeader from '@/components/CommonHeader'
 
 export default function LayoutContent({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth()
+  const { isCollapsed } = useSidebar()
   const pathname = usePathname()
   const router = useRouter()
   
@@ -40,7 +42,9 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar />
-      <div className="ml-16 flex-1 flex flex-col bg-gray-50 dark:bg-gray-900">
+      <div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 transition-all duration-300 ease-in-out ${
+        isCollapsed ? 'ml-16' : 'ml-64'
+      }`}>
         {isCasePage ? <CaseHeader /> : <CommonHeader />}
         <main className="flex-1 bg-gray-50 dark:bg-gray-900">
           {children}

@@ -66,7 +66,7 @@ export default function ActivityPage() {
       <div className="p-6">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
           </div>
         </div>
       </div>
@@ -115,7 +115,7 @@ export default function ActivityPage() {
                         setItemsPerPage(Number(e.target.value))
                         setCurrentPage(1)
                       }}
-                      className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                      className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                     >
                       <option value={10}>10</option>
                       <option value={20}>20</option>
@@ -150,7 +150,7 @@ export default function ActivityPage() {
                           onClick={() => setCurrentPage(pageNum)}
                           className={`px-3 py-2 border rounded-lg text-sm font-medium ${
                             currentPage === pageNum
-                              ? 'bg-purple-600 text-white border-purple-600'
+                              ? 'bg-primary-600 text-white border-primary-600'
                               : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                           }`}
                         >

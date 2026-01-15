@@ -255,7 +255,7 @@ export default function KnowledgeBasePage() {
             onClick={() => setActiveTab('patterns')}
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'patterns'
-                ? 'border-purple-500 text-purple-600'
+                ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -265,7 +265,7 @@ export default function KnowledgeBasePage() {
             onClick={() => setActiveTab('search')}
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'search'
-                ? 'border-purple-500 text-purple-600'
+                ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -275,7 +275,7 @@ export default function KnowledgeBasePage() {
             onClick={() => setActiveTab('query')}
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'query'
-                ? 'border-purple-500 text-purple-600'
+                ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -285,7 +285,7 @@ export default function KnowledgeBasePage() {
             onClick={() => setActiveTab('summary')}
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'summary'
-                ? 'border-purple-500 text-purple-600'
+                ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -310,7 +310,7 @@ export default function KnowledgeBasePage() {
                 </button>
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="text-sm text-purple-600 hover:text-purple-700 px-3 py-1 border border-purple-200 rounded hover:bg-purple-50"
+                  className="text-sm text-primary-600 hover:text-primary-700 px-3 py-1 border border-primary-200 rounded hover:bg-primary-50"
                 >
                   {showFilters ? '▼ Hide' : '▶ Show'} Filters
                 </button>
@@ -327,7 +327,7 @@ export default function KnowledgeBasePage() {
                   <select
                     value={filters.datePreset}
                     onChange={(e) => handleDatePresetChange(e.target.value as any)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="all">All Time</option>
                     <option value="30d">Last 30 Days</option>
@@ -349,7 +349,7 @@ export default function KnowledgeBasePage() {
                         type="date"
                         value={filters.startDate}
                         onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
                     <div>
@@ -360,7 +360,7 @@ export default function KnowledgeBasePage() {
                         type="date"
                         value={filters.endDate}
                         onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
                   </>
@@ -393,7 +393,7 @@ export default function KnowledgeBasePage() {
                                 }))
                               }
                             }}
-                            className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                           />
                           <span className="text-sm text-gray-700 capitalize">{type.replace('_', ' ')}</span>
                         </label>
@@ -431,7 +431,7 @@ export default function KnowledgeBasePage() {
                 <p className="text-xs text-gray-600 mb-2">Active Filters:</p>
                 <div className="flex flex-wrap gap-2">
                   {filters.datePreset !== 'all' && (
-                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
+                    <span className="px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs">
                       {filters.datePreset === 'custom' 
                         ? `Custom: ${filters.startDate} to ${filters.endDate}`
                         : filters.datePreset === '30d' ? 'Last 30 Days'
@@ -466,7 +466,7 @@ export default function KnowledgeBasePage() {
                   </h2>
                   <div className="space-y-4">
                     {patterns.recurring_actors.slice(0, 5).map((pattern: any, idx: number) => (
-                      <div key={idx} className="border-l-4 border-purple-500 pl-4 py-2">
+                      <div key={idx} className="border-l-4 border-primary-500 pl-4 py-2">
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-medium text-gray-900">
@@ -478,7 +478,7 @@ export default function KnowledgeBasePage() {
                             </p>
                           </div>
                           <div className="text-right">
-                            <span className="text-sm font-medium text-purple-600">
+                            <span className="text-sm font-medium text-primary-600">
                               {(pattern.confidence * 100).toFixed(0)}% confidence
                             </span>
                           </div>
@@ -570,13 +570,13 @@ export default function KnowledgeBasePage() {
 
               {/* AI Suggestions */}
               {suggestions.length > 0 && (
-                <div className="bg-white rounded-lg border border-purple-200 shadow-sm p-6">
+                <div className="bg-white rounded-lg border border-primary-200 shadow-sm p-6">
                   <h2 className="text-xl font-semibold text-gray-900 mb-4">
                     AI Suggestions ({suggestions.length})
                   </h2>
                   <div className="space-y-4">
                     {suggestions.map((suggestion: any, idx: number) => (
-                      <div key={idx} className="border-l-4 border-purple-500 pl-4 py-2">
+                      <div key={idx} className="border-l-4 border-primary-500 pl-4 py-2">
                         <p className="text-sm text-gray-700 whitespace-pre-wrap">
                           {suggestion.suggestion}
                         </p>
@@ -615,7 +615,7 @@ export default function KnowledgeBasePage() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search by document name or title..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       handleSearch()
@@ -631,7 +631,7 @@ export default function KnowledgeBasePage() {
                 <select
                   value={searchDocumentType}
                   onChange={(e) => setSearchDocumentType(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="">All Types</option>
                   {availableDocumentTypes.map((type) => (
@@ -645,7 +645,7 @@ export default function KnowledgeBasePage() {
               <button
                 onClick={handleSearch}
                 disabled={loadingSearch}
-                className="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loadingSearch ? 'Searching...' : 'Search Documents (Enter)'}
               </button>
@@ -676,7 +676,7 @@ export default function KnowledgeBasePage() {
                   }
 
                   return (
-                    <div key={doc.id} className="border-l-4 border-purple-500 pl-4 py-3 bg-gray-50 rounded-r-lg hover:bg-gray-100 transition-colors">
+                    <div key={doc.id} className="border-l-4 border-primary-500 pl-4 py-3 bg-gray-50 rounded-r-lg hover:bg-gray-100 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-900">
@@ -719,7 +719,7 @@ export default function KnowledgeBasePage() {
                         </div>
                         <button
                           onClick={() => window.open(`/cases/${caseId}/documents/${doc.id}/review`, '_blank')}
-                          className="ml-4 px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
+                          className="ml-4 px-4 py-2 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-colors"
                         >
                           View →
                         </button>
@@ -759,7 +759,7 @@ export default function KnowledgeBasePage() {
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   placeholder="Ask a question about the case documents..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[100px]"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 min-h-[100px]"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && e.ctrlKey) {
                       handleQuery()
@@ -770,7 +770,7 @@ export default function KnowledgeBasePage() {
               <button
                 onClick={handleQuery}
                 disabled={loadingQuery || !question.trim()}
-                className="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loadingQuery ? 'Processing...' : 'Ask Question (Ctrl+Enter)'}
               </button>
@@ -814,7 +814,7 @@ export default function KnowledgeBasePage() {
                 <select
                   value={summaryType}
                   onChange={(e) => setSummaryType(e.target.value as any)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="comprehensive">Comprehensive Summary</option>
                   <option value="timeline">Timeline Summary</option>
@@ -824,7 +824,7 @@ export default function KnowledgeBasePage() {
               <button
                 onClick={handleGenerateSummary}
                 disabled={loadingSummary}
-                className="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loadingSummary ? 'Generating...' : 'Generate Summary'}
               </button>

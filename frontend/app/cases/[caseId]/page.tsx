@@ -111,11 +111,11 @@ export default function CaseHomePage() {
           {caseId && (
             <div className="mb-6">
               <Link href={`/cases/${caseIdParam}/knowledge`}>
-                <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg border border-purple-200 shadow-lg p-6 text-white hover:shadow-xl transition-shadow cursor-pointer">
+                <div className="bg-gradient-to-r bg-primary-600 to-blue-600 rounded-lg border border-primary-200 shadow-lg p-6 text-white hover:shadow-xl transition-shadow cursor-pointer">
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-2xl font-bold mb-2">AI Knowledge Base</h2>
-                      <p className="text-purple-100 mb-4">
+                      <p className="text-primary-100 mb-4">
                         Discover patterns, ask questions, and generate summaries with AI-powered insights
                       </p>
                       <div className="flex gap-4 text-sm">
@@ -135,7 +135,7 @@ export default function CaseHomePage() {
             {/* Case Description */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Case description</h2>
-              <button className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1">
+              <button className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
                 <Plus className="h-4 w-4" />
                 add description
               </button>
@@ -151,7 +151,7 @@ export default function CaseHomePage() {
           <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Resume review</h2>
-              <button className="text-sm text-purple-600 hover:text-purple-700 font-medium px-3 py-1 border border-purple-200 rounded hover:bg-purple-50 flex items-center gap-1">
+              <button className="text-sm text-primary-600 hover:text-primary-700 font-medium px-3 py-1 border border-primary-200 rounded hover:bg-primary-50 flex items-center gap-1">
                 <RefreshCw className="h-4 w-4" />
                 Refresh
               </button>
@@ -181,7 +181,7 @@ export default function CaseHomePage() {
                   {caseId && (
                     <button 
                       onClick={() => router.push(`/cases/${caseId}/activity`)}
-                      className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
+                      className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
                     >
                       View all
                       <ArrowRight className="h-4 w-4" />
@@ -192,7 +192,7 @@ export default function CaseHomePage() {
               <div className="space-y-4">
                 {loadingActivities ? (
                   <div className="text-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>
                     <p className="text-xs text-gray-500 mt-2">Loading activities...</p>
                   </div>
                 ) : !activities || activities.length === 0 ? (

@@ -248,7 +248,7 @@ export default function EntitiesPage() {
           </div>
           {loadingStats && factsPerEntity.length === 0 && (
             <div className="text-sm text-gray-500 flex items-center gap-2">
-              <Loader2 className="animate-spin h-4 w-4 text-purple-600" />
+              <Loader2 className="animate-spin h-4 w-4 text-primary-600" />
               Loading insights...
             </div>
           )}
@@ -257,14 +257,14 @@ export default function EntitiesPage() {
 
       {/* Entity Statistics from Facts */}
       {!loadingStats && factsPerEntity.length > 0 && (
-        <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-200 mb-6">
+        <div className="bg-gradient-to-br bg-primary-50 to-blue-50 rounded-lg border border-primary-200 mb-6">
           {/* Collapsible Header */}
           <div className="p-6 pb-0">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Entity Insights from Facts</h2>
               <button
                 onClick={() => setShowStatistics(!showStatistics)}
-                className="px-3 py-1 text-sm bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 rounded-lg font-medium transition-colors"
+                className="px-3 py-1 text-sm bg-white border border-primary-300 text-primary-700 hover:bg-primary-100 rounded-lg font-medium transition-colors"
               >
                 {showStatistics ? '▲ Collapse' : '▼ Expand'}
               </button>
@@ -280,10 +280,10 @@ export default function EntitiesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-500">Entities with Facts</p>
-                  <p className="text-3xl font-bold text-purple-600 mt-1">{factsPerEntity.length}</p>
+                  <p className="text-3xl font-bold text-primary-600 mt-1">{factsPerEntity.length}</p>
                 </div>
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <Users className="h-6 w-6 text-purple-600" />
+                <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+                  <Users className="h-6 w-6 text-primary-600" />
                 </div>
               </div>
             </div>
@@ -329,7 +329,7 @@ export default function EntitiesPage() {
                 .map((entity, index) => (
                   <div
                     key={index}
-                    className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 hover:border-purple-300 transition-colors"
+                    className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 hover:border-primary-300 transition-colors"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
@@ -349,7 +349,7 @@ export default function EntitiesPage() {
                       </div>
                       <div className="ml-3 flex-shrink-0">
                         <div className="flex items-center gap-1">
-                          <span className="text-lg font-bold text-purple-600">{entity.value}</span>
+                          <span className="text-lg font-bold text-primary-600">{entity.value}</span>
                           <span className="text-xs text-gray-500">facts</span>
                         </div>
                       </div>
@@ -468,7 +468,7 @@ export default function EntitiesPage() {
                             </td>
                             <td className="px-4 py-3 whitespace-normal">
                               <div className="flex items-center">
-                                <span className="text-sm font-semibold text-purple-600">{entity.value}</span>
+                                <span className="text-sm font-semibold text-primary-600">{entity.value}</span>
                                 <span className="text-xs text-gray-500 ml-1">facts</span>
                               </div>
                             </td>
@@ -493,7 +493,7 @@ export default function EntitiesPage() {
                                 onClick={() => {
                                   router.push(`/cases/${caseIdParam}/facts?entity=${encodeURIComponent(entity.name)}`)
                                 }}
-                                className="text-xs text-purple-600 hover:text-purple-700 font-medium hover:underline"
+                                className="text-xs text-primary-600 hover:text-primary-700 font-medium hover:underline"
                               >
                                 View Facts →
                               </button>
@@ -524,7 +524,7 @@ export default function EntitiesPage() {
                 setSearchQuery(e.target.value)
                 setCurrentPage(1)
               }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
 
@@ -537,7 +537,7 @@ export default function EntitiesPage() {
                 setTypeFilter(e.target.value)
                 setCurrentPage(1)
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="all">All Types</option>
               {availableTypes.map((type) => (
@@ -557,7 +557,7 @@ export default function EntitiesPage() {
                 setReviewStatusFilter(e.target.value)
                 setCurrentPage(1)
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="all">All</option>
               <option value="accepted">Accepted</option>
@@ -567,7 +567,7 @@ export default function EntitiesPage() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <div className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm font-semibold">
+            <div className="px-3 py-1.5 bg-primary-100 text-primary-700 rounded-lg text-sm font-semibold">
               {total} {total === 1 ? 'entity' : 'entities'}
             </div>
           </div>
@@ -673,7 +673,7 @@ export default function EntitiesPage() {
                             <button
                               onClick={() => handleEdit(entity)}
                               disabled={deletingEntity === entity.id}
-                              className="w-full lg:w-auto px-2.5 py-1 text-xs text-purple-600 hover:bg-purple-50 rounded font-medium border border-purple-200 hover:border-purple-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                              className="w-full lg:w-auto px-2.5 py-1 text-xs text-primary-600 hover:bg-primary-50 rounded font-medium border border-primary-200 hover:border-primary-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                               title="Edit entity"
                             >
                               <Edit className="h-3 w-3 mr-1" />
@@ -745,7 +745,7 @@ export default function EntitiesPage() {
                         setPageSize(Number(e.target.value))
                         setCurrentPage(1)
                       }}
-                      className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                      className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                     >
                       <option value={10}>10</option>
                       <option value={25}>25</option>
@@ -780,7 +780,7 @@ export default function EntitiesPage() {
                           onClick={() => setCurrentPage(pageNum)}
                           className={`px-3 py-2 border rounded-lg text-sm font-medium ${
                             currentPage === pageNum
-                              ? 'bg-purple-600 text-white border-purple-600'
+                              ? 'bg-primary-600 text-white border-primary-600'
                               : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                           }`}
                         >
@@ -829,7 +829,7 @@ export default function EntitiesPage() {
                   type="text"
                   value={editValues.name || ''}
                   onChange={(e) => setEditValues({ ...editValues, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Entity name"
                 />
               </div>
@@ -870,7 +870,7 @@ export default function EntitiesPage() {
                   type="text"
                   value={editValues.short_name || ''}
                   onChange={(e) => setEditValues({ ...editValues, short_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Short name"
                 />
               </div>
@@ -884,7 +884,7 @@ export default function EntitiesPage() {
                   type="email"
                   value={editValues.email || ''}
                   onChange={(e) => setEditValues({ ...editValues, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="email@example.com"
                 />
               </div>
@@ -898,7 +898,7 @@ export default function EntitiesPage() {
                   type="text"
                   value={editValues.role || ''}
                   onChange={(e) => setEditValues({ ...editValues, role: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Role"
                 />
               </div>
@@ -916,7 +916,7 @@ export default function EntitiesPage() {
               <button
                 onClick={handleSave}
                 disabled={savingEntity === editingEntity.id || !editValues.name}
-                className="px-4 py-2 bg-purple-600 text-white hover:bg-purple-700 rounded-lg font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className="px-4 py-2 bg-primary-600 text-white hover:bg-primary-700 rounded-lg font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
                 {savingEntity === editingEntity.id ? (
                   <>

@@ -196,10 +196,10 @@ export default function EntitiesPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Total Cases</p>
-              <p className="text-2xl font-bold text-purple-600 mt-1">{cases.length}</p>
+              <p className="text-2xl font-bold text-primary-600 mt-1">{cases.length}</p>
             </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Folder className="h-6 w-6 text-purple-600" />
+            <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+              <Folder className="h-6 w-6 text-primary-600" />
             </div>
           </div>
         </div>
@@ -240,7 +240,7 @@ export default function EntitiesPage() {
                 placeholder="Search entities..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             </div>
@@ -252,7 +252,7 @@ export default function EntitiesPage() {
             <select
               value={caseFilter}
               onChange={(e) => setCaseFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="all">All Cases</option>
               {cases.map((caseItem) => (
@@ -269,7 +269,7 @@ export default function EntitiesPage() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="all">All Types</option>
               {availableTypes.sort().map((type) => (
@@ -286,7 +286,7 @@ export default function EntitiesPage() {
             <select
               value={reviewStatusFilter}
               onChange={(e) => setReviewStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="all">All</option>
               <option value="accepted">Accepted</option>
@@ -328,7 +328,7 @@ export default function EntitiesPage() {
                     ) : (
                       <ChevronRight className="h-5 w-5 text-gray-400" />
                     )}
-                    <Folder className="h-5 w-5 text-purple-600" />
+                    <Folder className="h-5 w-5 text-primary-600" />
                     <div>
                       <h3 className="font-semibold text-gray-900">
                         {caseItem.matter_name || caseItem.matter_number}
@@ -343,7 +343,7 @@ export default function EntitiesPage() {
                       e.stopPropagation()
                       router.push(`/cases/${caseItem.id}/entities`)
                     }}
-                    className="px-4 py-2 text-sm text-purple-600 hover:bg-purple-50 rounded-lg font-medium transition-colors"
+                    className="px-4 py-2 text-sm text-primary-600 hover:bg-primary-50 rounded-lg font-medium transition-colors"
                   >
                     View Case Entities
                   </button>
@@ -354,7 +354,7 @@ export default function EntitiesPage() {
                   <div className="border-t border-gray-200">
                     {isLoading ? (
                       <div className="p-8 text-center">
-                        <Loader2 className="h-6 w-6 animate-spin text-purple-600 mx-auto mb-2" />
+                        <Loader2 className="h-6 w-6 animate-spin text-primary-600 mx-auto mb-2" />
                         <p className="text-sm text-gray-500">Loading entities...</p>
                       </div>
                     ) : caseData && caseData.entities.length === 0 ? (
@@ -414,7 +414,7 @@ export default function EntitiesPage() {
                                 </span>
                                 <button
                                   onClick={() => router.push(`/cases/${caseItem.id}/facts?entity=${encodeURIComponent(entity.name)}`)}
-                                  className="ml-auto text-xs text-purple-600 hover:text-purple-700 font-medium"
+                                  className="ml-auto text-xs text-primary-600 hover:text-primary-700 font-medium"
                                 >
                                   View Facts →
                                 </button>

@@ -261,7 +261,7 @@ export default function FactsPage() {
                 {entityFilter && (
                   <button
                     onClick={clearEntityFilter}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs sm:text-sm font-medium"
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-xs sm:text-sm font-medium"
                   >
                     Clear Entity Filter
                   </button>
@@ -272,7 +272,7 @@ export default function FactsPage() {
                       setSearchQuery('')
                       setCurrentPage(1)
                     }}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs sm:text-sm font-medium"
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-xs sm:text-sm font-medium"
                   >
                     Clear Search
                   </button>
@@ -294,24 +294,24 @@ export default function FactsPage() {
     const noDateFacts = groupedFacts['No Date'] || []
 
     return (
-      <div className="bg-gradient-to-b from-purple-50 to-white rounded-lg p-3 sm:p-4 md:p-6 w-full overflow-hidden relative" style={{ overflowX: 'scroll', overflowY: 'visible', maxWidth: '90vw' }}>
+      <div className="bg-gradient-to-b from-primary-50 to-white rounded-lg p-3 sm:p-4 md:p-6 w-full overflow-hidden relative" style={{ overflowX: 'scroll', overflowY: 'visible', maxWidth: '90vw' }}>
         {/* Scroll Navigation Buttons - Fixed at middle of screen */}
         {canScrollLeft && (
           <button
             onClick={() => scrollTimeline('left')}
-            className="fixed left-2 sm:left-4 top-1/2 -translate-y-1/2 z-50 bg-white/90 hover:bg-white border-2 border-purple-300 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg transition-all hover:scale-110"
+            className="fixed left-2 sm:left-4 top-1/2 -translate-y-1/2 z-50 bg-white/90 hover:bg-white border-2 border-primary-300 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg transition-all hover:scale-110"
             aria-label="Scroll left"
           >
-            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600" />
           </button>
         )}
         {canScrollRight && (
           <button
             onClick={() => scrollTimeline('right')}
-            className="fixed right-2 sm:right-4 top-1/2 -translate-y-1/2 z-50 bg-white/90 hover:bg-white border-2 border-purple-300 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg transition-all hover:scale-110"
+            className="fixed right-2 sm:right-4 top-1/2 -translate-y-1/2 z-50 bg-white/90 hover:bg-white border-2 border-primary-300 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg transition-all hover:scale-110"
             aria-label="Scroll right"
           >
-            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600" />
           </button>
         )}
         
@@ -319,7 +319,7 @@ export default function FactsPage() {
         <div 
           ref={timelineScrollRef}
           onScroll={checkScrollButtons}
-          className="w-full overflow-x-auto overflow-y-visible pb-6 sm:pb-8 scrollbar-thin scrollbar-thumb-purple-400 scrollbar-track-gray-100" 
+          className="w-full overflow-x-auto overflow-y-visible pb-6 sm:pb-8 scrollbar-thin scrollbar-thumb-primary-400 scrollbar-track-gray-100" 
           style={{ 
             WebkitOverflowScrolling: 'touch',
             scrollbarWidth: 'thin',
@@ -330,16 +330,16 @@ export default function FactsPage() {
             {/* Timeline axis */}
             <div className="relative mb-4 sm:mb-6 md:mb-8">
               {/* Horizontal line */}
-              <div className="absolute top-5 sm:top-6 left-0 right-0 h-0.5 sm:h-1 bg-gradient-to-r from-purple-300 via-purple-500 to-purple-300" />
+              <div className="absolute top-5 sm:top-6 left-0 right-0 h-0.5 sm:h-1 bg-gradient-to-r from-primary-300 via-primary-500 to-primary-300" />
               
               {/* Date markers */}
               <div className="flex justify-between items-start relative gap-2 sm:gap-0">
                 {dates.map((date, index) => (
                   <div key={date} className="flex flex-col items-center min-w-[120px] sm:min-w-[150px] md:min-w-[200px] flex-shrink-0">
                     {/* Marker */}
-                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 rounded-full bg-purple-600 border-2 sm:border-3 md:border-4 border-white shadow-lg z-10 mb-1.5 sm:mb-2" />
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 rounded-full bg-primary-600 border-2 sm:border-3 md:border-4 border-white shadow-lg z-10 mb-1.5 sm:mb-2" />
                     {/* Date label */}
-                    <div className="text-[10px] sm:text-xs md:text-sm font-semibold text-purple-900 mb-0.5 sm:mb-1 text-center px-1 break-words">{date}</div>
+                    <div className="text-[10px] sm:text-xs md:text-sm font-semibold text-primary-900 mb-0.5 sm:mb-1 text-center px-1 break-words">{date}</div>
                     <div className="text-[9px] sm:text-xs text-gray-500 text-center">
                       {groupedFacts[date].length} {groupedFacts[date].length === 1 ? 'fact' : 'facts'}
                     </div>
@@ -360,14 +360,14 @@ export default function FactsPage() {
                       >
                         {/* Connecting line from timeline */}
                         {factIndex === 0 && (
-                          <div className="absolute -top-6 sm:-top-8 left-1/2 w-0.5 h-6 sm:h-8 bg-purple-300" />
+                          <div className="absolute -top-6 sm:-top-8 left-1/2 w-0.5 h-6 sm:h-8 bg-primary-300" />
                         )}
                         
                         {/* Fact card */}
-                        <div className="bg-white border-2 border-purple-200 rounded-lg p-2 sm:p-3 md:p-4 hover:shadow-lg hover:border-purple-400 transition-all">
+                        <div className="bg-white border-2 border-primary-200 rounded-lg p-2 sm:p-3 md:p-4 hover:shadow-lg hover:border-primary-400 transition-all">
                           {/* Time */}
                           {fact.date_time && (
-                            <div className="text-[10px] sm:text-xs font-medium text-purple-600 mb-1.5 sm:mb-2">
+                            <div className="text-[10px] sm:text-xs font-medium text-primary-600 mb-1.5 sm:mb-2">
                               {new Date(fact.date_time).toLocaleTimeString('en-US', {
                                 hour: '2-digit',
                                 minute: '2-digit'
@@ -430,7 +430,7 @@ export default function FactsPage() {
                           <div className="flex flex-col gap-1.5 sm:gap-2 pt-2 sm:pt-3 border-t border-gray-100">
                             <button
                               onClick={() => router.push(`/cases/${caseIdParam}/documents/${fact.document_id}/review`)}
-                              className="text-[10px] sm:text-xs text-purple-600 hover:text-purple-700 font-medium text-left truncate flex items-center gap-1"
+                              className="text-[10px] sm:text-xs text-primary-600 hover:text-primary-700 font-medium text-left truncate flex items-center gap-1"
                             >
                               <FileText className="h-3 w-3" />
                               View Document
@@ -438,7 +438,7 @@ export default function FactsPage() {
                             {fact.review_status === 'not_reviewed' ? (
                               <button
                                 onClick={() => handleReviewStatusChange(fact.id, 'accepted')}
-                                className="w-full px-2 sm:px-3 py-1 sm:py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 text-[10px] sm:text-xs font-medium"
+                                className="w-full px-2 sm:px-3 py-1 sm:py-1.5 bg-primary-600 text-white rounded hover:bg-primary-700 text-[10px] sm:text-xs font-medium"
                               >
                                 Accept
                               </button>
@@ -522,7 +522,7 @@ export default function FactsPage() {
                   <div className="flex flex-col gap-2 pt-3 border-t border-gray-100">
                     <button
                       onClick={() => router.push(`/cases/${caseIdParam}/documents/${fact.document_id}/review`)}
-                      className="text-xs text-purple-600 hover:text-purple-700 font-medium text-left flex items-center gap-1"
+                      className="text-xs text-primary-600 hover:text-primary-700 font-medium text-left flex items-center gap-1"
                     >
                       <FileText className="h-3 w-3" />
                       View Document
@@ -530,7 +530,7 @@ export default function FactsPage() {
                     {fact.review_status === 'not_reviewed' ? (
                       <button
                         onClick={() => handleReviewStatusChange(fact.id, 'accepted')}
-                        className="w-full px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 text-xs font-medium"
+                        className="w-full px-3 py-1.5 bg-primary-600 text-white rounded hover:bg-primary-700 text-xs font-medium"
                       >
                         Accept
                       </button>
@@ -570,24 +570,24 @@ export default function FactsPage() {
 
       {/* Active Entity Filter Indicator */}
       {entityFilter && (
-        <div className="bg-purple-50 border-l-4 border-purple-500 p-3 sm:p-4 mb-4 sm:mb-6 rounded-r-lg overflow-hidden">
+        <div className="bg-primary-50 border-l-4 border-primary-500 p-3 sm:p-4 mb-4 sm:mb-6 rounded-r-lg overflow-hidden">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 min-w-0">
             <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 w-full sm:w-auto">
               <div className="flex-shrink-0">
-                <Filter className="h-5 w-5 text-purple-500" />
+                <Filter className="h-5 w-5 text-primary-500" />
               </div>
               <div className="min-w-0 flex-1 overflow-hidden">
-                <p className="text-xs sm:text-sm font-medium text-purple-900 truncate">
+                <p className="text-xs sm:text-sm font-medium text-primary-900 truncate">
                   Filtering by entity: <span className="font-bold">"{entityFilter}"</span>
                 </p>
-                <p className="text-xs text-purple-700 mt-0.5 truncate">
+                <p className="text-xs text-primary-700 mt-0.5 truncate">
                   Showing {total} facts
                 </p>
               </div>
             </div>
             <button
               onClick={clearEntityFilter}
-              className="flex-shrink-0 w-full sm:w-auto px-3 sm:px-4 py-2 bg-purple-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap"
+              className="flex-shrink-0 w-full sm:w-auto px-3 sm:px-4 py-2 bg-primary-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
             >
               Clear Filter
             </button>
@@ -609,7 +609,7 @@ export default function FactsPage() {
                   setSearchQuery(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               {searchQuery && (
@@ -636,7 +636,7 @@ export default function FactsPage() {
                   setReviewStatusFilter(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-xs sm:text-sm min-w-[100px] sm:min-w-[120px]"
+                className="px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs sm:text-sm min-w-[100px] sm:min-w-[120px]"
               >
                 <option value="all">All</option>
                 <option value="accepted">Accepted</option>
@@ -652,7 +652,7 @@ export default function FactsPage() {
                   onClick={() => setViewMode('list')}
                   className={`px-2.5 sm:px-3 md:px-4 py-2 text-xs sm:text-sm font-medium transition-colors ${
                     viewMode === 'list'
-                      ? 'bg-purple-600 text-white'
+                      ? 'bg-primary-600 text-white'
                       : 'bg-white text-gray-700 hover:bg-gray-50'
                   }`}
                 >
@@ -662,7 +662,7 @@ export default function FactsPage() {
                   onClick={() => setViewMode('timeline')}
                   className={`px-2.5 sm:px-3 md:px-4 py-2 text-xs sm:text-sm font-medium transition-colors ${
                     viewMode === 'timeline'
-                      ? 'bg-purple-600 text-white'
+                      ? 'bg-primary-600 text-white'
                       : 'bg-white text-gray-700 hover:bg-gray-50'
                   }`}
                 >
@@ -708,7 +708,7 @@ export default function FactsPage() {
                   {entityFilter && (
                     <button
                       onClick={clearEntityFilter}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs sm:text-sm font-medium"
+                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-xs sm:text-sm font-medium"
                     >
                       Clear Entity Filter
                     </button>
@@ -719,7 +719,7 @@ export default function FactsPage() {
                         setSearchQuery('')
                         setCurrentPage(1)
                       }}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs sm:text-sm font-medium"
+                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-xs sm:text-sm font-medium"
                     >
                       Clear Search
                     </button>
@@ -817,7 +817,7 @@ export default function FactsPage() {
                         </Tooltip>
                         <button
                           onClick={() => router.push(`/cases/${caseIdParam}/documents/${fact.document_id}/review`)}
-                          className="text-xs text-purple-600 hover:text-purple-700 mt-1"
+                          className="text-xs text-primary-600 hover:text-primary-700 mt-1"
                         >
                           Review document
                         </button>
@@ -837,7 +837,7 @@ export default function FactsPage() {
                         {fact.review_status === 'not_reviewed' ? (
                           <button
                             onClick={() => handleReviewStatusChange(fact.id, 'accepted')}
-                            className="text-purple-600 hover:text-purple-700 font-medium"
+                            className="text-primary-600 hover:text-primary-700 font-medium"
                           >
                             Accept
                           </button>
@@ -871,7 +871,7 @@ export default function FactsPage() {
                         setPageSize(Number(e.target.value))
                         setCurrentPage(1)
                       }}
-                      className="px-2 sm:px-3 py-1.5 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                      className="px-2 sm:px-3 py-1.5 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                     >
                       <option value={10}>10</option>
                       <option value={20}>20</option>
@@ -906,7 +906,7 @@ export default function FactsPage() {
                           onClick={() => setCurrentPage(pageNum)}
                           className={`px-2 sm:px-3 py-2 border rounded-lg text-xs sm:text-sm font-medium ${
                             currentPage === pageNum
-                              ? 'bg-purple-600 text-white border-purple-600'
+                              ? 'bg-primary-600 text-white border-primary-600'
                               : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                           }`}
                         >
