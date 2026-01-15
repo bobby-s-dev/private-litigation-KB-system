@@ -115,7 +115,7 @@ export default function CaseHomePage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-2xl font-bold mb-2">AI Knowledge Base</h2>
-                      <p className="text-primary-100 mb-4">
+                      <p className="mb-4">
                         Discover patterns, ask questions, and generate summaries with AI-powered insights
                       </p>
                       <div className="flex gap-4 text-sm">

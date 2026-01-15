@@ -75,7 +75,7 @@ export default function FactsPerEntity({ matterId }: FactsPerEntityProps) {
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900">Facts per Entity</h2>
-        <button className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+        <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
           View all
         </button>
       </div>
