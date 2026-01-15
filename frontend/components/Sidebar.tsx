@@ -23,7 +23,7 @@ export default function Sidebar() {
   const { isCollapsed, toggleSidebar } = useSidebar()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
-  
+
   // Get user initials
   const getUserInitials = () => {
     if (!user?.username) return 'U'
@@ -57,13 +57,12 @@ export default function Sidebar() {
   }
 
   return (
-    <div className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 ease-in-out ${
-      isCollapsed ? 'w-16' : 'w-64'
-    }`}>
+    <div className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 ease-in-out ${isCollapsed ? 'w-16' : 'w-64'
+      }`}>
       {/* Toggle Button */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         {!isCollapsed && (
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">🐧 PenguinLeo Assistant</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">🐧 PenguinLeo</h2>
         )}
         <button
           onClick={toggleSidebar}
@@ -86,15 +85,13 @@ export default function Sidebar() {
             <Link
               key={item.label}
               href={item.href}
-              className={`flex items-center gap-3 rounded-lg mb-2 transition-colors ${
-                isCollapsed 
-                  ? 'w-12 h-12 justify-center mx-auto' 
+              className={`flex items-center gap-3 rounded-lg mb-2 transition-colors ${isCollapsed
+                  ? 'w-12 h-12 justify-center mx-auto'
                   : 'w-full px-3 py-2.5'
-              } ${
-                isActive
+                } ${isActive
                   ? 'bg-primary-0 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
+                }`}
               title={isCollapsed ? item.label : undefined}
             >
               <item.icon className="w-5 h-5 flex-shrink-0" />
@@ -109,18 +106,16 @@ export default function Sidebar() {
       <div className={`mt-auto mb-4 relative ${isCollapsed ? 'px-2' : 'px-3'}`} ref={menuRef}>
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className={`flex items-center gap-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800 ${
-            isCollapsed 
-              ? 'w-12 h-12 justify-center mx-auto rounded-full' 
+          className={`flex items-center gap-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800 ${isCollapsed
+              ? 'w-12 h-12 justify-center mx-auto rounded-full'
               : 'w-full px-3 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-700'
-          }`}
+            }`}
           style={isCollapsed ? { backgroundColor: 'var(--primary-color)' } : undefined}
           title={isCollapsed ? (user?.username || 'User') : undefined}
         >
-          <div 
-            className={`flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0 ${
-              isCollapsed ? 'w-12 h-12' : 'w-10 h-10'
-            }`}
+          <div
+            className={`flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0 ${isCollapsed ? 'w-12 h-12' : 'w-10 h-10'
+              }`}
             style={{ backgroundColor: 'var(--primary-color)' }}
           >
             {getUserInitials()}
@@ -136,16 +131,15 @@ export default function Sidebar() {
             </div>
           )}
         </button>
-        
+
         {/* Dropdown Menu */}
         {isMenuOpen && (
-          <div className={`absolute bottom-16 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50 ${
-            isCollapsed ? 'left-0 w-48' : 'left-3 right-3'
-          }`}>
+          <div className={`absolute bottom-16 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50 ${isCollapsed ? 'left-0 w-48' : 'left-3 right-3'
+            }`}>
             {/* User Info */}
             <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3">
-                <div 
+                <div
                   className="w-10 h-10 flex items-center justify-center rounded-full text-white text-sm font-semibold flex-shrink-0"
                   style={{ backgroundColor: 'var(--primary-color)' }}
                 >
@@ -161,7 +155,7 @@ export default function Sidebar() {
                 </div>
               </div>
             </div>
-            
+
             {/* Menu Items */}
             <div className="py-1">
               <Link
