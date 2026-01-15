@@ -118,7 +118,7 @@ export default function RecentlyUploadedSources({ matterId, refreshKey, limit = 
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
         </div>
       </div>
     )
@@ -141,7 +141,7 @@ export default function RecentlyUploadedSources({ matterId, refreshKey, limit = 
         {showViewAll && caseId && (
           <button
             onClick={() => router.push(`/cases/${caseId}/resources`)}
-            className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+            className="text-sm text-primary-600 hover:text-primary-700 font-medium"
           >
             View all
           </button>
@@ -197,7 +197,7 @@ export default function RecentlyUploadedSources({ matterId, refreshKey, limit = 
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleReview(source.id)}
-                      className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 transition-colors"
+                      className="bg-primary-600 text-white px-3 py-1 rounded text-sm hover:bg-primary-700 transition-colors"
                     >
                       Review
                     </button>

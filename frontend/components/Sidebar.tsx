@@ -92,7 +92,7 @@ export default function Sidebar() {
                   : 'w-full px-3 py-2.5'
               } ${
                 isActive
-                  ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
+                  ? 'bg-primary-0 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
               title={isCollapsed ? item.label : undefined}

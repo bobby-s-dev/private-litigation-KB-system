@@ -54,8 +54,8 @@ export default function CaseHeader() {
     if (pathname === `/cases/${caseId}/facts`) return 1
     if (pathname === `/cases/${caseId}/entities`) return 2
     if (pathname === `/cases/${caseId}/knowledge`) return 3
-    if (pathname === `/cases/${caseId}/resources`) return 5
-    if (pathname === `/cases/${caseId}/activity`) return 9
+    if (pathname === `/cases/${caseId}/resources`) return 4
+    if (pathname === `/cases/${caseId}/activity`) return 7
     return -1
   }
 

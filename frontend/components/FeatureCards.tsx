@@ -54,11 +54,22 @@ export default function FeatureCards() {
             }`}
           >
             <div className="mb-3">
-              <feature.icon className="h-8 w-8 text-purple-600" />
+              <feature.icon className="h-8 w-8" style={{ color: 'var(--primary-600)' }} />
             </div>
             <h3 className="font-semibold text-gray-900 mb-2">{feature.title}</h3>
             <p className="text-sm text-gray-600">{feature.description}</p>
-            <div className="absolute bottom-4 right-4 text-gray-400 group-hover:text-purple-600 transition-colors">
+            <div 
+              className="absolute bottom-4 right-4 transition-colors"
+              style={{ 
+                color: 'var(--gray-400)', // gray-400
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--primary-600)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--gray-400)'
+              }}
+            >
               →
             </div>
           </div>

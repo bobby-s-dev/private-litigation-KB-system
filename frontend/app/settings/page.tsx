@@ -179,9 +179,6 @@ export default function SettingsPage() {
                   e.currentTarget.style.borderColor = ''
                 }
               }}
-              style={{
-                borderColor: theme === 'dark' ? primaryColor : undefined
-              }}
             >
               <div className={`p-2 rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`}>
                 {theme === 'dark' ? (
